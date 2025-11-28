@@ -87,7 +87,7 @@ final class BibleRepositoryProvider extends $FunctionalProvider<BibleRepository,
   }
 }
 
-String _$bibleRepositoryHash() => r'6964ea9d70c55fa6699a7edaba165019624ac0b8';
+String _$bibleRepositoryHash() => r'f0eccf2369e7457cbbf58d7fdaf55a00119f9a08';
 
 @ProviderFor(bookReadCount)
 const bookReadCountProvider = BookReadCountFamily._();
