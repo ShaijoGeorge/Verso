@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../data/bible_data.dart';
 import '../widgets/book_grid.dart';
 
@@ -19,8 +20,9 @@ class OldTestamentScreen extends StatelessWidget {
       body: BookGrid(
         books: otBooks,
         onBookTap: (book) {
-          // will handle navigation later
-          print("Tapped on ${book.name}"); 
+          // Use GoRouter to push the new screen
+          // We use 'push' so the user can hit 'Back' to return to the list
+          GoRouter.of(context).push('/book/${book.id}');
         },
       ),
     );
