@@ -47,8 +47,8 @@ class BookProgressCard extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   color: isCompleted 
-                      ? Theme.of(context).colorScheme.primary.withAlpha(77) // Alpha for 30% 
-                      : Theme.of(context).colorScheme.primary.withAlpha(38), // Alpha for 15%
+                      ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3) 
+                      : Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
                 ),
               ),
             ),
