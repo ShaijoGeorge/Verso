@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class _AppColors {
   // --- Light Palette ---
@@ -22,6 +21,7 @@ class AppTheme {
   static final lightTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
+    fontFamily: 'Metropolis',
     
     colorScheme: const ColorScheme.light(
       primary: _AppColors.blueDeep,
@@ -35,7 +35,7 @@ class AppTheme {
     
     scaffoldBackgroundColor: _AppColors.greyLight,
     
-    textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme).apply(
+    textTheme: const TextTheme().apply(
       bodyColor: Colors.black87,
       displayColor: _AppColors.blueDeep,
     ),
@@ -76,6 +76,7 @@ class AppTheme {
   static final darkTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
+    fontFamily: 'Metropolis',
     
     colorScheme: const ColorScheme.dark(
       primary: _AppColors.blueAccent,    // Lighter blue stands out on black
@@ -89,7 +90,7 @@ class AppTheme {
     
     scaffoldBackgroundColor: _AppColors.darkBackground,
     
-    textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme).apply(
+    textTheme: const TextTheme().apply(
       bodyColor: Colors.grey[200],
       displayColor: Colors.white,
     ),
