@@ -1,33 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme.dart';
+import 'core/router.dart'; // Import the router
 
 void main() {
-  // ProviderScope is the entry point of Riverpod. It stores the state of all providers.
   runApp(const ProviderScope(child: BibliaApp()));
 }
 
-class BibliaApp extends StatelessWidget {
+class BibliaApp extends ConsumerWidget {
   const BibliaApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch the router provider
+    final router = ref.watch(routerProvider);
+
+    return MaterialApp.router(
       title: 'Biblia',
       debugShowCheckedModeBanner: false,
-      
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      
-      // Use system setting to toggle light/dark mode
       themeMode: ThemeMode.system,
       
-      // Temp placeholder until build Router
-      home: const Scaffold(
-        body: Center(
-          child: Text('Biblia: Ready for Development'),
-        ),
-      ),
+      // Connect GoRouter
+      routerConfig: router,
     );
   }
 }
