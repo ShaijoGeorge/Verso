@@ -27,12 +27,31 @@ void main() async {
   runApp(const ProviderScope(child: BibliaApp()));
 }
 
-class BibliaApp extends ConsumerWidget {
+// Converted to ConsumerStatefulWidget to listen for Auth Events
+class BibliaApp extends ConsumerStatefulWidget {
   const BibliaApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Watch the router provider
+  ConsumerState<BibliaApp> createState() => _BibliaAppState();
+}
+
+class _BibliaAppState extends ConsumerState<BibliaApp> {
+  
+  @override
+  void initState() {
+    super.initState();
+    // Listen for the "Password Recovery" event
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final event = data.event;
+      if (event == AuthChangeEvent.passwordRecovery) {
+        // If we detect a recovery link was clicked, force navigation to Update Password
+        ref.read(routerProvider).go('/update-password');
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(

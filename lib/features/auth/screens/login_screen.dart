@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/auth_providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -150,6 +151,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       : null,
                 ),
                 const Gap(24),
+
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      GoRouter.of(context).push('/forgot-password');
+                    },
+                    child: const Text('Forgot Password?'),
+                  ),
+                ),
+                const Gap(8),
 
                 // Submit Button
                 FilledButton(

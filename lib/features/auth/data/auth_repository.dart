@@ -33,6 +33,16 @@ class AuthRepository {
     await _supabase.auth.signOut();
   }
 
+  // --- NEW METHODS FOR PROFESSIONAL AUTH ---
+
+  Future<void> resetPassword(String email) async {
+    // This sends the email with a link like: io.supabase.flutter://reset-callback
+    await _supabase.auth.resetPasswordForEmail(
+      email,
+      redirectTo: 'io.supabase.flutter://reset-callback',
+    );
+  }
+
   // Update Email
   Future<void> updateEmail(String newEmail) async {
     await _supabase.auth.updateUser(UserAttributes(email: newEmail));

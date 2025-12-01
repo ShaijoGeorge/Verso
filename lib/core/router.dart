@@ -1,7 +1,8 @@
-import 'package:biblia/features/auth/providers/auth_providers.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; 
 import 'widgets/main_wrapper.dart';
 import '../data/bible_data.dart';
 import '../features/home/screens/home_screen.dart';
@@ -9,27 +10,47 @@ import '../features/reading/screens/old_testament_screen.dart';
 import '../features/reading/screens/new_testament_screen.dart';
 import '../features/reading/screens/chapters_screen.dart';
 import '../features/auth/screens/login_screen.dart';
+import '../features/auth/screens/forgot_password_screen.dart';
+import '../features/auth/screens/update_password_screen.dart';
 import '../features/auth/screens/profile_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
 
-// 1. Create a Global Key for the Root Navigator
-// This key allows us to push screens *over* the bottom navigation bar
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authUserProvider);
+  // Listen to the Supabase Auth Stream directly
+  final authStream = Supabase.instance.client.auth.onAuthStateChange;
 
   return GoRouter(
-    // 2. Register the key with the Router
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/home',
     
-    redirect: (context, state) {
-      final isLoggedIn = authState.value != null;
-      final isLoggingIn = state.uri.toString() == '/login';
+    // Refresh the router whenever Auth State changes (Login, Logout, Recovery)
+    refreshListenable: GoRouterRefreshStream(authStream),
 
-      if (!isLoggedIn && !isLoggingIn) return '/login';
-      if (isLoggedIn && isLoggingIn) return '/home';
+    redirect: (context, state) {
+      final session = Supabase.instance.client.auth.currentSession;
+      final isLoggedIn = session != null;
+      
+      final isLoginRoute = state.uri.toString() == '/login';
+      final isForgotRoute = state.uri.toString() == '/forgot-password';
+      final isUpdatePasswordRoute = state.uri.toString() == '/update-password';
+
+      // 1. If NOT logged in...
+      if (!isLoggedIn && !isLoginRoute && !isForgotRoute && !isUpdatePasswordRoute) {
+        return '/login';
+      }
+
+      // 2. If LOGGED IN...
+      if (isLoggedIn) {
+        // If on the Update Password screen, ALLOW IT.
+        if (isUpdatePasswordRoute) return null;
+
+        // Otherwise, if trying to access Login or Forgot -> Home
+        if (isLoginRoute || isForgotRoute) {
+          return '/home';
+        }
+      }
 
       return null;
     },
@@ -37,6 +58,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      // NEW: The screen for setting a new password
+      GoRoute(
+        path: '/update-password',
+        builder: (context, state) => const UpdatePasswordScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
@@ -69,8 +99,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-      // 3. Use the _rootNavigatorKey here
-      // This tells GoRouter: "Render this screen on the Root Navigator, covering the tabs"
       GoRoute(
         path: '/book/:bookId',
         parentNavigatorKey: _rootNavigatorKey, 
@@ -97,3 +125,21 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+// Helper class to make Stream listenable for GoRouter
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.listen(
+      (dynamic _) => notifyListeners(),
+    );
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
