@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import '../providers/stats_providers.dart';
+import '../../../core/widgets/error_state_widget.dart';
 
 class StatsScreen extends ConsumerWidget {
   const StatsScreen({super.key});
@@ -14,7 +15,10 @@ class StatsScreen extends ConsumerWidget {
     // No Scaffold, no AppBar here either
     return statsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('Error: $err')),
+      error: (err, stack) => ErrorStateWidget(
+        error: err,
+        onRetry: () => ref.invalidate(userStatsProvider),
+      ),
       data: (stats) {
         return SingleChildScrollView(
           padding: const EdgeInsets.all(24),

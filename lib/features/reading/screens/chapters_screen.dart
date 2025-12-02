@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/bible_data.dart';
 import '../providers/reading_providers.dart';
+import '../../../core/widgets/error_state_widget.dart';
 
 class ChaptersScreen extends ConsumerWidget {
   final BibleBook book;
@@ -19,7 +20,13 @@ class ChaptersScreen extends ConsumerWidget {
       ),
       body: progressAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
+        error: (err, stack) => ErrorStateWidget(
+          error: err,
+          onRetry: () {
+             // This forces Riverpod to re-fetch the data
+             ref.invalidate(bookProgressProvider(book.id));
+          },
+        ),
         data: (progressList) {
           // 2. Convert the list of "ReadingProgress" objects into a Set of read chapter numbers
           // This makes checking "isRead" extremely fast (O(1))
