@@ -45,7 +45,10 @@ class AuthRepository {
 
   // Update Email
   Future<void> updateEmail(String newEmail) async {
-    await _supabase.auth.updateUser(UserAttributes(email: newEmail));
+    await _supabase.auth.updateUser(
+      UserAttributes(email: newEmail),
+      emailRedirectTo: 'io.supabase.flutter://reset-callback',
+    );
   }
 
   // Update Password
