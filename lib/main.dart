@@ -6,7 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/constants.dart';
 import 'features/settings/services/notification_service.dart';
-
+import 'features/settings/providers/settings_providers.dart';
 
 void main() async {
 
@@ -53,14 +53,27 @@ class _BibliaAppState extends ConsumerState<BibliaApp> {
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
+    // Watch the settings provider to get the current theme preference
+    final settingsAsync = ref.watch(currentSettingsProvider);
 
     return MaterialApp.router(
       title: 'Biblia',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
-      
+
+      // A duration of 500ms - 800ms is usually good for a "luxurious" feel.
+      themeAnimationDuration: const Duration(milliseconds: 600), 
+      themeAnimationCurve: Curves.easeInOutCubic, // Starts slow, speeds up, ends slow
+
+      // Determine the ThemeMode based on the loaded settings
+      themeMode: settingsAsync.when(
+        data: (settings) =>
+            settings.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+        loading: () => ThemeMode.system, // Default while loading
+        error: (_, __) => ThemeMode.system, // Default on error
+      ),
+
       // Connect GoRouter
       routerConfig: router,
     );

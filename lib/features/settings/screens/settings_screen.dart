@@ -85,9 +85,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ),
               ),
+              // Animated Dark Mode Toggle
               SwitchListTile(
                 title: const Text('Dark Mode'),
-                secondary: const Icon(Icons.dark_mode_outlined),
+                // We use AnimatedSwitcher to animate the icon change
+                secondary: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 500),
+                  transitionBuilder: (Widget child, Animation<double> animation) {
+                    // Combine Rotation and Scale for a "spinning" effect
+                    return RotationTransition(
+                      turns: child.key == const ValueKey('dark_icon')
+                          ? Tween<double>(begin: 0.75, end: 1).animate(animation)
+                          : Tween<double>(begin: 0.75, end: 1).animate(animation),
+                      child: ScaleTransition(scale: animation, child: child),
+                    );
+                  },
+                  child: settings.isDarkMode
+                      ? const Icon(Icons.dark_mode, key: ValueKey('dark_icon')) // Moon
+                      : const Icon(Icons.light_mode, key: ValueKey('light_icon')), // Sun
+                ),
                 value: settings.isDarkMode,
                 onChanged: (bool value) {
                   ref.read(currentSettingsProvider.notifier).toggleTheme(value);
