@@ -30,17 +30,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  // Helper to format time (e.g., "07:05")
+  // Helper to format time (e.g., "07:05 PM")
   String _formatTime(int hour, int minute) {
-    final h = hour.toString().padLeft(2, '0');
-    final m = minute.toString().padLeft(2, '0');
-    return '$h:$m';
+    // Convert 24h to 12h
+    final int h = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    final String m = minute.toString().padLeft(2, '0');
+    final String period = hour >= 12 ? 'PM' : 'AM';
+    return '$h:$m $period';
   }
 
   Future<void> _pickTime(int currentHour, int currentMinute) async {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay(hour: currentHour, minute: currentMinute),
+      // Force the picker to show 12-hour format (AM/PM)
+      builder: (BuildContext context, Widget? child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
+          child: child!,
+        );
+      },
     );
 
     if (picked != null) {
