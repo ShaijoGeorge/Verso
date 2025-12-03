@@ -101,4 +101,18 @@ class BibleRepository {
     }
     return streak;
   }
+
+  Future<List<ReadingProgress>> getAllProgressSnapshot() async {
+    final userId = _currentUserId;
+    if (userId.isEmpty) return [];
+
+    final response = await _supabase
+        .from('user_progress')
+        .select()
+        .eq('user_id', userId)
+        .eq('is_read', true); // Only fetch what is actually read
+
+    final data = response as List<dynamic>;
+    return data.map((json) => ReadingProgress.fromJson(json)).toList();
+  }
 }

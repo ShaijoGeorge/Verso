@@ -41,3 +41,37 @@ final class UserStatsProvider extends $FunctionalProvider<AsyncValue<UserStats>,
 }
 
 String _$userStatsHash() => r'c9ad9667cbd47e455da8c8c31f40ac188c5e6942';
+
+@ProviderFor(detailedStats)
+const detailedStatsProvider = DetailedStatsProvider._();
+
+final class DetailedStatsProvider extends $FunctionalProvider<
+        AsyncValue<DetailedStats>, DetailedStats, FutureOr<DetailedStats>>
+    with $FutureModifier<DetailedStats>, $FutureProvider<DetailedStats> {
+  const DetailedStatsProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'detailedStatsProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$detailedStatsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<DetailedStats> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<DetailedStats> create(Ref ref) {
+    return detailedStats(ref);
+  }
+}
+
+String _$detailedStatsHash() => r'8b477ef35e4ccff3cb48c70b7474ba0f07f61f71';
