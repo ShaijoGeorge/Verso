@@ -4,7 +4,6 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   gtk
-  isar_community_flutter_libs
   url_launcher_linux
 )
 

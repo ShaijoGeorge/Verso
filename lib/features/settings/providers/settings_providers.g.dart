@@ -51,7 +51,7 @@ final class SettingsRepositoryProvider extends $FunctionalProvider<
 }
 
 String _$settingsRepositoryHash() =>
-    r'47444fce5017fd8c86f1ede068a2d31573cc5628';
+    r'5849d89f9468753266ce5aa638352968fc190910';
 
 @ProviderFor(CurrentSettings)
 const currentSettingsProvider = CurrentSettingsProvider._();

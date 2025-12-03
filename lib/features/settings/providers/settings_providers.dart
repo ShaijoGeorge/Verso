@@ -1,14 +1,13 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../data/local/entities/user_settings.dart';
-import '../../reading/providers/reading_providers.dart'; // To get dbService
 import '../data/settings_repository.dart';
 
 part 'settings_providers.g.dart';
 
 @riverpod
 SettingsRepository settingsRepository(Ref ref) {
-  final dbService = ref.watch(databaseServiceProvider);
-  return SettingsRepository(dbService);
+  // Return the repository without any database dependencies
+  return SettingsRepository();
 }
 
 @riverpod

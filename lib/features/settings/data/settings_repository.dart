@@ -1,46 +1,33 @@
-import '../../../core/database_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/local/entities/user_settings.dart';
 
 class SettingsRepository {
-  final DatabaseService _dbService;
+  // Key constants
+  static const _kThemeKey = 'is_dark_mode';
+  static const _kReminderEnabledKey = 'is_reminder_enabled';
+  static const _kReminderHourKey = 'reminder_hour';
+  static const _kReminderMinuteKey = 'reminder_minute';
 
-  SettingsRepository(this._dbService);
-
-  // Get settings (or create default if not exists)
   Future<UserSettings> getSettings() async {
-    final isar = await _dbService.db;
-    final settings = await isar.userSettings.get(0);
-    if (settings == null) {
-      final defaultSettings = UserSettings();
-      await isar.writeTxn(() async {
-        await isar.userSettings.put(defaultSettings);
-      });
-      return defaultSettings;
-    }
-    return settings;
+    final prefs = await SharedPreferences.getInstance();
+    
+    return UserSettings(
+      isDarkMode: prefs.getBool(_kThemeKey) ?? false,
+      isReminderEnabled: prefs.getBool(_kReminderEnabledKey) ?? false,
+      reminderHour: prefs.getInt(_kReminderHourKey) ?? 7,
+      reminderMinute: prefs.getInt(_kReminderMinuteKey) ?? 0,
+    );
   }
 
-  // Save Settings
-  Future<void> saveSettings(UserSettings settings) async {
-    final isar = await _dbService.db;
-    await isar.writeTxn(() async {
-      await isar.userSettings.put(settings);
-    });
-  }
-  
-  // Toggle Dark Mode
   Future<void> toggleTheme(bool isDark) async {
-    final settings = await getSettings();
-    settings.isDarkMode = isDark;
-    await saveSettings(settings);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kThemeKey, isDark);
   }
 
-  // Update Reminder
   Future<void> updateReminder(bool isEnabled, int hour, int minute) async {
-    final settings = await getSettings();
-    settings.isReminderEnabled = isEnabled;
-    settings.reminderHour = hour;
-    settings.reminderMinute = minute;
-    await saveSettings(settings);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kReminderEnabledKey, isEnabled);
+    await prefs.setInt(_kReminderHourKey, hour);
+    await prefs.setInt(_kReminderMinuteKey, minute);
   }
 }

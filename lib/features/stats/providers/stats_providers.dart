@@ -15,14 +15,17 @@ class UserStats {
   });
 }
 
+// Note: Calculating aggregate stats (like total count of 1000+ chapters) 
+// via Realtime Stream can be heavy. We keep this as a Future that refreshes
+// when the user enters the screen.
 @riverpod
 Future<UserStats> userStats(Ref ref) async {
   final repo = ref.watch(bibleRepositoryProvider);
 
-  // 1. Get Streak
+  // 1. Get Streak (Fetches from Cloud)
   final streak = await repo.getCurrentStreak();
 
-  // 2. Get Total Read
+  // 2. Get Total Read (Fetches from Cloud)
   final totalRead = await repo.countTotalRead();
 
   // 3. Calculate Percentage (Total Bible Chapters = 1189)

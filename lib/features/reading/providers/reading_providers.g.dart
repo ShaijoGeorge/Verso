@@ -9,46 +9,6 @@ part of 'reading_providers.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(databaseService)
-const databaseServiceProvider = DatabaseServiceProvider._();
-
-final class DatabaseServiceProvider extends $FunctionalProvider<DatabaseService,
-    DatabaseService, DatabaseService> with $Provider<DatabaseService> {
-  const DatabaseServiceProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'databaseServiceProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
-
-  @override
-  String debugGetCreateSourceHash() => _$databaseServiceHash();
-
-  @$internal
-  @override
-  $ProviderElement<DatabaseService> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
-
-  @override
-  DatabaseService create(Ref ref) {
-    return databaseService(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(DatabaseService value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<DatabaseService>(value),
-    );
-  }
-}
-
-String _$databaseServiceHash() => r'323927c4138725be4427216964fece6d70043b46';
-
 @ProviderFor(bibleRepository)
 const bibleRepositoryProvider = BibleRepositoryProvider._();
 
@@ -87,14 +47,14 @@ final class BibleRepositoryProvider extends $FunctionalProvider<BibleRepository,
   }
 }
 
-String _$bibleRepositoryHash() => r'f0eccf2369e7457cbbf58d7fdaf55a00119f9a08';
+String _$bibleRepositoryHash() => r'5a30c2279c0a8fff477c8f224751fc75df275d08';
 
 @ProviderFor(bookReadCount)
 const bookReadCountProvider = BookReadCountFamily._();
 
 final class BookReadCountProvider
-    extends $FunctionalProvider<AsyncValue<int>, int, FutureOr<int>>
-    with $FutureModifier<int>, $FutureProvider<int> {
+    extends $FunctionalProvider<AsyncValue<int>, int, Stream<int>>
+    with $FutureModifier<int>, $StreamProvider<int> {
   const BookReadCountProvider._(
       {required BookReadCountFamily super.from, required int super.argument})
       : super(
@@ -117,11 +77,11 @@ final class BookReadCountProvider
 
   @$internal
   @override
-  $FutureProviderElement<int> $createElement($ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
+  $StreamProviderElement<int> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
 
   @override
-  FutureOr<int> create(Ref ref) {
+  Stream<int> create(Ref ref) {
     final argument = this.argument as int;
     return bookReadCount(
       ref,
@@ -140,10 +100,10 @@ final class BookReadCountProvider
   }
 }
 
-String _$bookReadCountHash() => r'c99458c93af06788d193ad472838f2dbe0619a30';
+String _$bookReadCountHash() => r'6da6891e418aede2ad0ea2e641bba8f4d20c3ee0';
 
 final class BookReadCountFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<int>, int> {
+    with $FunctionalFamilyOverride<Stream<int>, int> {
   const BookReadCountFamily._()
       : super(
           retry: null,
@@ -168,10 +128,10 @@ const bookProgressProvider = BookProgressFamily._();
 final class BookProgressProvider extends $FunctionalProvider<
         AsyncValue<List<ReadingProgress>>,
         List<ReadingProgress>,
-        FutureOr<List<ReadingProgress>>>
+        Stream<List<ReadingProgress>>>
     with
         $FutureModifier<List<ReadingProgress>>,
-        $FutureProvider<List<ReadingProgress>> {
+        $StreamProvider<List<ReadingProgress>> {
   const BookProgressProvider._(
       {required BookProgressFamily super.from, required int super.argument})
       : super(
@@ -194,12 +154,12 @@ final class BookProgressProvider extends $FunctionalProvider<
 
   @$internal
   @override
-  $FutureProviderElement<List<ReadingProgress>> $createElement(
+  $StreamProviderElement<List<ReadingProgress>> $createElement(
           $ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
+      $StreamProviderElement(pointer);
 
   @override
-  FutureOr<List<ReadingProgress>> create(Ref ref) {
+  Stream<List<ReadingProgress>> create(Ref ref) {
     final argument = this.argument as int;
     return bookProgress(
       ref,
@@ -218,10 +178,10 @@ final class BookProgressProvider extends $FunctionalProvider<
   }
 }
 
-String _$bookProgressHash() => r'c95b213249750fcc655c7649f7245c6b55ee8c96';
+String _$bookProgressHash() => r'14e6e01524966da8518d7d07441253b7d00928fd';
 
 final class BookProgressFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<List<ReadingProgress>>, int> {
+    with $FunctionalFamilyOverride<Stream<List<ReadingProgress>>, int> {
   const BookProgressFamily._()
       : super(
           retry: null,
