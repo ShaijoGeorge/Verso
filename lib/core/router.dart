@@ -2,8 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'; 
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'widgets/main_wrapper.dart';
+import 'widgets/not_found_screen.dart';
 import '../data/bible_data.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/reading/screens/old_testament_screen.dart';
@@ -14,7 +15,6 @@ import '../features/auth/screens/forgot_password_screen.dart';
 import '../features/auth/screens/update_password_screen.dart';
 import '../features/auth/screens/profile_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
-import 'widgets/not_found_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   // Listen to the Supabase Auth Stream directly
@@ -30,28 +30,49 @@ final routerProvider = Provider<GoRouter>((ref) {
     
     // Refresh the router whenever Auth State changes (Login, Logout, Recovery)
     refreshListenable: GoRouterRefreshStream(authStream),
-
+    
+    // Debug Log to help us see errors
     errorBuilder: (context, state) {
+      debugPrint("⚠️ ROUTER ERROR: ${state.error}");
       return NotFoundScreen(error: state.error);
     },
 
     redirect: (context, state) {
+      // --- CRITICAL FIX START ---
+      // Intercept the raw deep link from Android and convert it to a valid path
+      if (state.uri.scheme == 'io.supabase.flutter' && state.uri.host == 'reset-callback') {
+        debugPrint("GoRouter: Deep link detected, normalizing to /reset-callback");
+        return '/reset-callback';
+      }
+      // --- CRITICAL FIX END ---
+
       final session = Supabase.instance.client.auth.currentSession;
       final isLoggedIn = session != null;
       
-      final isLoginRoute = state.uri.toString() == '/login';
-      final isForgotRoute = state.uri.toString() == '/forgot-password';
-      final isUpdatePasswordRoute = state.uri.toString() == '/update-password';
+      final path = state.uri.path;
+      
+      // Normalize path to handle potential trailing slashes
+      final cleanPath = path.endsWith('/') && path.length > 1 
+          ? path.substring(0, path.length - 1) 
+          : path;
 
-      // 1. If NOT logged in...
-      if (!isLoggedIn && !isLoginRoute && !isForgotRoute && !isUpdatePasswordRoute) {
-        return '/login';
+      final isLoginRoute = cleanPath == '/login';
+      final isForgotRoute = cleanPath == '/forgot-password';
+      final isUpdatePasswordRoute = cleanPath == '/update-password';
+      final isResetCallback = cleanPath == '/reset-callback';
+
+      // IF NOT LOGGED IN
+      if (!isLoggedIn) {
+        // Allow access to auth pages AND the reset callback
+        if (!isLoginRoute && !isForgotRoute && !isUpdatePasswordRoute && !isResetCallback) {
+          return '/login';
+        }
       }
 
-      // 2. If LOGGED IN...
+      // IF LOGGED IN
       if (isLoggedIn) {
-        // If they are specifically trying to go to Login, send them Home. 
-        if (isLoginRoute) {
+        // If user is on an Auth page or the Callback page, send them Home
+        if (isLoginRoute || isForgotRoute || isResetCallback) {
           return '/home';
         }
       }
@@ -72,6 +93,27 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/update-password',
         builder: (context, state) => const UpdatePasswordScreen(),
       ),
+      
+      // The Callback Route (Loading Spinner)
+      GoRoute(
+        path: '/reset-callback',
+        builder: (context, state) {
+
+          // SAFETY NET:
+          // If we are here, but Supabase already has a session, go Home immediately.
+          // This handles cases where the auth state changed faster than the router could react.
+          final session = Supabase.instance.client.auth.currentSession;
+          if (session != null) {
+            // We use Future.microtask to navigate after the build frame finishes
+            Future.microtask(() => context.go('/home'));
+          }
+
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        },
+      ),
+
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return MainWrapper(navigationShell: navigationShell);
@@ -106,7 +148,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Use the local 'rootNavigatorKey' for these routes to cover the tabs
       GoRoute(
         path: '/book/:bookId',
-        parentNavigatorKey: rootNavigatorKey, 
+        parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) {
           final bookId = int.parse(state.pathParameters['bookId']!);
           final book = kBibleBooks.firstWhere((b) => b.id == bookId);
@@ -117,14 +159,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Profile Route
       GoRoute(
         path: '/profile',
-        parentNavigatorKey: rootNavigatorKey, 
+        parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const ProfileScreen(),
       ),
 
       // Settings Route
       GoRoute(
         path: '/settings',
-        parentNavigatorKey: rootNavigatorKey, 
+        parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const SettingsScreen(),
       ),
     ],
@@ -135,9 +177,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     notifyListeners();
-    _subscription = stream.listen(
-      (dynamic _) => notifyListeners(),
-    );
+    _subscription = stream.listen((dynamic _) {
+      notifyListeners();
+    });
   }
 
   late final StreamSubscription<dynamic> _subscription;
