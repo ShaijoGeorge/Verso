@@ -16,24 +16,14 @@ class UserStats {
   });
 }
 
-// Note: Calculating aggregate stats (like total count of 1000+ chapters) 
-// via Realtime Stream can be heavy. We keep this as a Future that refreshes
-// when the user enters the screen.
 @riverpod
 Future<UserStats> userStats(Ref ref) async {
   final repo = ref.watch(bibleRepositoryProvider);
-
-  // 1. Get Streak (Fetches from Cloud)
   final streak = await repo.getCurrentStreak();
-
-  // 2. Get Total Read (Fetches from Cloud)
   final totalRead = await repo.countTotalRead();
-
-  // 3. Calculate Percentage (Total Bible Chapters = 1189)
-  const totalChaptersInBible = 1189;
-  final progress = totalChaptersInBible > 0 
-      ? (totalRead / totalChaptersInBible) * 100 
-      : 0.0;
+  const totalChaptersInBible = 1334;
+  final progress =
+      totalChaptersInBible > 0 ? (totalRead / totalChaptersInBible) * 100 : 0.0;
 
   return UserStats(
     streak: streak,
@@ -43,56 +33,103 @@ Future<UserStats> userStats(Ref ref) async {
 }
 
 class DetailedStats {
-  final int otChaptersRead;
-  final int ntChaptersRead;
-  final double otProgress; // 0.0 to 1.0
-  final double ntProgress; // 0.0 to 1.0
-  final int booksCompleted;
-  final List<ReadingProgress> rawHistory;
+  final int otRead;
+  final int ntRead;
+  final int totalRead;
+  final double otProgress;
+  final double ntProgress;
+  final double totalProgress;
+
+  final List<DateTime> last7DaysDates;
+  final List<int> last7DaysCounts;
+  final Map<int, int> currentMonthDailyCounts;
+  final Map<int, int> currentYearMonthlyCounts;
+  final double averageChaptersPerDay;
+
+  // Predictions REMOVED
 
   DetailedStats({
-    required this.otChaptersRead,
-    required this.ntChaptersRead,
+    required this.otRead,
+    required this.ntRead,
+    required this.totalRead,
     required this.otProgress,
     required this.ntProgress,
-    required this.booksCompleted,
-    required this.rawHistory,
+    required this.totalProgress,
+    required this.last7DaysDates,
+    required this.last7DaysCounts,
+    required this.currentMonthDailyCounts,
+    required this.currentYearMonthlyCounts,
+    required this.averageChaptersPerDay,
   });
 }
 
 @riverpod
 Future<DetailedStats> detailedStats(Ref ref) async {
   final repo = ref.watch(bibleRepositoryProvider);
-  
-  // 1. Fetch ALL reading progress (We need a new method in Repository or stream it)
-  // For now, we will stream all progress using the existing stream method if feasible,
-  // or better, fetch a snapshot since stats don't need 100% realtime for charts.
-  // Note: ideally you add `getAllProgress()` to your repository.
-  // Assuming we use the existing filtered stream logic, we might need a broader query.
-  // Let's assume you add `Future<List<ReadingProgress>> getAllProgress()` to your repo.
-  // For this example, I will mock the fetch call assuming you add it.
-  
-  final allProgress = await repo.getAllProgressSnapshot(); 
+  final history = await repo.getAllProgressSnapshot();
 
-  // 2. Constants (Standard Protestant Bible)
-  const int totalOTChapters = 929;
-  const int totalNTChapters = 260;
-  
-  // 3. Filter Data
-  // OT is usually Book ID 1-39, NT is 40-66
-  final otRead = allProgress.where((p) => p.bookId <= 39 && p.isRead).length;
-  final ntRead = allProgress.where((p) => p.bookId >= 40 && p.isRead).length;
+  const int totalOT = 1074;
+  const int totalNT = 260;
+  const int totalBible = 1334;
 
-  // 4. Calculate Books Completed
-  // This is tricky without knowing total chapters per book dynamically.
-  // We will just count chapters for now.
-  
+  final otRead = history.where((p) => p.bookId <= 39).length;
+  final ntRead = history.where((p) => p.bookId >= 40).length;
+  final totalRead = history.length;
+
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+
+  // 1. Weekly Data
+  final last7DaysDates = <DateTime>[];
+  final last7DaysCounts = <int>[];
+  for (int i = 6; i >= 0; i--) {
+    final date = today.subtract(Duration(days: i));
+    last7DaysDates.add(date);
+    final count = history.where((p) {
+      if (p.readAt == null) return false;
+      final pDate = p.readAt!;
+      return pDate.year == date.year &&
+          pDate.month == date.month &&
+          pDate.day == date.day;
+    }).length;
+    last7DaysCounts.add(count);
+  }
+
+  // 2. Monthly Data
+  final currentMonthDailyCounts = <int, int>{};
+  final monthHistory = history.where((p) =>
+      p.readAt != null &&
+      p.readAt!.year == now.year &&
+      p.readAt!.month == now.month);
+  for (final entry in monthHistory) {
+    currentMonthDailyCounts[entry.readAt!.day] =
+        (currentMonthDailyCounts[entry.readAt!.day] ?? 0) + 1;
+  }
+
+  // 3. Yearly Data
+  final currentYearMonthlyCounts = <int, int>{};
+  final yearHistory =
+      history.where((p) => p.readAt != null && p.readAt!.year == now.year);
+  for (final entry in yearHistory) {
+    currentYearMonthlyCounts[entry.readAt!.month] =
+        (currentYearMonthlyCounts[entry.readAt!.month] ?? 0) + 1;
+  }
+
+  // 4. Average
+  final recentTotal = last7DaysCounts.reduce((a, b) => a + b);
+  final dailyRate = recentTotal > 0 ? recentTotal / 7.0 : 0.0;
+
   return DetailedStats(
-    otChaptersRead: otRead,
-    ntChaptersRead: ntRead,
-    otProgress: otRead / totalOTChapters,
-    ntProgress: ntRead / totalNTChapters,
-    booksCompleted: 0, // Placeholder until complex logic is added
-    rawHistory: allProgress,
+    otRead: otRead,
+    ntRead: ntRead,
+    totalRead: totalRead,
+    otProgress: otRead / totalOT,
+    ntProgress: ntRead / totalNT,
+    totalProgress: totalRead / totalBible,
+    last7DaysDates: last7DaysDates,
+    last7DaysCounts: last7DaysCounts,
+    currentMonthDailyCounts: currentMonthDailyCounts,
+    currentYearMonthlyCounts: currentYearMonthlyCounts,
+    averageChaptersPerDay: dailyRate,
   );
 }

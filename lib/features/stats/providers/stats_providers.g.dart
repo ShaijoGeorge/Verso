@@ -74,4 +74,4 @@ final class DetailedStatsProvider extends $FunctionalProvider<
   }
 }
 
-String _$detailedStatsHash() => r'8b477ef35e4ccff3cb48c70b7474ba0f07f61f71';
+String _$detailedStatsHash() => r'675515cd01ae8cf3bedb2a8fb15a5e600fa58c69';
