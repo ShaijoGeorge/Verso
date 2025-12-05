@@ -41,9 +41,9 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
                     ),
                   )
                 : const Icon(Icons.done_all),
-            
+
             tooltip: 'Mark all as read',
-            
+
             // Disable the button while loading (onPressed = null)
             onPressed: _isMarkingRead
                 ? null
@@ -72,9 +72,8 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
                       setState(() => _isMarkingRead = true);
 
                       try {
-                        await ref
-                            .read(bibleRepositoryProvider)
-                            .markBookAsRead(widget.book.id, widget.book.chapters);
+                        await ref.read(bibleRepositoryProvider).markBookAsRead(
+                            widget.book.id, widget.book.chapters);
 
                         // Invalidate providers to refresh
                         ref.invalidate(bookReadCountProvider(widget.book.id));
@@ -138,15 +137,15 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
               return _ChapterBox(
                 chapterNum: chapterNum,
                 isRead: isRead,
-                onTap: () {
-                  // Toggle the chapter status in the database
+                onTap: (newStatus) {
+                  // Fire-and-forget the write operation (don't await)
                   ref.read(bibleRepositoryProvider).toggleChapter(
                         widget.book.id,
                         chapterNum,
-                        !isRead,
+                        newStatus,
                       );
+                  // Only invalidate the "Count" (FutureProvider), NOT the stream
                   ref.invalidate(bookReadCountProvider(widget.book.id));
-                  ref.invalidate(bookProgressProvider(widget.book.id));
                 },
               );
             },
@@ -157,10 +156,10 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
   }
 }
 
-class _ChapterBox extends StatelessWidget {
+class _ChapterBox extends StatefulWidget {
   final int chapterNum;
   final bool isRead;
-  final VoidCallback onTap;
+  final Function(bool newStatus) onTap;
 
   const _ChapterBox({
     required this.chapterNum,
@@ -169,22 +168,56 @@ class _ChapterBox extends StatelessWidget {
   });
 
   @override
+  State<_ChapterBox> createState() => _ChapterBoxState();
+}
+
+class _ChapterBoxState extends State<_ChapterBox> {
+  // Store the local state
+  late bool _isRead;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with the data from the database
+    _isRead = widget.isRead;
+  }
+
+  @override
+  void didUpdateWidget(covariant _ChapterBox oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If the database actually updates (Stream event arrives), sync our local state
+    if (oldWidget.isRead != widget.isRead) {
+      _isRead = widget.isRead;
+    }
+  }
+
+  void _handleTap() {
+    // 1. INSTANTLY flip the color locally (Optimistic Update)
+    setState(() {
+      _isRead = !_isRead;
+    });
+
+    // 2. Call the database function in the background
+    widget.onTap(_isRead);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: _handleTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
-          color: isRead
+          color: _isRead
               ? colorScheme.primary
               : colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
-          border: isRead
+          border: _isRead
               ? null
               : Border.all(color: colorScheme.outline.withValues(alpha: 0.5)),
-          boxShadow: isRead
+          boxShadow: _isRead
               ? [
                   BoxShadow(
                       color: colorScheme.primary.withValues(alpha: 0.3),
@@ -195,11 +228,11 @@ class _ChapterBox extends StatelessWidget {
         ),
         child: Center(
           child: Text(
-            '$chapterNum',
+            '${widget.chapterNum}',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: isRead ? colorScheme.onPrimary : colorScheme.onSurface,
+              color: _isRead ? colorScheme.onPrimary : colorScheme.onSurface,
             ),
           ),
         ),
