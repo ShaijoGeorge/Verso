@@ -1,9 +1,13 @@
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/bible_repository.dart';
 import '../../../data/local/entities/reading_progress.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 part 'reading_providers.g.dart';
+
+final biblePageTriggerProvider = StateProvider<int>((ref) => 0);
 
 // Provide the Repository
 @Riverpod(keepAlive: true)

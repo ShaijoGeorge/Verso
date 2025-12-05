@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/widgets/profile_drawer.dart';
 import '../../features/stats/providers/stats_providers.dart';
+import '../../features/reading/providers/reading_providers.dart';
 
 class MainWrapper extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -22,9 +23,14 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
 
   void _goBranch(int index) {
 
-    // If we are going to Home (Index 1) from somewhere else, trigger the animation
+    // Home Page Animation Trigger
     if (index == 1 && widget.navigationShell.currentIndex != 1) {
       ref.read(homeRefreshTriggerProvider.notifier).state++;
+    }
+
+    // Bible Pages Animation Trigger
+    if ((index == 0 || index == 2) && widget.navigationShell.currentIndex != index) {
+      ref.read(biblePageTriggerProvider.notifier).state++;
     }
 
     widget.navigationShell.goBranch(

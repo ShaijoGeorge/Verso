@@ -99,3 +99,12 @@ const List<BibleBook> kBibleBooks = [
   BibleBook(id: 72, name: 'Jude', chapters: 1, testament: Testament.newTestament),
   BibleBook(id: 73, name: 'Revelation', chapters: 22, testament: Testament.newTestament),
 ];
+
+// Automatically filter the lists so you don't have to manage them manually
+final oldTestamentBooks = kBibleBooks
+    .where((book) => book.testament == Testament.old)
+    .toList();
+
+final newTestamentBooks = kBibleBooks
+    .where((book) => book.testament == Testament.newTestament)
+    .toList();
