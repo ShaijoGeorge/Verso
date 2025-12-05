@@ -13,6 +13,8 @@ class StatsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(userStatsProvider);
 
+    final refreshTrigger = ref.watch(homeRefreshTriggerProvider);
+
     // No Scaffold, no AppBar here either
     return statsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -25,82 +27,111 @@ class StatsScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
-              // Wrap the Circular Progress Bar in a GestureDetector
-              GestureDetector(
-                onTap: () {
+              // ANIMATED CIRCULAR PROGRESS
+              // We use TweenAnimationBuilder to drive the value from 0 to actual progress
+              TweenAnimationBuilder<double>(
+                // Forces the animation to restart when trigger changes
+                key: ValueKey("circle_$refreshTrigger"),
+                tween: Tween<double>(begin: 0.0, end: stats.totalProgress),
+                duration: const Duration(milliseconds: 1500), // 1.5 seconds animation
+                curve: Curves.easeOutCubic, // Smooth slowdown at the end
+                builder: (context, animatedProgress, child) {
+                  return GestureDetector(
+                    onTap: () {
                   // Navigate to Detailed Stats
-                  context.push('/detailed-stats');
-                },
-                child: SizedBox(
-                  width: 220,
-                  height: 220,
-                  child: DashedCircularProgressBar.aspectRatio(
-                    aspectRatio: 1,
-                    valueNotifier: ValueNotifier(stats.totalProgress),
-                    progress: stats.totalProgress,
-                    maxProgress: 100,
-                    corners: StrokeCap.butt,
-                    foregroundColor: Theme.of(context).colorScheme.primary,
-                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    foregroundStrokeWidth: 15,
-                    backgroundStrokeWidth: 15,
-                    animation: true,
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '${stats.totalProgress.toStringAsFixed(1)}%',
-                            style: const TextStyle(
-                              fontSize: 40,
-                              fontWeight: FontWeight.bold,
-                            ),
+                      context.push('/detailed-stats');
+                    },
+                    child: SizedBox(
+                      width: 220,
+                      height: 220,
+                      child: DashedCircularProgressBar.aspectRatio(
+                        aspectRatio: 1,
+                        // Pass the animated value to the notifier
+                        valueNotifier: ValueNotifier(animatedProgress),
+                        progress: animatedProgress,
+                        maxProgress: 100,
+                        corners: StrokeCap.butt,
+                        foregroundColor: Theme.of(context).colorScheme.primary,
+                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        foregroundStrokeWidth: 15,
+                        backgroundStrokeWidth: 15,
+                        animation: false, // we using Tween
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '${animatedProgress.toStringAsFixed(1)}%',
+                                style: const TextStyle(
+                                  fontSize: 40,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                'Bible Completed',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const Gap(8),
+                              Text(
+                                'Tap for details',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
-                          Text(
-                            'Bible Completed',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          const Gap(8),
-                          // Optional: Add a small hint text
-                          Text(
-                            'Tap for details',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
               const Gap(40),
 
-                // Stats Grid (Streak & Chapters)
+              // ANIMATED STAT CARDS
               Row(
                 children: [
-                    // Streak Card
+                  // Streak Card (Counts up from 0)
                   Expanded(
-                    child: _StatCard(
-                      icon: Icons.local_fire_department,
-                      iconColor: Colors.orange,
-                      label: "Current Streak",
-                      value: "${stats.streak} Days",
+                    child: TweenAnimationBuilder<int>(
+                      // Forces restart
+                      key: ValueKey("streak_$refreshTrigger"),
+                      tween: IntTween(begin: 0, end: stats.streak),
+                      duration: const Duration(milliseconds: 1500),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, animatedStreak, _) {
+                        return _StatCard(
+                          icon: Icons.local_fire_department,
+                          iconColor: Colors.orange,
+                          label: "Current Streak",
+                          value: "$animatedStreak Days",
+                        );
+                      },
                     ),
                   ),
                   const Gap(16),
-                    // Total Read Card
+                  
+                  // Chapters Read Card (Counts up from 0)
                   Expanded(
-                    child: _StatCard(
-                      icon: Icons.auto_stories,
-                      iconColor: Colors.blue,
-                      label: "Chapters Read",
-                      value: "${stats.totalChaptersRead}",
+                    child: TweenAnimationBuilder<int>(
+                      // Forces restart
+                      key: ValueKey("chapters_$refreshTrigger"),
+                      tween: IntTween(begin: 0, end: stats.totalChaptersRead),
+                      duration: const Duration(milliseconds: 1500),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, animatedChapters, _) {
+                        return _StatCard(
+                          icon: Icons.auto_stories,
+                          iconColor: Colors.blue,
+                          label: "Chapters Read",
+                          value: "$animatedChapters",
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -113,7 +144,6 @@ class StatsScreen extends ConsumerWidget {
   }
 }
 
-// Keep the _StatCard class at the bottom as it was.
 class _StatCard extends StatelessWidget {
   final IconData icon;
   final Color iconColor;

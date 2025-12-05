@@ -1,8 +1,10 @@
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../reading/providers/reading_providers.dart';
-import '../../../data/local/entities/reading_progress.dart';
 
 part 'stats_providers.g.dart';
+
+final homeRefreshTriggerProvider = StateProvider<int>((ref) => 0);
 
 class UserStats {
   final int streak;
