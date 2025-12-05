@@ -39,7 +39,49 @@ class BibleRepository {
       'chapter_number': chapterNumber,
       'is_read': isRead,
       'read_at': isRead ? now.toIso8601String() : null,
-    }, onConflict: 'user_id, book_id, chapter_number');
+    }, onConflict: 'user_id,book_id,chapter_number');
+  }
+
+  // Mark Entire Book as Read (Smart Version)
+  // Only inserts chapters that are NOT already marked as read.
+  Future<void> markBookAsRead(int bookId, int totalChapters) async {
+    final userId = _currentUserId;
+    if (userId.isEmpty) return;
+
+    final now = DateTime.now().toIso8601String();
+
+    // Fetch which chapters are ALREADY read
+    final existingData = await _supabase
+        .from('user_progress')
+        .select('chapter_number')
+        .eq('user_id', userId)
+        .eq('book_id', bookId);
+    
+    // Create a Set of existing IDs for fast lookup (e.g., {1, 2, 3, 4, 5})
+    final existingChapters = (existingData as List)
+        .map((e) => e['chapter_number'] as int)
+        .toSet();
+
+    // Generate list of ONLY the missing chapters
+    final List<Map<String, dynamic>> newInserts = [];
+    
+    for (int i = 1; i <= totalChapters; i++) {
+      if (!existingChapters.contains(i)) {
+        newInserts.add({
+          'user_id': userId,
+          'book_id': bookId,
+          'chapter_number': i,
+          'is_read': true,
+          'read_at': now,
+        });
+      }
+    }
+
+    // Insert only the new ones (Standard Insert, not Upsert)
+    // This avoids "duplicate key" errors since we filtered them out manually.
+    if (newInserts.isNotEmpty) {
+      await _supabase.from('user_progress').insert(newInserts); 
+    }
   }
 
   // 3. Count Total Read
