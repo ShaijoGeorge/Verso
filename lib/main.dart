@@ -7,8 +7,21 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/constants.dart';
 import 'features/settings/services/notification_service.dart';
 import 'features/settings/providers/settings_providers.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Use this to handle data updates in the background if needed
+  print("Handling a background message: ${message.messageId}");
+}
 void main() async {
+
+  // Initialize Firebase
+  await Firebase.initializeApp();
+
+  // Register Background Handler
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   WidgetsFlutterBinding.ensureInitialized();
   
