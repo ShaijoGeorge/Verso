@@ -50,6 +50,7 @@ flutter:
   uses-material-design: true
   assets:
     - .env
+    - assets/app_logo.png
 
   fonts:
     - family: Metropolis

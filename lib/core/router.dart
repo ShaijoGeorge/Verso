@@ -17,6 +17,7 @@ import '../features/auth/screens/profile_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
 import '../features/stats/screens/detailed_stats_screen.dart';
 import '../features/stats/screens/activity_analytics_screen.dart';
+import '../features/intro/screens/splash_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   // Listen to the Supabase Auth Stream directly
@@ -28,7 +29,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
-    initialLocation: '/home',
+    initialLocation: '/',
     
     // Refresh the router whenever Auth State changes (Login, Logout, Recovery)
     refreshListenable: GoRouterRefreshStream(authStream),
@@ -58,10 +59,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           ? path.substring(0, path.length - 1) 
           : path;
 
+      final isSplash = path == '/';
       final isLoginRoute = cleanPath == '/login';
       final isForgotRoute = cleanPath == '/forgot-password';
       final isUpdatePasswordRoute = cleanPath == '/update-password';
       final isResetCallback = cleanPath == '/reset-callback';
+
+      // Allow Splash Screen to stay
+      if (isSplash) {
+        return null; 
+      }
 
       // IF NOT LOGGED IN
       if (!isLoggedIn) {
@@ -82,6 +89,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const SplashScreen(),
+      ),
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
