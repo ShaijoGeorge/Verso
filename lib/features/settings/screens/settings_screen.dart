@@ -14,11 +14,13 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _version = '';
+  String _debugInfo = 'Loading...';
 
   @override
   void initState() {
     super.initState();
     _loadVersion();
+    _loadDebugInfo();
   }
 
   Future<void> _loadVersion() async {
@@ -30,9 +32,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  // Helper to format time (e.g., "07:05 PM")
+  Future<void> _loadDebugInfo() async {
+    try {
+      final notifEnabled = await NotificationService().areNotificationsEnabled();
+      final canSchedule = await NotificationService().canScheduleExactNotifications();
+      final pending = await NotificationService().getPendingNotifications();
+      
+      if (mounted) {
+        setState(() {
+          _debugInfo = '''
+Notifications Enabled: $notifEnabled
+Can Schedule Exact: $canSchedule
+Pending Notifications: ${pending.length}
+${pending.isNotEmpty ? '\nScheduled:\n${pending.map((p) => '  ID ${p.id}: ${p.title}').join('\n')}' : ''}
+''';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _debugInfo = 'Error loading debug info: $e';
+        });
+      }
+    }
+  }
+
   String _formatTime(int hour, int minute) {
-    // Convert 24h to 12h
     final int h = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
     final String m = minute.toString().padLeft(2, '0');
     final String period = hour >= 12 ? 'PM' : 'AM';
@@ -43,7 +68,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay(hour: currentHour, minute: currentMinute),
-      // Force the picker to show 12-hour format (AM/PM)
       builder: (BuildContext context, Widget? child) {
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
@@ -53,60 +77,114 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
 
     if (picked != null) {
-      // 1. Update Database
-      await ref.read(currentSettingsProvider.notifier).updateReminder(
-            true, // Enable it automatically if they picked a time
-            picked.hour,
-            picked.minute,
-          );
-
-      // 2. Schedule Notification
+      setState(() => _debugInfo = 'Scheduling...');
+      
       try {
+        // 1. Update Database
+        await ref.read(currentSettingsProvider.notifier).updateReminder(
+              true,
+              picked.hour,
+              picked.minute,
+            );
+
+        // 2. Schedule Notification
         await NotificationService().scheduleDailyReminder(
           picked.hour,
           picked.minute,
         );
         
+        // 3. Reload debug info
+        await _loadDebugInfo();
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Reminder set for ${_formatTime(picked.hour, picked.minute)}')),
+            SnackBar(
+              content: Text('✅ Reminder set for ${_formatTime(picked.hour, picked.minute)}'),
+              backgroundColor: Colors.green,
+            ),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error scheduling reminder: $e')),
+            SnackBar(
+              content: Text('❌ Error: ${e.toString()}'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
           );
         }
       }
     }
   }
 
-  // Test Notification Function
   Future<void> _testNotification() async {
     try {
       await NotificationService().showTestNotification();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Test notification sent! Check your notification tray.')),
+          const SnackBar(
+            content: Text('✅ Test notification sent!'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send test: $e')),
+          SnackBar(
+            content: Text('❌ Failed: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
   }
 
+  Future<void> _showDebugDialog() async {
+    await _loadDebugInfo();
+    
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Debug Information'),
+        content: SingleChildScrollView(
+          child: SelectableText(_debugInfo),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _loadDebugInfo();
+            },
+            child: const Text('Refresh'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Watch the settings from the database
     final settingsAsync = ref.watch(currentSettingsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(
+        title: const Text('Settings'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.bug_report),
+            onPressed: _showDebugDialog,
+            tooltip: 'Debug Info',
+          ),
+        ],
+      ),
       body: settingsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
@@ -126,14 +204,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ),
               ),
-              // Animated Dark Mode Toggle
               SwitchListTile(
                 title: const Text('Dark Mode'),
-                // We use AnimatedSwitcher to animate the icon change
                 secondary: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 500),
                   transitionBuilder: (Widget child, Animation<double> animation) {
-                    // Combine Rotation and Scale for a "spinning" effect
                     return RotationTransition(
                       turns: child.key == const ValueKey('dark_icon')
                           ? Tween<double>(begin: 0.75, end: 1).animate(animation)
@@ -142,8 +217,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     );
                   },
                   child: settings.isDarkMode
-                      ? const Icon(Icons.dark_mode, key: ValueKey('dark_icon')) // Moon
-                      : const Icon(Icons.light_mode, key: ValueKey('light_icon')), // Sun
+                      ? const Icon(Icons.dark_mode, key: ValueKey('dark_icon'))
+                      : const Icon(Icons.light_mode, key: ValueKey('light_icon')),
                 ),
                 value: settings.isDarkMode,
                 onChanged: (bool value) {
@@ -165,6 +240,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ),
               ),
+              
               SwitchListTile(
                 title: const Text('Daily Reminder'),
                 subtitle: Text(settings.isReminderEnabled
@@ -173,41 +249,53 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 secondary: const Icon(Icons.notifications_active_outlined),
                 value: settings.isReminderEnabled,
                 onChanged: (bool value) async {
-                  // Update DB
-                  await ref
-                      .read(currentSettingsProvider.notifier)
-                      .updateReminder(
-                        value,
-                        settings.reminderHour,
-                        settings.reminderMinute,
-                      );
+                  setState(() => _debugInfo = 'Updating...');
+                  
+                  try {
+                    await ref
+                        .read(currentSettingsProvider.notifier)
+                        .updateReminder(
+                          value,
+                          settings.reminderHour,
+                          settings.reminderMinute,
+                        );
 
-                  // Update System Notification
-                  if (value) {
-                    try {
+                    if (value) {
                       await NotificationService().scheduleDailyReminder(
                         settings.reminderHour,
                         settings.reminderMinute,
                       );
+                      
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Daily reminder enabled')),
+                          const SnackBar(content: Text('✅ Daily reminder enabled')),
                         );
                       }
-                    } catch (e) {
+                    } else {
+                      await NotificationService().cancelReminders();
+                      
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error: $e')),
+                          const SnackBar(content: Text('Reminder disabled')),
                         );
                       }
                     }
-                  } else {
-                    await NotificationService().cancelReminders();
+                    
+                    await _loadDebugInfo();
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('❌ Error: $e'),
+                          backgroundColor: Colors.red,
+                          duration: const Duration(seconds: 5),
+                        ),
+                      );
+                    }
                   }
                 },
               ),
               
-              // Time Picker (Only visible if enabled)
               if (settings.isReminderEnabled)
                 ListTile(
                   title: const Text('Reminder Time'),
@@ -226,7 +314,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onTap: () => _pickTime(settings.reminderHour, settings.reminderMinute),
                 ),
 
-              // TEST NOTIFICATION BUTTON
               if (settings.isReminderEnabled)
                 ListTile(
                   title: const Text('Test Notification'),

@@ -19,7 +19,7 @@ class NotificationService {
   Future<void> init() async {
     if (_isInitialized) return;
 
-    _initializeTimezone();
+    await _initializeTimezone();
 
     final settings = _initSettings();
     final didInit = await _notificationsPlugin.initialize(
@@ -32,27 +32,32 @@ class NotificationService {
         name: 'NotificationService');
   }
 
-  /// Timezone setup
+  /// Timezone setup with better fallback
   Future<void> _initializeTimezone() async {
     tz.initializeTimeZones();
 
     try {
       final String timeZoneName = await FlutterTimezone.getLocalTimezone();
+      log.log('Device timezone: $timeZoneName', name: 'NotificationService');
+      
       tz.setLocalLocation(tz.getLocation(timeZoneName));
+      
+      // Verify timezone is correct
+      final now = tz.TZDateTime.now(tz.local);
+      log.log('Current time in device timezone: $now', name: 'NotificationService');
+      
     } catch (e) {
-      debugPrint('Could not get local timezone: $e');
-      tz.setLocalLocation(tz.getLocation('UTC'));
-    }
-
-    /// fallback
-    try {
-      final localName = DateTime.now().timeZoneName;
-      tz.setLocalLocation(tz.getLocation(localName));
-      log.log('Fallback timezone set to: $localName',
-          name: 'NotificationService');
-    } catch (e) {
-      log.log('Fallback to UTC: $e', name: 'NotificationService');
-      tz.setLocalLocation(tz.UTC);
+      log.log('Error getting timezone: $e', name: 'NotificationService');
+      
+      // Better fallback: Try to use Asia/Kolkata for Indian users
+      try {
+        tz.setLocalLocation(tz.getLocation('Asia/Kolkata'));
+        log.log('Fallback to Asia/Kolkata timezone', name: 'NotificationService');
+      } catch (fallbackError) {
+        // Last resort: UTC
+        tz.setLocalLocation(tz.UTC);
+        log.log('Final fallback to UTC', name: 'NotificationService');
+      }
     }
   }
 
@@ -72,26 +77,44 @@ class NotificationService {
         name: 'NotificationService');
   }
 
-  /// Ask for permissions (must call before scheduling)
+  /// Ask for permissions with exact alarm permission for Android 12+
   Future<bool> requestPermissions() async {
-    /// iOS
+    // iOS permissions
     final ios = await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>()
         ?.requestPermissions(alert: true, badge: true, sound: true);
 
-    /// Android (Android 13+)
+    // Android notification permission (Android 13+)
     final android = await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.requestNotificationsPermission();
 
+    // Request exact alarm permission (Android 12+)
+    final exactAlarm = await _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestExactAlarmsPermission();
+
     final granted = (ios ?? true) && (android ?? true);
 
-    log.log('Notification permissions granted: $granted',
+    log.log('Notification permissions: $granted, Exact Alarms: $exactAlarm',
         name: 'NotificationService');
 
     return granted;
+  }
+
+  /// Check if app can schedule exact alarms
+  Future<bool> canScheduleExactNotifications() async {
+    if (!_isInitialized) await init();
+
+    final canSchedule = await _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.canScheduleExactNotifications();
+
+    return canSchedule ?? true;
   }
 
   /// Check if app is allowed to show notifications
@@ -106,31 +129,44 @@ class NotificationService {
     return android ?? true;
   }
 
-  /// Daily reminder scheduler
+  /// Daily reminder scheduler with better error handling
   Future<void> scheduleDailyReminder(int hour, int minute) async {
     if (!_isInitialized) await init();
 
     await cancelReminders();
 
+    // Check permissions
     final hasPermission = await requestPermissions();
     if (!hasPermission) {
       log.log('No permission, cannot schedule reminder',
           name: 'NotificationService');
-      return;
+      throw Exception('Notification permission denied');
+    }
+
+    // Check exact alarm permission
+    final canSchedule = await canScheduleExactNotifications();
+    if (!canSchedule) {
+      log.log('Cannot schedule exact alarms', name: 'NotificationService');
+      throw Exception('Exact alarm permission denied. Please enable it in Settings.');
     }
 
     final scheduled = _nextInstance(hour, minute);
 
-    log.log('Scheduling reminder for: $scheduled',
+    log.log('Scheduling reminder for: $scheduled (${scheduled.timeZoneName})',
+        name: 'NotificationService');
+    
+    // Log what time it will show in user's perspective
+    final localTime = scheduled.toLocal();
+    log.log('Will show at: ${localTime.hour}:${localTime.minute.toString().padLeft(2, '0')}',
         name: 'NotificationService');
 
     try {
       await _notificationsPlugin.zonedSchedule(
         0,
-        'Bible Reading Time',
-        'Time to read your daily chapters! 📖',
+        'Bible Reading Time 📖',
+        'Time to read your daily chapters!',
         scheduled,
-        const NotificationDetails(
+        NotificationDetails(
           android: AndroidNotificationDetails(
             'daily_reminder',
             'Daily Reminder',
@@ -139,8 +175,11 @@ class NotificationService {
             priority: Priority.high,
             playSound: true,
             enableVibration: true,
+            // Additional flags for reliability
+            ongoing: false,
+            autoCancel: true,
           ),
-          iOS: DarwinNotificationDetails(
+          iOS: const DarwinNotificationDetails(
             presentAlert: true,
             presentBadge: true,
             presentSound: true,
@@ -182,18 +221,28 @@ class NotificationService {
     return date;
   }
 
+  /// Get list of pending notifications (for debugging)
+  Future<List<PendingNotificationRequest>> getPendingNotifications() async {
+    if (!_isInitialized) await init();
+    return await _notificationsPlugin.pendingNotificationRequests();
+  }
+
   /// Debug test notification
   Future<void> showTestNotification() async {
     if (!_isInitialized) await init();
 
+    final now = DateTime.now();
+    final timeString = '${now.hour}:${now.minute.toString().padLeft(2, '0')}';
+    
     await _notificationsPlugin.show(
       999,
-      'Test Notification',
-      'If you see this, notifications are working! ✅',
+      'Test Notification ✅',
+      'Sent at $timeString. Notifications are working!',
       const NotificationDetails(
         android: AndroidNotificationDetails(
           'test_channel',
           'Test Notifications',
+          channelDescription: 'Test notifications to verify setup',
           importance: Importance.max,
           priority: Priority.high,
         ),
@@ -201,6 +250,6 @@ class NotificationService {
       ),
     );
 
-    log.log('Test notification shown', name: 'NotificationService');
+    log.log('Test notification shown at $timeString', name: 'NotificationService');
   }
 }
