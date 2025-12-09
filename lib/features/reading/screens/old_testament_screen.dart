@@ -20,7 +20,7 @@ class OldTestamentScreen extends ConsumerWidget {
         
         books: oldTestamentBooks, // Ensure this list is imported
         onBookTap: (book) {
-          context.push('/chapters', extra: book);
+          context.push('/book/${book.id}');
         },
       ),
     );
