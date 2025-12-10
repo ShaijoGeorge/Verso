@@ -55,6 +55,14 @@ class ProfileDrawer extends ConsumerWidget {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.history_edu),
+            title: const Text('Reading Journal'),
+            onTap: () {
+              Navigator.pop(context); // Close drawer
+              context.push('/activity-log'); // Navigate
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.settings_outlined),
             title: const Text('Settings'),
             onTap: () {

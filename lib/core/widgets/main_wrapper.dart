@@ -53,6 +53,15 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
       appBar: AppBar(
         title: Text(title),
         centerTitle: true,
+
+        actions: [
+          if (widget.navigationShell.currentIndex == 1) // Only show on Home tab
+            IconButton(
+              icon: const Icon(Icons.history),
+              tooltip: 'Reading Journal',
+              onPressed: () => context.push('/activity-log'),
+            ),
+        ],
       ),
       drawer: const ProfileDrawer(),
       body: widget.navigationShell,

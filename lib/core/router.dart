@@ -18,6 +18,7 @@ import '../features/settings/screens/settings_screen.dart';
 import '../features/stats/screens/detailed_stats_screen.dart';
 import '../features/stats/screens/activity_analytics_screen.dart';
 import '../features/intro/screens/splash_screen.dart';
+import '../features/stats/screens/activity_log_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   // Listen to the Supabase Auth Stream directly
@@ -194,6 +195,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/detailed-activity',
         parentNavigatorKey: rootNavigatorKey, // Covers the bottom bar
         builder: (context, state) => const ActivityAnalyticsScreen(),
+      ),
+
+      GoRoute(
+        path: '/activity-log',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const ActivityLogScreen(),
       ),
     ],
   );
