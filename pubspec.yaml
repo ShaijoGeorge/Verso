@@ -28,7 +28,7 @@ dependencies:
 
   # --- Data & Backend ---
   supabase_flutter: ^2.3.0      # Cloud Sync
-  shared_preferences: ^2.2.2    # Simple Settings (Dark Mode)
+  shared_preferences: ^2.5.5    # Simple Settings (Dark Mode)
   flutter_secure_storage: ^9.2.2
 
   flutter_local_notifications: ^17.0.0
