@@ -58,16 +58,6 @@ flutter:
     - .env
     - assets/app_logo.png
 
-  fonts:
-    - family: Metropolis
-      fonts:
-        - asset: assets/fonts/Metropolis-Regular.otf
-        - asset: assets/fonts/Metropolis-RegularItalic.otf
-          style: italic
-        - asset: assets/fonts/Metropolis-Bold.otf
-          weight: 700
-        - asset: assets/fonts/Metropolis-ExtraBold.otf
-          weight: 800
 
 flutter_launcher_icons:
   android: "ic_launcher"
