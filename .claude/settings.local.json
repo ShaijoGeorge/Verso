@@ -5,7 +5,8 @@
       "WebFetch(domain:pub.dev)",
       "Bash(flutter pub:*)",
       "Bash(dart run:*)",
-      "Bash(flutter clean:*)"
+      "Bash(flutter clean:*)",
+      "Bash(flutter analyze:*)"
     ]
   }
 }
