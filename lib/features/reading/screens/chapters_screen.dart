@@ -85,7 +85,6 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
                           );
                         }
                       } catch (e) {
-                        debugPrint('Error marking read: $e');
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(

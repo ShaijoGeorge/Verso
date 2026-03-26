@@ -1,4 +1,4 @@
-import 'package:biblia/features/reading/providers/reading_providers.dart';
+import 'package:verso/features/reading/providers/reading_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/bible_data.dart';

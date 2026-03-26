@@ -37,7 +37,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     
     // Debug Log to help us see errors
     errorBuilder: (context, state) {
-      debugPrint("⚠️ ROUTER ERROR: ${state.error}");
       return NotFoundScreen(error: state.error);
     },
 
@@ -45,7 +44,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       // --- CRITICAL FIX START ---
       // Intercept the raw deep link from Android and convert it to a valid path
       if (state.uri.scheme == 'io.supabase.flutter' && state.uri.host == 'reset-callback') {
-        debugPrint("GoRouter: Deep link detected, normalizing to /reset-callback");
         return '/reset-callback';
       }
       // --- CRITICAL FIX END ---

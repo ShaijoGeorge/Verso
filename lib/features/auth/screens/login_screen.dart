@@ -43,12 +43,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   // Load credentials if they exist
   Future<void> _loadSavedCredentials() async {
     try {
-      debugPrint('Reading credentials...');
       final savedEmail = await _storage.read(key: 'email');
       final savedPassword = await _storage.read(key: 'password');
 
       if (savedEmail != null && savedPassword != null) {
-        debugPrint('Credentials found for: $savedEmail');
         setState(() {
           _emailController.text = savedEmail;
           _passwordController.text = savedPassword;
@@ -56,7 +54,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error loading credentials: $e');
+      // Silently ignore credential loading errors
     }
   }
 
@@ -88,11 +86,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
         // Handle Remember Me Logic (Save AFTER login succeeds)
         if (_rememberMe) {
-          debugPrint('Saving credentials...');
           await _storage.write(key: 'email', value: _emailController.text.trim());
           await _storage.write(key: 'password', value: _passwordController.text.trim());
         } else {
-          debugPrint('Clearing credentials...');
           await _storage.delete(key: 'email');
           await _storage.delete(key: 'password');
         }
