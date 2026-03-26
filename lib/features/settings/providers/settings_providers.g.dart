@@ -10,13 +10,13 @@ part of 'settings_providers.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(settingsRepository)
-const settingsRepositoryProvider = SettingsRepositoryProvider._();
+final settingsRepositoryProvider = SettingsRepositoryProvider._();
 
 final class SettingsRepositoryProvider extends $FunctionalProvider<
     SettingsRepository,
     SettingsRepository,
     SettingsRepository> with $Provider<SettingsRepository> {
-  const SettingsRepositoryProvider._()
+  SettingsRepositoryProvider._()
       : super(
           from: null,
           argument: null,
@@ -54,11 +54,11 @@ String _$settingsRepositoryHash() =>
     r'5849d89f9468753266ce5aa638352968fc190910';
 
 @ProviderFor(CurrentSettings)
-const currentSettingsProvider = CurrentSettingsProvider._();
+final currentSettingsProvider = CurrentSettingsProvider._();
 
 final class CurrentSettingsProvider
     extends $AsyncNotifierProvider<CurrentSettings, UserSettings> {
-  const CurrentSettingsProvider._()
+  CurrentSettingsProvider._()
       : super(
           from: null,
           argument: null,
@@ -84,13 +84,12 @@ abstract class _$CurrentSettings extends $AsyncNotifier<UserSettings> {
   @$mustCallSuper
   @override
   void runBuild() {
-    final created = build();
     final ref = this.ref as $Ref<AsyncValue<UserSettings>, UserSettings>;
     final element = ref.element as $ClassProviderElement<
         AnyNotifier<AsyncValue<UserSettings>, UserSettings>,
         AsyncValue<UserSettings>,
         Object?,
         Object?>;
-    element.handleValue(ref, created);
+    element.handleCreate(ref, build);
   }
 }

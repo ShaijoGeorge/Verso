@@ -28,7 +28,7 @@ class NotificationService {
       ),
     );
 
-    _isInitialized = await _notificationsPlugin.initialize(settings) ?? false;
+    _isInitialized = await _notificationsPlugin.initialize(settings: settings) ?? false;
   }
 
   /// Timezone setup
@@ -36,8 +36,8 @@ class NotificationService {
     tz.initializeTimeZones();
 
     try {
-      final String timeZoneName = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(timeZoneName));
+      final timezoneInfo = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(timezoneInfo.identifier));
     } catch (e) {
       // Fallback to Asia/Kolkata for Indian users
       try {
@@ -91,16 +91,16 @@ class NotificationService {
       '⭐ Your reading streak is waiting!',
       '🌈 Start your day with inspiration!',
     ];
-    
+
     final dayOfWeek = DateTime.now().weekday;
     final message = messages[dayOfWeek % messages.length];
 
     await _notificationsPlugin.zonedSchedule(
-      0,
-      'Bible Reading Time 📖',
-      message,
-      scheduled,
-      const NotificationDetails(
+      id: 0,
+      title: 'Bible Reading Time 📖',
+      body: message,
+      scheduledDate: scheduled,
+      notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
           'daily_reminder',
           'Daily Reminder',
@@ -118,8 +118,6 @@ class NotificationService {
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,
     );
   }

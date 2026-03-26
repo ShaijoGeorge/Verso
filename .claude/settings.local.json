@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc -l /c/Users/shaij/Desktop/Verso/lib/**/*.dart)",
+      "WebFetch(domain:pub.dev)",
+      "Bash(flutter pub:*)",
+      "Bash(dart run:*)",
+      "Bash(flutter clean:*)"
+    ]
+  }
+}

@@ -19,13 +19,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _nameController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  // FIX: Explicitly use EncryptedSharedPreferences for Android
-  // This solves the issue where data isn't persisted on some devices.
-  final _storage = const FlutterSecureStorage(
-    aOptions: AndroidOptions(
-      encryptedSharedPreferences: true,
-    ),
-  );
+  final _storage = const FlutterSecureStorage();
   
   bool _isSignUp = false;
   bool _isLoading = false;

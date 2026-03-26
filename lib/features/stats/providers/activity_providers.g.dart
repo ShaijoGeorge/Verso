@@ -10,7 +10,7 @@ part of 'activity_providers.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(activityLog)
-const activityLogProvider = ActivityLogProvider._();
+final activityLogProvider = ActivityLogProvider._();
 
 final class ActivityLogProvider extends $FunctionalProvider<
         AsyncValue<List<ActivityGroup>>,
@@ -19,7 +19,7 @@ final class ActivityLogProvider extends $FunctionalProvider<
     with
         $FutureModifier<List<ActivityGroup>>,
         $FutureProvider<List<ActivityGroup>> {
-  const ActivityLogProvider._()
+  ActivityLogProvider._()
       : super(
           from: null,
           argument: null,

@@ -10,12 +10,12 @@ part of 'auth_providers.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(authRepository)
-const authRepositoryProvider = AuthRepositoryProvider._();
+final authRepositoryProvider = AuthRepositoryProvider._();
 
 final class AuthRepositoryProvider
     extends $FunctionalProvider<AuthRepository, AuthRepository, AuthRepository>
     with $Provider<AuthRepository> {
-  const AuthRepositoryProvider._()
+  AuthRepositoryProvider._()
       : super(
           from: null,
           argument: null,
@@ -51,12 +51,12 @@ final class AuthRepositoryProvider
 String _$authRepositoryHash() => r'b9113114874a44d746f3b71d30ba28ae369a441f';
 
 @ProviderFor(authUser)
-const authUserProvider = AuthUserProvider._();
+final authUserProvider = AuthUserProvider._();
 
 final class AuthUserProvider
     extends $FunctionalProvider<AsyncValue<User?>, User?, Stream<User?>>
     with $FutureModifier<User?>, $StreamProvider<User?> {
-  const AuthUserProvider._()
+  AuthUserProvider._()
       : super(
           from: null,
           argument: null,

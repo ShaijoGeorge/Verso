@@ -10,12 +10,12 @@ part of 'stats_providers.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(userStats)
-const userStatsProvider = UserStatsProvider._();
+final userStatsProvider = UserStatsProvider._();
 
 final class UserStatsProvider extends $FunctionalProvider<AsyncValue<UserStats>,
         UserStats, FutureOr<UserStats>>
     with $FutureModifier<UserStats>, $FutureProvider<UserStats> {
-  const UserStatsProvider._()
+  UserStatsProvider._()
       : super(
           from: null,
           argument: null,
@@ -43,12 +43,12 @@ final class UserStatsProvider extends $FunctionalProvider<AsyncValue<UserStats>,
 String _$userStatsHash() => r'd414c593cfd78bdd98f67970e7561f60bd996c15';
 
 @ProviderFor(detailedStats)
-const detailedStatsProvider = DetailedStatsProvider._();
+final detailedStatsProvider = DetailedStatsProvider._();
 
 final class DetailedStatsProvider extends $FunctionalProvider<
         AsyncValue<DetailedStats>, DetailedStats, FutureOr<DetailedStats>>
     with $FutureModifier<DetailedStats>, $FutureProvider<DetailedStats> {
-  const DetailedStatsProvider._()
+  DetailedStatsProvider._()
       : super(
           from: null,
           argument: null,

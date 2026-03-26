@@ -10,11 +10,11 @@ part of 'reading_providers.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(bibleRepository)
-const bibleRepositoryProvider = BibleRepositoryProvider._();
+final bibleRepositoryProvider = BibleRepositoryProvider._();
 
 final class BibleRepositoryProvider extends $FunctionalProvider<BibleRepository,
     BibleRepository, BibleRepository> with $Provider<BibleRepository> {
-  const BibleRepositoryProvider._()
+  BibleRepositoryProvider._()
       : super(
           from: null,
           argument: null,
@@ -50,7 +50,7 @@ final class BibleRepositoryProvider extends $FunctionalProvider<BibleRepository,
 String _$bibleRepositoryHash() => r'5a30c2279c0a8fff477c8f224751fc75df275d08';
 
 @ProviderFor(globalProgress)
-const globalProgressProvider = GlobalProgressProvider._();
+final globalProgressProvider = GlobalProgressProvider._();
 
 final class GlobalProgressProvider extends $FunctionalProvider<
         AsyncValue<List<ReadingProgress>>,
@@ -59,7 +59,7 @@ final class GlobalProgressProvider extends $FunctionalProvider<
     with
         $FutureModifier<List<ReadingProgress>>,
         $StreamProvider<List<ReadingProgress>> {
-  const GlobalProgressProvider._()
+  GlobalProgressProvider._()
       : super(
           from: null,
           argument: null,
@@ -88,12 +88,12 @@ final class GlobalProgressProvider extends $FunctionalProvider<
 String _$globalProgressHash() => r'b3ea4eddbdc9ce75d85d6400bc2454ab01e440aa';
 
 @ProviderFor(bookReadCount)
-const bookReadCountProvider = BookReadCountFamily._();
+final bookReadCountProvider = BookReadCountFamily._();
 
 final class BookReadCountProvider
     extends $FunctionalProvider<AsyncValue<int>, int, Stream<int>>
     with $FutureModifier<int>, $StreamProvider<int> {
-  const BookReadCountProvider._(
+  BookReadCountProvider._(
       {required BookReadCountFamily super.from, required int super.argument})
       : super(
           retry: null,
@@ -142,7 +142,7 @@ String _$bookReadCountHash() => r'c859087e1586a5622d92fc99972608111e698b5b';
 
 final class BookReadCountFamily extends $Family
     with $FunctionalFamilyOverride<Stream<int>, int> {
-  const BookReadCountFamily._()
+  BookReadCountFamily._()
       : super(
           retry: null,
           name: r'bookReadCountProvider',
@@ -161,7 +161,7 @@ final class BookReadCountFamily extends $Family
 }
 
 @ProviderFor(bookProgress)
-const bookProgressProvider = BookProgressFamily._();
+final bookProgressProvider = BookProgressFamily._();
 
 final class BookProgressProvider extends $FunctionalProvider<
         AsyncValue<List<ReadingProgress>>,
@@ -170,7 +170,7 @@ final class BookProgressProvider extends $FunctionalProvider<
     with
         $FutureModifier<List<ReadingProgress>>,
         $StreamProvider<List<ReadingProgress>> {
-  const BookProgressProvider._(
+  BookProgressProvider._(
       {required BookProgressFamily super.from, required int super.argument})
       : super(
           retry: null,
@@ -220,7 +220,7 @@ String _$bookProgressHash() => r'98018fb7f85fbe32b428516ff98681f38111f2ae';
 
 final class BookProgressFamily extends $Family
     with $FunctionalFamilyOverride<Stream<List<ReadingProgress>>, int> {
-  const BookProgressFamily._()
+  BookProgressFamily._()
       : super(
           retry: null,
           name: r'bookProgressProvider',
