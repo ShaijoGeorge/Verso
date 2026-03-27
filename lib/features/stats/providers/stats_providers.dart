@@ -4,7 +4,7 @@ import '../../reading/providers/reading_providers.dart';
 
 part 'stats_providers.g.dart';
 
-final homeRefreshTriggerProvider = StateProvider<int>((ref) => 0);
+
 
 class UserStats {
   final int streak;

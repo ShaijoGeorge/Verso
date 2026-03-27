@@ -9,6 +9,52 @@ part of 'reading_providers.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
+@ProviderFor(BiblePageTrigger)
+final biblePageTriggerProvider = BiblePageTriggerProvider._();
+
+final class BiblePageTriggerProvider
+    extends $NotifierProvider<BiblePageTrigger, int> {
+  BiblePageTriggerProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'biblePageTriggerProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$biblePageTriggerHash();
+
+  @$internal
+  @override
+  BiblePageTrigger create() => BiblePageTrigger();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(int value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<int>(value),
+    );
+  }
+}
+
+String _$biblePageTriggerHash() => r'34b43e36e59afd9b0808b7ff6ec55aac8d2d7eb0';
+
+abstract class _$BiblePageTrigger extends $Notifier<int> {
+  int build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<int, int>;
+    final element = ref.element
+        as $ClassProviderElement<AnyNotifier<int, int>, int, Object?, Object?>;
+    element.handleCreate(ref, build);
+  }
+}
+
 @ProviderFor(bibleRepository)
 final bibleRepositoryProvider = BibleRepositoryProvider._();
 
