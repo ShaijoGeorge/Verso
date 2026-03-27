@@ -40,7 +40,7 @@ final class UserStatsProvider extends $FunctionalProvider<AsyncValue<UserStats>,
   }
 }
 
-String _$userStatsHash() => r'd414c593cfd78bdd98f67970e7561f60bd996c15';
+String _$userStatsHash() => r'01e04cf33d1596b4aa63150a04c3dfe63599d873';
 
 @ProviderFor(detailedStats)
 final detailedStatsProvider = DetailedStatsProvider._();
@@ -74,4 +74,4 @@ final class DetailedStatsProvider extends $FunctionalProvider<
   }
 }
 
-String _$detailedStatsHash() => r'8efbe2fd381713244e33d292f094ffb8497e3586';
+String _$detailedStatsHash() => r'5c08e7a1f4a8d404b076d9c05567f8559b426c7d';
