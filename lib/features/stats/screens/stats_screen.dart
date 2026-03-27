@@ -13,8 +13,6 @@ class StatsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(userStatsProvider);
 
-    final refreshTrigger = ref.watch(homeRefreshTriggerProvider);
-
     // No Scaffold, no AppBar here either
     return statsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -30,8 +28,8 @@ class StatsScreen extends ConsumerWidget {
               // ANIMATED CIRCULAR PROGRESS
               // We use TweenAnimationBuilder to drive the value from 0 to actual progress
               TweenAnimationBuilder<double>(
-                // Forces the animation to restart when trigger changes
-                key: ValueKey("circle_$refreshTrigger"),
+                // Forces the animation to restart when stats object changes (identity)
+                key: ValueKey(stats),
                 tween: Tween<double>(begin: 0.0, end: stats.totalProgress),
                 duration: const Duration(milliseconds: 1500), // 1.5 seconds animation
                 curve: Curves.easeOutCubic, // Smooth slowdown at the end
@@ -100,7 +98,7 @@ class StatsScreen extends ConsumerWidget {
                   Expanded(
                     child: TweenAnimationBuilder<int>(
                       // Forces restart
-                      key: ValueKey("streak_$refreshTrigger"),
+                      key: ValueKey("streak_${stats.streak}"),
                       tween: IntTween(begin: 0, end: stats.streak),
                       duration: const Duration(milliseconds: 1500),
                       curve: Curves.easeOutCubic,
@@ -120,7 +118,7 @@ class StatsScreen extends ConsumerWidget {
                   Expanded(
                     child: TweenAnimationBuilder<int>(
                       // Forces restart
-                      key: ValueKey("chapters_$refreshTrigger"),
+                      key: ValueKey("chapters_${stats.totalChaptersRead}"),
                       tween: IntTween(begin: 0, end: stats.totalChaptersRead),
                       duration: const Duration(milliseconds: 1500),
                       curve: Curves.easeOutCubic,

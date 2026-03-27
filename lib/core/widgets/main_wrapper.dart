@@ -23,14 +23,14 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
 
   void _goBranch(int index) {
 
-    // Home Page Animation Trigger
+    // Home Page Animation Trigger (Eliminated provider, using invalidation)
     if (index == 1 && widget.navigationShell.currentIndex != 1) {
-      ref.read(homeRefreshTriggerProvider.notifier).state++;
+      ref.invalidate(userStatsProvider);
     }
 
-    // Bible Pages Animation Trigger
+    // Bible Pages Animation Trigger (New @riverpod notifier)
     if ((index == 0 || index == 2) && widget.navigationShell.currentIndex != index) {
-      ref.read(biblePageTriggerProvider.notifier).state++;
+      ref.read(biblePageTriggerProvider.notifier).increment();
     }
 
     widget.navigationShell.goBranch(

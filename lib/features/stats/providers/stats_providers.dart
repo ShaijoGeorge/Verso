@@ -1,10 +1,11 @@
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../reading/providers/reading_providers.dart';
+import '../../../data/local/entities/reading_progress.dart';
 
 part 'stats_providers.g.dart';
 
-final homeRefreshTriggerProvider = StateProvider<int>((ref) => 0);
+
 
 class UserStats {
   final int streak;
@@ -18,11 +19,50 @@ class UserStats {
   });
 }
 
+int _calculateStreak(List<ReadingProgress> history) {
+  if (history.isEmpty) return 0;
+
+  final readDates = history
+      .where((p) => p.isRead && p.readAt != null)
+      .map((p) => p.readAt!)
+      .map((dt) => DateTime(dt.year, dt.month, dt.day))
+      .toSet()
+      .toList()
+    ..sort((a, b) => b.compareTo(a)); // Descending
+
+  if (readDates.isEmpty) return 0;
+
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final yesterday = today.subtract(const Duration(days: 1));
+
+  // If the most recent read is not today or yesterday, streak is broken
+  if (readDates.first != today && readDates.first != yesterday) {
+    return 0;
+  }
+
+  int streak = 0;
+  DateTime targetDate = readDates.first;
+
+  for (final day in readDates) {
+    if (day == targetDate) {
+      streak++;
+      targetDate = targetDate.subtract(const Duration(days: 1));
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
 @riverpod
 Future<UserStats> userStats(Ref ref) async {
-  final repo = ref.watch(bibleRepositoryProvider);
-  final streak = await repo.getCurrentStreak();
-  final totalRead = await repo.countTotalRead();
+  // Watch the global stream's latest data
+  final history = await ref.watch(globalProgressProvider.future);
+  
+  final totalRead = history.where((p) => p.isRead).length;
+  final streak = _calculateStreak(history);
+  
   const totalChaptersInBible = 1334;
   final progress =
       totalChaptersInBible > 0 ? (totalRead / totalChaptersInBible) * 100 : 0.0;
@@ -48,8 +88,6 @@ class DetailedStats {
   final Map<int, int> currentYearMonthlyCounts;
   final double averageChaptersPerDay;
 
-  // Predictions REMOVED
-
   DetailedStats({
     required this.otRead,
     required this.ntRead,
@@ -67,16 +105,17 @@ class DetailedStats {
 
 @riverpod
 Future<DetailedStats> detailedStats(Ref ref) async {
-  final repo = ref.watch(bibleRepositoryProvider);
-  final history = await repo.getAllProgressSnapshot();
+  final history = await ref.watch(globalProgressProvider.future);
 
   const int totalOT = 1074;
   const int totalNT = 260;
   const int totalBible = 1334;
 
-  final otRead = history.where((p) => p.bookId <= 39).length;
-  final ntRead = history.where((p) => p.bookId >= 40).length;
-  final totalRead = history.length;
+  final readHistory = history.where((p) => p.isRead).toList();
+
+  final otRead = readHistory.where((p) => p.bookId <= 39).length;
+  final ntRead = readHistory.where((p) => p.bookId >= 40).length;
+  final totalRead = readHistory.length;
 
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
@@ -87,7 +126,7 @@ Future<DetailedStats> detailedStats(Ref ref) async {
   for (int i = 6; i >= 0; i--) {
     final date = today.subtract(Duration(days: i));
     last7DaysDates.add(date);
-    final count = history.where((p) {
+    final count = readHistory.where((p) {
       if (p.readAt == null) return false;
       final pDate = p.readAt!;
       return pDate.year == date.year &&
@@ -99,7 +138,7 @@ Future<DetailedStats> detailedStats(Ref ref) async {
 
   // 2. Monthly Data
   final currentMonthDailyCounts = <int, int>{};
-  final monthHistory = history.where((p) =>
+  final monthHistory = readHistory.where((p) =>
       p.readAt != null &&
       p.readAt!.year == now.year &&
       p.readAt!.month == now.month);
@@ -111,7 +150,7 @@ Future<DetailedStats> detailedStats(Ref ref) async {
   // 3. Yearly Data
   final currentYearMonthlyCounts = <int, int>{};
   final yearHistory =
-      history.where((p) => p.readAt != null && p.readAt!.year == now.year);
+      readHistory.where((p) => p.readAt != null && p.readAt!.year == now.year);
   for (final entry in yearHistory) {
     currentYearMonthlyCounts[entry.readAt!.month] =
         (currentYearMonthlyCounts[entry.readAt!.month] ?? 0) + 1;
