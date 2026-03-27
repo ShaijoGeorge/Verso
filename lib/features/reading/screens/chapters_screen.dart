@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/bible_data.dart';
 import '../providers/reading_providers.dart';
+import '../../stats/providers/stats_providers.dart';
 import '../../../core/widgets/error_state_widget.dart';
 import '../../../core/utils/app_error_handler.dart'; // Make sure this import is correct
 
@@ -78,6 +79,7 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
                         // Invalidate providers to refresh
                         ref.invalidate(bookReadCountProvider(widget.book.id));
                         ref.invalidate(bookProgressProvider(widget.book.id));
+                        ref.invalidate(userStatsProvider);
 
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -145,6 +147,7 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
                       );
                   // Only invalidate the "Count" (FutureProvider), NOT the stream
                   ref.invalidate(bookReadCountProvider(widget.book.id));
+                  ref.invalidate(userStatsProvider);
                 },
               );
             },
