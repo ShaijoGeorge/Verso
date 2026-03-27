@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/stats_providers.dart';
+import '../../../core/widgets/error_state_widget.dart';
 
 class DetailedStatsScreen extends ConsumerStatefulWidget {
   const DetailedStatsScreen({super.key});
@@ -32,7 +33,10 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
       appBar: AppBar(title: const Text('Detailed Stats')),
       body: statsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
+        error: (err, stack) => ErrorStateWidget(
+          error: err,
+          onRetry: () => ref.invalidate(detailedStatsProvider),
+        ),
         data: (stats) {
           final int maxRead = stats.last7DaysCounts.isNotEmpty 
               ? stats.last7DaysCounts.reduce(max) 

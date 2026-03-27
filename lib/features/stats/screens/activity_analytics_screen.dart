@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../providers/stats_providers.dart';
+import '../../../core/widgets/error_state_widget.dart';
 
 class ActivityAnalyticsScreen extends ConsumerWidget {
   const ActivityAnalyticsScreen({super.key});
@@ -16,7 +17,10 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Detailed Activity')),
       body: statsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
+        error: (err, stack) => ErrorStateWidget(
+          error: err,
+          onRetry: () => ref.invalidate(detailedStatsProvider),
+        ),
         data: (stats) {
           
           // Calculate Dynamic Y-Axis Max
