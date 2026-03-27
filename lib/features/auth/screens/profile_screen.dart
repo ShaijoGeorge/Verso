@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_providers.dart';
+import '../../../core/widgets/error_state_widget.dart';
+import '../../../core/utils/app_error_handler.dart';
+import '../../../core/design/components/verso_snackbar.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -13,7 +16,13 @@ class ProfileScreen extends ConsumerWidget {
 
     return userAsync.when(
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (err, stack) => Scaffold(body: Center(child: Text('Error: $err'))),
+      error: (err, stack) => Scaffold(
+        appBar: AppBar(title: const Text('My Profile')),
+        body: ErrorStateWidget(
+          error: err,
+          onRetry: () => ref.invalidate(authUserProvider),
+        ),
+      ),
       data: (user) {
         if (user == null) return const Scaffold(body: Center(child: Text('Not Logged In')));
 
@@ -131,7 +140,7 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+        VersoSnackbar.error(context, message: AppErrorHandler.getMessage(e));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -255,7 +264,7 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+        VersoSnackbar.error(context, message: AppErrorHandler.getMessage(e));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

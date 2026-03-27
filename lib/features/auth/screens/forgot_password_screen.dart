@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import '../providers/auth_providers.dart';
 import '../../../core/widgets/confirmation_view.dart';
+import '../../../core/utils/app_error_handler.dart';
+import '../../../core/design/components/verso_snackbar.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -36,9 +38,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        VersoSnackbar.error(context, message: AppErrorHandler.getMessage(e));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

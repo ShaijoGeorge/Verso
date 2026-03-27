@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_providers.dart';
 import '../../../core/utils/app_error_handler.dart';
+import '../../../core/design/components/verso_snackbar.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -96,23 +97,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
     } catch (e) {
       if (mounted) {
-        final userFriendlyError = AppErrorHandler.getMessage(e);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(child: Text(userFriendlyError)),
-              ],
-            ),
-            backgroundColor: Theme.of(context).colorScheme.error,
-            behavior: SnackBarBehavior.floating, // Makes it float above bottom nav
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
-        );
+        VersoSnackbar.error(context, message: AppErrorHandler.getMessage(e));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

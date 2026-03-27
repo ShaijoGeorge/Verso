@@ -4,6 +4,9 @@ import 'package:gap/gap.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../providers/settings_providers.dart';
 import '../services/notification_service.dart';
+import '../../../core/widgets/error_state_widget.dart';
+import '../../../core/utils/app_error_handler.dart';
+import '../../../core/design/components/verso_snackbar.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -69,9 +72,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error scheduling reminder: $e')),
-          );
+          VersoSnackbar.error(context, message: AppErrorHandler.getMessage(e));
         }
       }
     }
@@ -85,7 +86,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       appBar: AppBar(title: const Text('Settings')),
       body: settingsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
+        error: (err, stack) => ErrorStateWidget(
+          error: err,
+          onRetry: () => ref.invalidate(currentSettingsProvider),
+        ),
         data: (settings) {
           return ListView(
             children: [
@@ -172,9 +176,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     }
                   } catch (e) {
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error: $e')),
-                      );
+                      VersoSnackbar.error(context, message: AppErrorHandler.getMessage(e));
                     }
                   }
                 },
