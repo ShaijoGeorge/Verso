@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/bible_data.dart';
 import '../providers/reading_providers.dart';
+import '../services/reading_service.dart';
 import '../../stats/providers/stats_providers.dart';
 import '../../../core/widgets/error_state_widget.dart';
 import '../../../core/utils/app_error_handler.dart'; // Make sure this import is correct
@@ -73,13 +74,8 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
                       setState(() => _isMarkingRead = true);
 
                       try {
-                        await ref.read(bibleRepositoryProvider).markBookAsRead(
+                        await ref.read(readingServiceProvider).markBookAsRead(
                             widget.book.id, widget.book.chapters);
-
-                        // Invalidate providers to refresh
-                        ref.invalidate(bookReadCountProvider(widget.book.id));
-                        ref.invalidate(bookProgressProvider(widget.book.id));
-                        ref.invalidate(userStatsProvider);
 
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -140,14 +136,12 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
                 isRead: isRead,
                 onTap: (newStatus) {
                   // Fire-and-forget the write operation (don't await)
-                  ref.read(bibleRepositoryProvider).toggleChapter(
+                  // Use ReadingService for the write operation
+                  ref.read(readingServiceProvider).toggleChapter(
                         widget.book.id,
                         chapterNum,
                         newStatus,
                       );
-                  // Only invalidate the "Count" (FutureProvider), NOT the stream
-                  ref.invalidate(bookReadCountProvider(widget.book.id));
-                  ref.invalidate(userStatsProvider);
                 },
               );
             },
