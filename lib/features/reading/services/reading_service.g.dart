@@ -48,4 +48,4 @@ final class ReadingServiceProvider
   }
 }
 
-String _$readingServiceHash() => r'da30ad8ff0c43c9738886512e70bdd6c50f459bc';
+String _$readingServiceHash() => r'51d64b6a18bb3283bde2a6e6efbecd9777ab3cd8';

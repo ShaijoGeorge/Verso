@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_providers.dart';
+import '../../reading/providers/reading_providers.dart';
 
 class ProfileDrawer extends ConsumerWidget {
   const ProfileDrawer({super.key});
@@ -84,10 +85,13 @@ class ProfileDrawer extends ConsumerWidget {
             onTap: () async {
               // Close the drawer first
               Navigator.pop(context);
-              
+
+              // Clear offline cache and pending queue to prevent data leakage
+              await ref.read(offlineCacheServiceProvider).clearAll();
+
               // Call Sign Out
               await ref.read(authRepositoryProvider).signOut();
-              
+
               // The Router's AuthGuard will automatically redirect to /login
             },
           ),
