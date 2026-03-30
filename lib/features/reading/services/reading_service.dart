@@ -13,6 +13,9 @@ class ReadingService {
   final BibleRepository _repo;
   final OfflineCacheService _cache;
 
+  // Mutex to prevent multiple sync loops from running concurrently
+  bool _isSyncing = false;
+
   ReadingService(this._ref, this._repo, this._cache);
 
   bool get _isOnline => _ref.read(connectivityProvider);
@@ -20,107 +23,105 @@ class ReadingService {
       Supabase.instance.client.auth.currentUser?.id ?? '';
 
   Future<void> toggleChapter(int bookId, int chapterNumber, bool isRead) async {
-    if (_isOnline) {
-      await _repo.toggleChapter(bookId, chapterNumber, isRead);
-    } else {
-      // Queue the write for later (deduplicates same-chapter toggles)
-      await _cache.enqueueWrite({
-        'type': 'toggle',
-        'book_id': bookId,
-        'chapter_number': chapterNumber,
-        'is_read': isRead,
-      });
-      // Optimistically update the local cache
-      await _cache.applyCachedToggle(
-        _currentUserId,
-        bookId,
-        chapterNumber,
-        isRead,
-      );
-      // Refresh the global stream from cache
-      _ref.invalidate(globalProgressProvider);
-    }
+    // 1. ALWAYS queue the action (chronologically ordered source of truth)
+    await _cache.enqueueWrite({
+      'type': 'toggle',
+      'book_id': bookId,
+      'chapter_number': chapterNumber,
+      'is_read': isRead,
+    });
 
-    // Invalidation Cascade
-    _ref.invalidate(userStatsProvider);
-    _ref.invalidate(detailedStatsProvider);
-    _ref.invalidate(bookReadCountProvider(bookId));
+    // 2. ALWAYS update local cache immediately (instant optimistic UI)
+    await _cache.applyCachedToggle(
+      _currentUserId,
+      bookId,
+      chapterNumber,
+      isRead,
+    );
+
+    // 3. Refresh the UI
+    _invalidateProviders(bookId);
+
+    // 4. Trigger background sync if online
+    _triggerSync();
   }
 
   Future<void> markBookAsRead(int bookId, int totalChapters) async {
-    if (_isOnline) {
-      await _repo.markBookAsRead(bookId, totalChapters);
-    } else {
-      // Queue the write for later
-      await _cache.enqueueWrite({
-        'type': 'mark_book',
-        'book_id': bookId,
-        'total_chapters': totalChapters,
-      });
-      // Optimistically update the local cache
-      await _cache.applyCachedMarkBook(
-        _currentUserId,
-        bookId,
-        totalChapters,
-      );
-      // Refresh the global stream from cache
-      _ref.invalidate(globalProgressProvider);
-    }
+    await _cache.enqueueWrite({
+      'type': 'mark_book',
+      'book_id': bookId,
+      'total_chapters': totalChapters,
+    });
 
-    // Invalidation Cascade
+    await _cache.applyCachedMarkBook(
+      _currentUserId,
+      bookId,
+      totalChapters,
+    );
+
+    _invalidateProviders(bookId);
+    _triggerSync();
+  }
+
+  void _invalidateProviders(int bookId) {
+    _ref.invalidate(globalProgressProvider);
     _ref.invalidate(userStatsProvider);
     _ref.invalidate(detailedStatsProvider);
     _ref.invalidate(bookReadCountProvider(bookId));
     _ref.invalidate(bookProgressProvider(bookId));
   }
 
-  /// Flush all queued offline writes to Supabase.
-  /// Processes one-at-a-time: network errors stop the flush (retried next
-  /// connectivity event); data errors drop the malformed action so the
-  /// queue doesn't get permanently blocked.
-  Future<void> flushWriteQueue() async {
-    final queue = await _cache.getWriteQueue();
-    if (queue.isEmpty) return;
-
-    // Process from index 0 and remove each after success.
-    // We re-read the queue length each iteration because removeQueueAction
-    // mutates the underlying store.
-    while (true) {
-      final current = await _cache.getWriteQueue();
-      if (current.isEmpty) break;
-
-      final op = current.first;
-      try {
-        switch (op['type']) {
-          case 'toggle':
-            await _repo.toggleChapter(
-              op['book_id'] as int,
-              op['chapter_number'] as int,
-              op['is_read'] as bool,
-            );
-            break;
-          case 'mark_book':
-            await _repo.markBookAsRead(
-              op['book_id'] as int,
-              op['total_chapters'] as int,
-            );
-            break;
-        }
-        // Success — remove this action from the queue
-        await _cache.removeQueueAction(0);
-      } on TypeError catch (_) {
-        // Malformed data — drop it so the queue isn't permanently blocked
-        await _cache.removeQueueAction(0);
-      } catch (_) {
-        // Network error — stop flush; will retry on next connectivity event
-        break;
-      }
+  void _triggerSync() {
+    if (_isOnline) {
+      flushWriteQueue();
     }
+  }
 
-    // Refresh everything after sync
-    _ref.invalidate(globalProgressProvider);
-    _ref.invalidate(userStatsProvider);
-    _ref.invalidate(detailedStatsProvider);
+  /// Flush all queued writes to Supabase in FIFO order.
+  /// Uses a mutex to prevent overlapping syncs from racing.
+  /// Network errors stop the flush (retried on next connectivity event);
+  /// data errors drop the malformed action so the queue isn't blocked.
+  Future<void> flushWriteQueue() async {
+    if (_isSyncing) return;
+    _isSyncing = true;
+
+    try {
+      while (true) {
+        final current = await _cache.getWriteQueue();
+        if (current.isEmpty) break;
+
+        final op = current.first;
+        try {
+          switch (op['type']) {
+            case 'toggle':
+              await _repo.toggleChapter(
+                op['book_id'] as int,
+                op['chapter_number'] as int,
+                op['is_read'] as bool,
+              );
+              break;
+            case 'mark_book':
+              await _repo.markBookAsRead(
+                op['book_id'] as int,
+                op['total_chapters'] as int,
+              );
+              break;
+          }
+          await _cache.removeQueueAction(0);
+        } on TypeError catch (_) {
+          // Malformed data — drop it so the queue isn't permanently blocked
+          await _cache.removeQueueAction(0);
+        } catch (_) {
+          // Network error — stop flush; will retry on next connectivity event
+          break;
+        }
+      }
+    } finally {
+      _isSyncing = false;
+
+      // Refresh to fetch official server state now that queue is processed
+      _ref.invalidate(globalProgressProvider);
+    }
   }
 }
 
