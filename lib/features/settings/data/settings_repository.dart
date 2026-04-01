@@ -7,6 +7,7 @@ class SettingsRepository {
   static const _kReminderEnabledKey = 'is_reminder_enabled';
   static const _kReminderHourKey = 'reminder_hour';
   static const _kReminderMinuteKey = 'reminder_minute';
+  static const _kOnboardingKey = 'has_seen_onboarding';
 
   Future<UserSettings> getSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -17,6 +18,18 @@ class SettingsRepository {
       reminderHour: prefs.getInt(_kReminderHourKey) ?? 7,
       reminderMinute: prefs.getInt(_kReminderMinuteKey) ?? 0,
     );
+  }
+
+  // Check if onboarding is complete
+  Future<bool> hasSeenOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_kOnboardingKey) ?? false; // Default to false
+  }
+
+  // Mark onboarding as complete
+  Future<void> completeOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kOnboardingKey, true);
   }
 
   Future<void> toggleTheme(bool isDark) async {
