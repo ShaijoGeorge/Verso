@@ -32,28 +32,35 @@ class _SplashScreenState extends State<SplashScreen> {
     }
   }
 
-  void _startTimer() {
-    // Show splash for 1.5 seconds, then decide where to go
-    Timer(const Duration(milliseconds: 1500), () async {
-      if (!mounted) return;
+  void _startTimer() async {
+    // Define our two tasks
+    final minimumDelay = Future.delayed(const Duration(milliseconds: 1500));
+    final checkOnboarding = SettingsRepository().hasSeenOnboarding();
+
+    // Run them simultaneously and wait for BOTH to finish
+    // We capture the result of the onboarding check (the second future)
+    final results = await Future.wait([
+      minimumDelay,
+      checkOnboarding,
+    ]);
+
+    // Extract the boolean result
+    final hasSeenOnboarding = results[1] as bool;
+
+    // Perform our routing
+    if (!mounted) return;
       
-      final session = Supabase.instance.client.auth.currentSession;
-      if (session != null) {
-        context.go('/home');
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session != null) {
+      context.go('/home');
+    } else {
+      // Logged out -> Check if they've seen onboarding
+      if (hasSeenOnboarding) {
+        context.go('/login');
       } else {
-        // Logged out -> Check if they've seen onboarding
-        final repo = SettingsRepository();
-        final hasSeenOnboarding = await repo.hasSeenOnboarding();
-
-        if (!mounted) return;
-
-        if (hasSeenOnboarding) {
-          context.go('/login');
-        } else {
-          context.go('/onboarding');
-        }
+        context.go('/onboarding');
       }
-    });
+    }
   }
 
   @override
