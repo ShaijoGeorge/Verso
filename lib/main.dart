@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'core/theme.dart';
+import 'core/design/theme.dart';
 import 'core/router.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/constants.dart';
 import 'features/settings/services/notification_service.dart';
 import 'features/settings/providers/settings_providers.dart';
+import 'core/utils/verso_error_observer.dart';
 
 void main() async {
 
@@ -27,7 +28,12 @@ void main() async {
   // Request Permissions (Important for Android 13+)
   await NotificationService().requestPermissions();
 
-  runApp(const ProviderScope(child: BibliaApp()));
+  runApp(
+    ProviderScope(
+      observers: [VersoErrorObserver()],
+      child: const BibliaApp(),
+    ),
+  );
 }
 
 // Converted to ConsumerStatefulWidget to listen for Auth Events

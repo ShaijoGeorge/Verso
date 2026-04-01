@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/widgets/profile_drawer.dart';
 import '../../features/stats/providers/stats_providers.dart';
 import '../../features/reading/providers/reading_providers.dart';
+import '../providers/connectivity_provider.dart';
 
 class MainWrapper extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -18,19 +19,17 @@ class MainWrapper extends ConsumerStatefulWidget {
 }
 
 class _MainWrapperState extends ConsumerState<MainWrapper> {
-  
-  // No explicit sync needed for Realtime Streams
 
   void _goBranch(int index) {
 
-    // Home Page Animation Trigger
+    // Home Page Animation Trigger (Eliminated provider, using invalidation)
     if (index == 1 && widget.navigationShell.currentIndex != 1) {
-      ref.read(homeRefreshTriggerProvider.notifier).state++;
+      ref.invalidate(userStatsProvider);
     }
 
-    // Bible Pages Animation Trigger
+    // Bible Pages Animation Trigger (New @riverpod notifier)
     if ((index == 0 || index == 2) && widget.navigationShell.currentIndex != index) {
-      ref.read(biblePageTriggerProvider.notifier).state++;
+      ref.read(biblePageTriggerProvider.notifier).increment();
     }
 
     widget.navigationShell.goBranch(
@@ -41,6 +40,8 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    final isOnline = ref.watch(connectivityProvider);
+
     String title;
     switch (widget.navigationShell.currentIndex) {
       case 0: title = 'Old Testament'; break;
@@ -64,7 +65,46 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
         ],
       ),
       drawer: const ProfileDrawer(),
-      body: widget.navigationShell,
+      body: Column(
+        children: [
+          // Offline indicator banner
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: isOnline
+                ? const SizedBox.shrink()
+                : Material(
+                    color: Theme.of(context).colorScheme.secondaryContainer,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.cloud_off,
+                              size: 14,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSecondaryContainer),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Reading in offline mode. Changes will sync when connected.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSecondaryContainer,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+          ),
+          // Main content
+          Expanded(child: widget.navigationShell),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: widget.navigationShell.currentIndex,
         onDestinationSelected: _goBranch,

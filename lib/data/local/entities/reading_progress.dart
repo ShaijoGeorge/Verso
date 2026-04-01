@@ -23,4 +23,14 @@ class ReadingProgress {
       readAt: json['read_at'] != null ? DateTime.parse(json['read_at']) : null,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'user_id': userId,
+      'book_id': bookId,
+      'chapter_number': chapterNumber,
+      'is_read': isRead,
+      'read_at': readAt?.toIso8601String(),
+    };
+  }
 }

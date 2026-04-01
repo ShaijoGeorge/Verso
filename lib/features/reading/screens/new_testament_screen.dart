@@ -14,6 +14,7 @@ class NewTestamentScreen extends ConsumerWidget {
     // Watch the trigger!
     final refreshTrigger = ref.watch(biblePageTriggerProvider);
 
+
     return Scaffold(
       body: BookGrid(
         // MAGIC KEY: Forces the Grid to "reset" its memory when you arrive.

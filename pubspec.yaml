@@ -36,6 +36,8 @@ dependencies:
   timezone: ^0.11.0
   package_info_plus: ^9.0.0
 
+  connectivity_plus: ^6.1.4      # Network state monitoring for offline support
+
   intl: ^0.20.2
   collection: ^1.18.0
 
@@ -58,16 +60,6 @@ flutter:
     - .env
     - assets/app_logo.png
 
-  fonts:
-    - family: Metropolis
-      fonts:
-        - asset: assets/fonts/Metropolis-Regular.otf
-        - asset: assets/fonts/Metropolis-RegularItalic.otf
-          style: italic
-        - asset: assets/fonts/Metropolis-Bold.otf
-          weight: 700
-        - asset: assets/fonts/Metropolis-ExtraBold.otf
-          weight: 800
 
 flutter_launcher_icons:
   android: "ic_launcher"
