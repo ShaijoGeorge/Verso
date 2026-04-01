@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:gap/gap.dart';
+import '../../settings/data/settings_repository.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -32,15 +33,25 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void _startTimer() {
-    // Show splash for 3 seconds, then decide where to go
-    Timer(const Duration(seconds: 3), () {
+    // Show splash for 1.5 seconds, then decide where to go
+    Timer(const Duration(milliseconds: 1500), () async {
       if (!mounted) return;
       
       final session = Supabase.instance.client.auth.currentSession;
       if (session != null) {
         context.go('/home');
       } else {
-        context.go('/login');
+        // Logged out -> Check if they've seen onboarding
+        final repo = SettingsRepository();
+        final hasSeenOnboarding = await repo.hasSeenOnboarding();
+
+        if (!mounted) return;
+
+        if (hasSeenOnboarding) {
+          context.go('/login');
+        } else {
+          context.go('/onboarding');
+        }
       }
     });
   }
