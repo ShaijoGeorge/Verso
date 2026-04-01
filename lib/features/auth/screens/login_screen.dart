@@ -2,9 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_providers.dart';
 import '../../../core/utils/app_error_handler.dart';
 import '../../../core/design/components/verso_snackbar.dart';
+import '../../../core/design/components/verso_text_field.dart';
+import '../../../core/design/components/verso_gradient_button.dart';
+import '../../../core/design/components/verso_header_icon.dart';
+import '../../../core/design/components/verso_auth_gradient.dart';
+import '../../../core/design/tokens/spacing.dart';
+import '../../../core/design/tokens/radii.dart';
+import '../../../core/design/tokens/colors.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -14,23 +22,48 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen>
+    with SingleTickerProviderStateMixin {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   final _storage = const FlutterSecureStorage();
-  
+
   bool _isSignUp = false;
   bool _isLoading = false;
   bool _isPasswordVisible = false;
-  bool _rememberMe = false; 
+  bool _rememberMe = false;
+
+  late final AnimationController _animController;
+  late final Animation<double> _fadeIn;
+  late final Animation<Offset> _slideUp;
 
   @override
   void initState() {
     super.initState();
     _loadSavedCredentials();
+
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+    _fadeIn = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOut,
+    );
+
+    _slideUp = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOutCubic,
+    ));
+
+    _animController.forward();
   }
 
   @override
@@ -38,6 +71,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _nameController.dispose();
+    _animController.dispose();
     super.dispose();
   }
 
@@ -104,150 +138,270 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  void _toggleMode() {
+    setState(() => _isSignUp = !_isSignUp);
+    _animController.reset();
+    _animController.forward();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Icon(
-                  Icons.auto_stories,
-                  size: 80,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const Gap(16),
-                Text(
-                  _isSignUp ? 'Create Account' : 'Welcome Back',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const Gap(32),
-
-                // Name Field (Only for Sign Up)
-                if (_isSignUp) ...[
-                  TextFormField(
-                    controller: _nameController,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(
-                      labelText: 'Full Name',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.person),
-                    ),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Please enter your name' : null,
-                  ),
-                  const Gap(16),
-                ],
-
-                // Email Field
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  autocorrect: false,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email),
-                  ),
-                  validator: (value) =>
-                      value!.contains('@') ? null : 'Please enter a valid email',
-                ),
-                const Gap(16),
-
-                // Password Field
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: !_isPasswordVisible, // Toggles based on state
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.lock),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _isPasswordVisible
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _isPasswordVisible = !_isPasswordVisible;
-                        });
-                      },
-                    ),
-                  ),
-                  validator: (value) => value!.length < 6
-                      ? 'Password must be at least 6 characters'
-                      : null,
-                ),
-                const Gap(16),
-
-                if (!_isSignUp)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: Container(
+        decoration: BoxDecoration(gradient: VersoAuthGradient.of(context)),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: Spacing.pagePadding,
+              child: FadeTransition(
+                opacity: _fadeIn,
+                child: SlideTransition(
+                  position: _slideUp,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Row(
+                      // Logo and branding
+                      Column(
                         children: [
-                          Checkbox(
-                            value: _rememberMe,
-                            activeColor: Theme.of(context).colorScheme.primary,
-                            onChanged: (value) {
-                              setState(() {
-                                _rememberMe = value ?? false;
-                              });
-                            },
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: VisualDensity.compact,
+                          const VersoHeaderIcon(
+                            icon: Icons.auto_stories_rounded,
+                            iconSize: 36,
                           ),
-                          const SizedBox(width: 4),
+                          const Gap(Spacing.md),
                           Text(
-                            'Remember Password',
-                            style: Theme.of(context).textTheme.bodyMedium,
+                            'Verso',
+                            style: GoogleFonts.dmSerifDisplay(
+                              fontSize: 32,
+                              color: colorScheme.onSurface,
+                            ),
                           ),
                         ],
                       ),
-                      TextButton(
-                        onPressed: () {
-                          GoRouter.of(context).push('/forgot-password');
-                        },
-                        child: const Text('Forgot Password?'),
+                      const Gap(Spacing.xxl),
+
+                      // Form card
+                      Container(
+                        decoration: BoxDecoration(
+                          color: colorScheme.surface,
+                          borderRadius: AppRadii.borderRadiusXL,
+                          border: Border.all(
+                            color: colorScheme.outline.withValues(alpha: isDark ? 0.15 : 0.4),
+                          ),
+                          boxShadow: isDark
+                              ? []
+                              : [
+                                  BoxShadow(
+                                    color: AppColors.primaryLight.withValues(alpha: 0.06),
+                                    blurRadius: 40,
+                                    offset: const Offset(0, 16),
+                                  ),
+                                ],
+                        ),
+                        padding: const EdgeInsets.all(Spacing.lg),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Form title
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 300),
+                                child: Text(
+                                  _isSignUp ? 'Create Account' : 'Welcome Back',
+                                  key: ValueKey(_isSignUp),
+                                  style: GoogleFonts.dmSerifDisplay(
+                                    fontSize: 26,
+                                    color: colorScheme.onSurface,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ),
+                              const Gap(4),
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 300),
+                                child: Text(
+                                  _isSignUp
+                                      ? 'Start your Bible reading journey'
+                                      : 'Sign in to continue reading',
+                                  key: ValueKey('sub_$_isSignUp'),
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 14,
+                                    color: colorScheme.onSurfaceVariant,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              ),
+                              const Gap(Spacing.lg),
+
+                              // Name Field (Sign Up only)
+                              AnimatedSize(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeOutCubic,
+                                child: _isSignUp
+                                    ? Column(
+                                        children: [
+                                          VersoTextField(
+                                            controller: _nameController,
+                                            label: 'Full Name',
+                                            icon: Icons.person_outline_rounded,
+                                            textCapitalization: TextCapitalization.words,
+                                            validator: (value) =>
+                                                value!.isEmpty ? 'Please enter your name' : null,
+                                          ),
+                                          const Gap(Spacing.md),
+                                        ],
+                                      )
+                                    : const SizedBox.shrink(),
+                              ),
+
+                              // Email
+                              VersoTextField(
+                                controller: _emailController,
+                                label: 'Email',
+                                icon: Icons.mail_outline_rounded,
+                                keyboardType: TextInputType.emailAddress,
+                                autocorrect: false,
+                                validator: (value) =>
+                                    value!.contains('@') ? null : 'Please enter a valid email',
+                              ),
+                              const Gap(Spacing.md),
+
+                              // Password
+                              VersoTextField(
+                                controller: _passwordController,
+                                label: 'Password',
+                                icon: Icons.lock_outline_rounded,
+                                obscureText: !_isPasswordVisible,
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _isPasswordVisible
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined,
+                                    size: 20,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                  onPressed: () {
+                                    setState(() => _isPasswordVisible = !_isPasswordVisible);
+                                  },
+                                ),
+                                validator: (value) => value!.length < 6
+                                    ? 'Password must be at least 6 characters'
+                                    : null,
+                              ),
+
+                              // Remember me & Forgot password
+                              if (!_isSignUp) ...[
+                                const Gap(Spacing.sm),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () => setState(() => _rememberMe = !_rememberMe),
+                                      child: Row(
+                                        children: [
+                                          SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: Checkbox(
+                                              value: _rememberMe,
+                                              activeColor: colorScheme.primary,
+                                              onChanged: (value) {
+                                                setState(() => _rememberMe = value ?? false);
+                                              },
+                                              materialTapTargetSize:
+                                                  MaterialTapTargetSize.shrinkWrap,
+                                              visualDensity: VisualDensity.compact,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                            ),
+                                          ),
+                                          const Gap(Spacing.sm),
+                                          Text(
+                                            'Remember me',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 13,
+                                              color: colorScheme.onSurfaceVariant,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    TextButton(
+                                      onPressed: () =>
+                                          GoRouter.of(context).push('/forgot-password'),
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: Spacing.sm,
+                                          vertical: Spacing.xs,
+                                        ),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      ),
+                                      child: Text(
+                                        'Forgot password?',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: colorScheme.primary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+
+                              const Gap(Spacing.lg),
+
+                              // Submit button
+                              VersoGradientButton(
+                                label: _isSignUp ? 'Create Account' : 'Sign In',
+                                isLoading: _isLoading,
+                                onPressed: _submit,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const Gap(Spacing.lg),
+
+                      // Toggle sign up / sign in
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _isSignUp ? 'Already have an account?' : 'New to Verso?',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: _toggleMode,
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: Spacing.sm),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: Text(
+                              _isSignUp ? 'Sign In' : 'Create Account',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-
-                const Gap(24),
-
-                // Submit Button
-                FilledButton(
-                  onPressed: _isLoading ? null : _submit,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(_isSignUp ? 'Sign Up' : 'Log In'),
                 ),
-                const Gap(16),
-
-                // Toggle Button
-                TextButton(
-                  onPressed: () => setState(() => _isSignUp = !_isSignUp),
-                  child: Text(_isSignUp
-                      ? 'Already have an account? Log In'
-                      : 'New to Verso? Create Account'),
-                ),
-              ],
+              ),
             ),
           ),
         ),

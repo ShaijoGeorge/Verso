@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:gap/gap.dart';
+import '../../settings/data/settings_repository.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -31,18 +32,35 @@ class _SplashScreenState extends State<SplashScreen> {
     }
   }
 
-  void _startTimer() {
-    // Show splash for 3 seconds, then decide where to go
-    Timer(const Duration(seconds: 3), () {
-      if (!mounted) return;
+  void _startTimer() async {
+    // Define our two tasks
+    final minimumDelay = Future.delayed(const Duration(milliseconds: 1500));
+    final checkOnboarding = SettingsRepository().hasSeenOnboarding();
+
+    // Run them simultaneously and wait for BOTH to finish
+    // We capture the result of the onboarding check (the second future)
+    final results = await Future.wait([
+      minimumDelay,
+      checkOnboarding,
+    ]);
+
+    // Extract the boolean result
+    final hasSeenOnboarding = results[1] as bool;
+
+    // Perform our routing
+    if (!mounted) return;
       
-      final session = Supabase.instance.client.auth.currentSession;
-      if (session != null) {
-        context.go('/home');
-      } else {
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session != null) {
+      context.go('/home');
+    } else {
+      // Logged out -> Check if they've seen onboarding
+      if (hasSeenOnboarding) {
         context.go('/login');
+      } else {
+        context.go('/onboarding');
       }
-    });
+    }
   }
 
   @override

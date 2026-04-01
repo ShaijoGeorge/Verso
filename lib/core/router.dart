@@ -19,6 +19,7 @@ import '../features/stats/screens/detailed_stats_screen.dart';
 import '../features/stats/screens/activity_analytics_screen.dart';
 import '../features/intro/screens/splash_screen.dart';
 import '../features/stats/screens/activity_log_screen.dart';
+import '../features/intro/screens/onboarding_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   // Listen to the Supabase Auth Stream directly
@@ -64,6 +65,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isUpdatePasswordRoute = cleanPath == '/update-password';
       final isResetCallback = cleanPath == '/reset-callback';
 
+      final isOnboardingRoute = cleanPath == '/onboarding';
+
       // Allow Splash Screen to stay
       if (isSplash) {
         return null; 
@@ -71,16 +74,16 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // IF NOT LOGGED IN
       if (!isLoggedIn) {
-        // Allow access to auth pages AND the reset callback
-        if (!isLoginRoute && !isForgotRoute && !isUpdatePasswordRoute && !isResetCallback) {
+        // Allow access to /onboarding alongside the auth pages
+        if (!isLoginRoute && !isForgotRoute && !isUpdatePasswordRoute && !isResetCallback && !isOnboardingRoute) {
           return '/login';
         }
       }
 
       // IF LOGGED IN
       if (isLoggedIn) {
-        // If user is on an Auth page or the Callback page, send them Home
-        if (isLoginRoute || isForgotRoute || isResetCallback) {
+        // If they somehow navigate to /onboarding while logged in, send them Home
+        if (isLoginRoute || isForgotRoute || isResetCallback || isOnboardingRoute) {
           return '/home';
         }
       }
@@ -91,6 +94,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/',
         builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
         path: '/login',
