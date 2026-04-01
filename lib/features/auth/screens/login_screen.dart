@@ -6,9 +6,13 @@ import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_providers.dart';
 import '../../../core/utils/app_error_handler.dart';
 import '../../../core/design/components/verso_snackbar.dart';
-import '../../../core/design/tokens/colors.dart';
+import '../../../core/design/components/verso_text_field.dart';
+import '../../../core/design/components/verso_gradient_button.dart';
+import '../../../core/design/components/verso_header_icon.dart';
+import '../../../core/design/components/verso_auth_gradient.dart';
 import '../../../core/design/tokens/spacing.dart';
 import '../../../core/design/tokens/radii.dart';
+import '../../../core/design/tokens/colors.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -147,24 +151,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [
-                    const Color(0xFF0F2640),
-                    AppColors.backgroundDark,
-                    const Color(0xFF0D0D0F),
-                  ]
-                : [
-                    const Color(0xFFD6E8F5),
-                    AppColors.backgroundLight,
-                    const Color(0xFFF0F2F5),
-                  ],
-            stops: const [0.0, 0.4, 1.0],
-          ),
-        ),
+        decoration: BoxDecoration(gradient: VersoAuthGradient.of(context)),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -177,7 +164,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // Logo and branding
-                      _BrandHeader(isDark: isDark, colorScheme: colorScheme),
+                      Column(
+                        children: [
+                          const VersoHeaderIcon(
+                            icon: Icons.auto_stories_rounded,
+                            iconSize: 36,
+                          ),
+                          const Gap(Spacing.md),
+                          Text(
+                            'Verso',
+                            style: GoogleFonts.dmSerifDisplay(
+                              fontSize: 32,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                        ],
+                      ),
                       const Gap(Spacing.xxl),
 
                       // Form card
@@ -241,7 +243,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 child: _isSignUp
                                     ? Column(
                                         children: [
-                                          _StyledTextField(
+                                          VersoTextField(
                                             controller: _nameController,
                                             label: 'Full Name',
                                             icon: Icons.person_outline_rounded,
@@ -256,7 +258,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               ),
 
                               // Email
-                              _StyledTextField(
+                              VersoTextField(
                                 controller: _emailController,
                                 label: 'Email',
                                 icon: Icons.mail_outline_rounded,
@@ -268,7 +270,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               const Gap(Spacing.md),
 
                               // Password
-                              _StyledTextField(
+                              VersoTextField(
                                 controller: _passwordController,
                                 label: 'Password',
                                 icon: Icons.lock_outline_rounded,
@@ -329,7 +331,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                       ),
                                     ),
                                     TextButton(
-                                      onPressed: () => GoRouter.of(context).push('/forgot-password'),
+                                      onPressed: () =>
+                                          GoRouter.of(context).push('/forgot-password'),
                                       style: TextButton.styleFrom(
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: Spacing.sm,
@@ -354,7 +357,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               const Gap(Spacing.lg),
 
                               // Submit button
-                              _PrimaryButton(
+                              VersoGradientButton(
                                 label: _isSignUp ? 'Create Account' : 'Sign In',
                                 isLoading: _isLoading,
                                 onPressed: _submit,
@@ -400,216 +403,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 ),
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// Brand header with icon and app name
-
-class _BrandHeader extends StatelessWidget {
-  final bool isDark;
-  final ColorScheme colorScheme;
-
-  const _BrandHeader({required this.isDark, required this.colorScheme});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDark
-                  ? [const Color(0xFF7EB8E0), const Color(0xFF4A8BBF)]
-                  : [const Color(0xFF1B3A5C), const Color(0xFF2A5580)],
-            ),
-            borderRadius: AppRadii.borderRadiusXL,
-            boxShadow: [
-              BoxShadow(
-                color: (isDark ? const Color(0xFF7EB8E0) : const Color(0xFF1B3A5C))
-                    .withValues(alpha: 0.3),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: const Icon(
-            Icons.auto_stories_rounded,
-            size: 36,
-            color: Colors.white,
-          ),
-        ),
-        const Gap(Spacing.md),
-        Text(
-          'Verso',
-          style: GoogleFonts.dmSerifDisplay(
-            fontSize: 32,
-            color: colorScheme.onSurface,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// Styled text field with consistent design
-
-class _StyledTextField extends StatelessWidget {
-  final TextEditingController controller;
-  final String label;
-  final IconData icon;
-  final TextInputType? keyboardType;
-  final bool autocorrect;
-  final bool obscureText;
-  final TextCapitalization textCapitalization;
-  final Widget? suffixIcon;
-  final String? Function(String?)? validator;
-
-  const _StyledTextField({
-    required this.controller,
-    required this.label,
-    required this.icon,
-    this.keyboardType,
-    this.autocorrect = true,
-    this.obscureText = false,
-    this.textCapitalization = TextCapitalization.none,
-    this.suffixIcon,
-    this.validator,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      autocorrect: autocorrect,
-      obscureText: obscureText,
-      textCapitalization: textCapitalization,
-      style: GoogleFonts.plusJakartaSans(
-        fontSize: 15,
-        color: colorScheme.onSurface,
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: GoogleFonts.plusJakartaSans(
-          fontSize: 14,
-          color: colorScheme.onSurfaceVariant,
-        ),
-        prefixIcon: Icon(icon, size: 20, color: colorScheme.onSurfaceVariant),
-        suffixIcon: suffixIcon,
-        filled: true,
-        fillColor: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : colorScheme.primary.withValues(alpha: 0.04),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: Spacing.md,
-          vertical: Spacing.md,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: AppRadii.borderRadiusMD,
-          borderSide: BorderSide(
-            color: colorScheme.outline.withValues(alpha: 0.3),
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: AppRadii.borderRadiusMD,
-          borderSide: BorderSide(
-            color: colorScheme.outline.withValues(alpha: isDark ? 0.15 : 0.3),
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: AppRadii.borderRadiusMD,
-          borderSide: BorderSide(
-            color: colorScheme.primary,
-            width: 1.5,
-          ),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: AppRadii.borderRadiusMD,
-          borderSide: BorderSide(color: colorScheme.error),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: AppRadii.borderRadiusMD,
-          borderSide: BorderSide(color: colorScheme.error, width: 1.5),
-        ),
-      ),
-      validator: validator,
-    );
-  }
-}
-
-// Primary CTA button
-
-class _PrimaryButton extends StatelessWidget {
-  final String label;
-  final bool isLoading;
-  final VoidCallback onPressed;
-
-  const _PrimaryButton({
-    required this.label,
-    required this.isLoading,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = isDark ? const Color(0xFF7EB8E0) : const Color(0xFF1B3A5C);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: isLoading ? null : onPressed,
-        borderRadius: AppRadii.borderRadiusMD,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          height: 54,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: isLoading
-                  ? [primary.withValues(alpha: 0.6), primary.withValues(alpha: 0.5)]
-                  : [primary, primary.withValues(alpha: 0.85)],
-            ),
-            borderRadius: AppRadii.borderRadiusMD,
-            boxShadow: isLoading
-                ? []
-                : [
-                    BoxShadow(
-                      color: primary.withValues(alpha: 0.3),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-          ),
-          child: Center(
-            child: isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: Colors.white,
-                    ),
-                  )
-                : Text(
-                    label,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
           ),
         ),
       ),

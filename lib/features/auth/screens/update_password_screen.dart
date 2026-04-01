@@ -7,6 +7,10 @@ import '../providers/auth_providers.dart';
 import '../../../core/widgets/confirmation_view.dart';
 import '../../../core/utils/app_error_handler.dart';
 import '../../../core/design/components/verso_snackbar.dart';
+import '../../../core/design/components/verso_text_field.dart';
+import '../../../core/design/components/verso_gradient_button.dart';
+import '../../../core/design/components/verso_header_icon.dart';
+import '../../../core/design/components/verso_auth_gradient.dart';
 import '../../../core/design/tokens/colors.dart';
 import '../../../core/design/tokens/spacing.dart';
 import '../../../core/design/tokens/radii.dart';
@@ -95,16 +99,7 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen>
 
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [const Color(0xFF0F2640), AppColors.backgroundDark, const Color(0xFF0D0D0F)]
-                : [const Color(0xFFD6E8F5), AppColors.backgroundLight, const Color(0xFFF0F2F5)],
-            stops: const [0.0, 0.4, 1.0],
-          ),
-        ),
+        decoration: BoxDecoration(gradient: VersoAuthGradient.of(context)),
         child: SafeArea(
           child: _isSuccess
               ? ConfirmationView(
@@ -117,7 +112,6 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen>
                 )
               : Column(
                   children: [
-                    // Custom app bar
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: Spacing.sm,
@@ -135,7 +129,6 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen>
                         ],
                       ),
                     ),
-
                     Expanded(
                       child: Center(
                         child: SingleChildScrollView(
@@ -146,13 +139,8 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen>
                               position: _slideUp,
                               child: Column(
                                 children: [
-                                  // Icon
-                                  _HeaderIcon(
-                                    icon: Icons.shield_outlined,
-                                    isDark: isDark,
-                                  ),
+                                  const VersoHeaderIcon(icon: Icons.shield_outlined),
                                   const Gap(Spacing.lg),
-
                                   Text(
                                     'Set New Password',
                                     style: GoogleFonts.dmSerifDisplay(
@@ -196,27 +184,47 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen>
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.stretch,
                                       children: [
-                                        _StyledPasswordField(
+                                        VersoTextField(
                                           controller: _passwordController,
                                           label: 'New Password',
-                                          isVisible: _isPasswordVisible,
-                                          onToggle: () {
-                                            setState(() =>
-                                                _isPasswordVisible = !_isPasswordVisible);
-                                          },
+                                          icon: Icons.lock_outline_rounded,
+                                          obscureText: !_isPasswordVisible,
+                                          suffixIcon: IconButton(
+                                            icon: Icon(
+                                              _isPasswordVisible
+                                                  ? Icons.visibility_outlined
+                                                  : Icons.visibility_off_outlined,
+                                              size: 20,
+                                              color: colorScheme.onSurfaceVariant,
+                                            ),
+                                            onPressed: () {
+                                              setState(() =>
+                                                  _isPasswordVisible = !_isPasswordVisible);
+                                            },
+                                          ),
                                         ),
                                         const Gap(Spacing.md),
-                                        _StyledPasswordField(
+                                        VersoTextField(
                                           controller: _confirmPasswordController,
                                           label: 'Confirm Password',
-                                          isVisible: _isConfirmVisible,
-                                          onToggle: () {
-                                            setState(
-                                                () => _isConfirmVisible = !_isConfirmVisible);
-                                          },
+                                          icon: Icons.lock_outline_rounded,
+                                          obscureText: !_isConfirmVisible,
+                                          suffixIcon: IconButton(
+                                            icon: Icon(
+                                              _isConfirmVisible
+                                                  ? Icons.visibility_outlined
+                                                  : Icons.visibility_off_outlined,
+                                              size: 20,
+                                              color: colorScheme.onSurfaceVariant,
+                                            ),
+                                            onPressed: () {
+                                              setState(
+                                                  () => _isConfirmVisible = !_isConfirmVisible);
+                                            },
+                                          ),
                                         ),
                                         const Gap(Spacing.lg),
-                                        _PrimaryButton(
+                                        VersoGradientButton(
                                           label: 'Update Password',
                                           isLoading: _isLoading,
                                           onPressed: _updatePassword,
@@ -233,162 +241,6 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen>
                     ),
                   ],
                 ),
-        ),
-      ),
-    );
-  }
-}
-
-// Shared styled widgets
-
-class _HeaderIcon extends StatelessWidget {
-  final IconData icon;
-  final bool isDark;
-
-  const _HeaderIcon({required this.icon, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 72,
-      height: 72,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [const Color(0xFF7EB8E0), const Color(0xFF4A8BBF)]
-              : [const Color(0xFF1B3A5C), const Color(0xFF2A5580)],
-        ),
-        borderRadius: AppRadii.borderRadiusXL,
-        boxShadow: [
-          BoxShadow(
-            color: (isDark ? const Color(0xFF7EB8E0) : const Color(0xFF1B3A5C))
-                .withValues(alpha: 0.3),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Icon(icon, size: 32, color: Colors.white),
-    );
-  }
-}
-
-class _StyledPasswordField extends StatelessWidget {
-  final TextEditingController controller;
-  final String label;
-  final bool isVisible;
-  final VoidCallback onToggle;
-
-  const _StyledPasswordField({
-    required this.controller,
-    required this.label,
-    required this.isVisible,
-    required this.onToggle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return TextField(
-      controller: controller,
-      obscureText: !isVisible,
-      style: GoogleFonts.plusJakartaSans(fontSize: 15, color: colorScheme.onSurface),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: GoogleFonts.plusJakartaSans(fontSize: 14, color: colorScheme.onSurfaceVariant),
-        prefixIcon: Icon(Icons.lock_outline_rounded, size: 20, color: colorScheme.onSurfaceVariant),
-        suffixIcon: IconButton(
-          icon: Icon(
-            isVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-            size: 20,
-            color: colorScheme.onSurfaceVariant,
-          ),
-          onPressed: onToggle,
-        ),
-        filled: true,
-        fillColor: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : colorScheme.primary.withValues(alpha: 0.04),
-        contentPadding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: Spacing.md),
-        border: OutlineInputBorder(
-          borderRadius: AppRadii.borderRadiusMD,
-          borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: AppRadii.borderRadiusMD,
-          borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: isDark ? 0.15 : 0.3)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: AppRadii.borderRadiusMD,
-          borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
-        ),
-      ),
-    );
-  }
-}
-
-class _PrimaryButton extends StatelessWidget {
-  final String label;
-  final bool isLoading;
-  final VoidCallback onPressed;
-
-  const _PrimaryButton({
-    required this.label,
-    required this.isLoading,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = isDark ? const Color(0xFF7EB8E0) : const Color(0xFF1B3A5C);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: isLoading ? null : onPressed,
-        borderRadius: AppRadii.borderRadiusMD,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          height: 54,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: isLoading
-                  ? [primary.withValues(alpha: 0.6), primary.withValues(alpha: 0.5)]
-                  : [primary, primary.withValues(alpha: 0.85)],
-            ),
-            borderRadius: AppRadii.borderRadiusMD,
-            boxShadow: isLoading
-                ? []
-                : [
-                    BoxShadow(
-                      color: primary.withValues(alpha: 0.3),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-          ),
-          child: Center(
-            child: isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                  )
-                : Text(
-                    label,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-          ),
         ),
       ),
     );
