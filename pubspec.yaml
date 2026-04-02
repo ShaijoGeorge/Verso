@@ -15,7 +15,6 @@ dependencies:
   # --- UI & Design ---
   cupertino_icons: ^1.0.8
   google_fonts: ^8.0.2          # Beautiful typography
-  dashed_circular_progress_bar: ^0.0.6
   fl_chart: ^1.1.1             # For detailed graphs/stats
   gap: ^3.0.0                   # Easier spacing than SizedBox
 
