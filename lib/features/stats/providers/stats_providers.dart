@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../reading/providers/reading_providers.dart';
 import '../../../data/local/entities/reading_progress.dart';

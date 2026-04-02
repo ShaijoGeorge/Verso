@@ -120,7 +120,7 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
     final pass = _passwordController.text.trim();
 
     if (email.isEmpty || !email.contains('@') || pass.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Invalid input")));
+      VersoSnackbar.error(context, message: "Invalid input");
       return;
     }
 
@@ -134,9 +134,7 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
       
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("Check your email (both old and new) to confirm."),
-        ));
+        VersoSnackbar.success(context, message: "Check your email (both old and new) to confirm.");
       }
     } catch (e) {
       if (mounted) {
@@ -242,11 +240,11 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
     final confirmPass = _confirmPassController.text.trim();
 
     if (newPass.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("New password is too short")));
+      VersoSnackbar.error(context, message: "New password is too short");
       return;
     }
     if (newPass != confirmPass) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Passwords do not match")));
+      VersoSnackbar.error(context, message: "Passwords do not match");
       return;
     }
 
@@ -260,7 +258,7 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
 
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Password updated successfully!")));
+        VersoSnackbar.success(context, message: "Password updated successfully!");
       }
     } catch (e) {
       if (mounted) {

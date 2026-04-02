@@ -66,8 +66,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         );
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Reminder set for ${_formatTime(picked.hour, picked.minute)}')),
+          VersoSnackbar.success(
+            context,
+            message: 'Reminder set for ${_formatTime(picked.hour, picked.minute)}',
           );
         }
       } catch (e) {
@@ -167,9 +168,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       );
                       
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Daily reminder enabled')),
-                        );
+                        VersoSnackbar.success(context, message: 'Daily reminder enabled');
                       }
                     } else {
                       await NotificationService().cancelReminders();

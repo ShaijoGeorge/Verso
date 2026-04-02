@@ -86,9 +86,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           _nameController.text.trim(),
         );
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Account created! Please Log In.')),
-          );
+          VersoSnackbar.success(context, message: 'Account created! Please Log In.');
           setState(() => _isSignUp = false);
         }
       } else {
