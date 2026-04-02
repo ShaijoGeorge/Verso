@@ -13,7 +13,6 @@ dependencies:
   flutter_dotenv: ^6.0.0
 
   # --- UI & Design ---
-  cupertino_icons: ^1.0.8
   google_fonts: ^8.0.2          # Beautiful typography
   fl_chart: ^1.1.1             # For detailed graphs/stats
   gap: ^3.0.0                   # Easier spacing than SizedBox
