@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/bible_data.dart';
 import '../providers/reading_providers.dart';
 import '../services/reading_service.dart';
-import '../../stats/providers/stats_providers.dart';
 import '../../../core/widgets/error_state_widget.dart';
-import '../../../core/utils/app_error_handler.dart'; // Make sure this import is correct
+import '../../../core/utils/app_error_handler.dart';
+import '../../../core/design/components/verso_snackbar.dart';
 
 // Convert to ConsumerStatefulWidget to track loading state
 class ChaptersScreen extends ConsumerStatefulWidget {
@@ -78,16 +78,13 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
                             widget.book.id, widget.book.chapters);
 
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Marked as read!')),
-                          );
+                          VersoSnackbar.success(context, message: 'Marked as read!');
                         }
                       } catch (e) {
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text(
-                                    'Failed: ${AppErrorHandler.getMessage(e)}')),
+                          VersoSnackbar.error(
+                            context,
+                            message: 'Failed: ${AppErrorHandler.getMessage(e)}',
                           );
                         }
                       } finally {

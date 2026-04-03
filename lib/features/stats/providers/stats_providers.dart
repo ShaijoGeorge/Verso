@@ -1,7 +1,7 @@
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../reading/providers/reading_providers.dart';
 import '../../../data/local/entities/reading_progress.dart';
+import '../../../data/bible_data.dart';
 
 part 'stats_providers.g.dart';
 
@@ -10,11 +10,13 @@ part 'stats_providers.g.dart';
 class UserStats {
   final int streak;
   final int totalChaptersRead;
+  final int booksCompleted;
   final double totalProgress;
 
   UserStats({
     required this.streak,
     required this.totalChaptersRead,
+    required this.booksCompleted,
     required this.totalProgress,
   });
 }
@@ -60,9 +62,25 @@ Future<UserStats> userStats(Ref ref) async {
   // Watch the global stream's latest data
   final history = await ref.watch(globalProgressProvider.future);
   
-  final totalRead = history.where((p) => p.isRead).length;
+  final readHistory = history.where((p) => p.isRead).toList();
+  final totalRead = readHistory.length;
   final streak = _calculateStreak(history);
   
+  // Calculate Books Completed
+  int completedBooksCount = 0;
+  final Map<int, Set<int>> readChaptersByBook = {};
+  for (final progress in readHistory) {
+    readChaptersByBook.putIfAbsent(progress.bookId, () => <int>{});
+    readChaptersByBook[progress.bookId]!.add(progress.chapterNumber);
+  }
+
+  for (final book in kBibleBooks) {
+    final readCount = readChaptersByBook[book.id]?.length ?? 0;
+    if (readCount >= book.chapters) {
+      completedBooksCount++;
+    }
+  }
+
   const totalChaptersInBible = 1334;
   final progress =
       totalChaptersInBible > 0 ? (totalRead / totalChaptersInBible) * 100 : 0.0;
@@ -70,6 +88,7 @@ Future<UserStats> userStats(Ref ref) async {
   return UserStats(
     streak: streak,
     totalChaptersRead: totalRead,
+    booksCompleted: completedBooksCount,
     totalProgress: progress,
   );
 }
@@ -78,6 +97,8 @@ class DetailedStats {
   final int otRead;
   final int ntRead;
   final int totalRead;
+  final int otBooksCompleted;
+  final int ntBooksCompleted;
   final double otProgress;
   final double ntProgress;
   final double totalProgress;
@@ -92,6 +113,8 @@ class DetailedStats {
     required this.otRead,
     required this.ntRead,
     required this.totalRead,
+    required this.otBooksCompleted,
+    required this.ntBooksCompleted,
     required this.otProgress,
     required this.ntProgress,
     required this.totalProgress,
@@ -116,6 +139,26 @@ Future<DetailedStats> detailedStats(Ref ref) async {
   final otRead = readHistory.where((p) => p.bookId <= 39).length;
   final ntRead = readHistory.where((p) => p.bookId >= 40).length;
   final totalRead = readHistory.length;
+
+  // Calculate Books Completed for OT/NT
+  int otBooksCompleted = 0;
+  int ntBooksCompleted = 0;
+  final Map<int, Set<int>> readChaptersByBook = {};
+  for (final progress in readHistory) {
+    readChaptersByBook.putIfAbsent(progress.bookId, () => <int>{});
+    readChaptersByBook[progress.bookId]!.add(progress.chapterNumber);
+  }
+
+  for (final book in kBibleBooks) {
+    final readCount = readChaptersByBook[book.id]?.length ?? 0;
+    if (readCount >= book.chapters) {
+      if (book.testament == Testament.old) {
+        otBooksCompleted++;
+      } else {
+        ntBooksCompleted++;
+      }
+    }
+  }
 
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
@@ -164,6 +207,8 @@ Future<DetailedStats> detailedStats(Ref ref) async {
     otRead: otRead,
     ntRead: ntRead,
     totalRead: totalRead,
+    otBooksCompleted: otBooksCompleted,
+    ntBooksCompleted: ntBooksCompleted,
     otProgress: otRead / totalOT,
     ntProgress: ntRead / totalNT,
     totalProgress: totalRead / totalBible,

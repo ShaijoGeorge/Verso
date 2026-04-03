@@ -1,4 +1,4 @@
-import 'package:dashed_circular_progress_bar/dashed_circular_progress_bar.dart';
+import '../../../core/design/components/verso_circular_progress.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -39,51 +39,40 @@ class StatsScreen extends ConsumerWidget {
                   // Navigate to Detailed Stats
                       context.push('/detailed-stats');
                     },
-                    child: SizedBox(
-                      width: 220,
-                      height: 220,
-                      child: DashedCircularProgressBar.aspectRatio(
-                        aspectRatio: 1,
-                        // Pass the animated value to the notifier
-                        valueNotifier: ValueNotifier(animatedProgress),
-                        progress: animatedProgress,
-                        maxProgress: 100,
-                        corners: StrokeCap.butt,
-                        foregroundColor: Theme.of(context).colorScheme.primary,
-                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        foregroundStrokeWidth: 15,
-                        backgroundStrokeWidth: 15,
-                        animation: false, // we using Tween
-                        child: Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '${animatedProgress.toStringAsFixed(1)}%',
-                                style: const TextStyle(
-                                  fontSize: 40,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                'Bible Completed',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                              const Gap(8),
-                              Text(
-                                'Tap for details',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
+                    child: VersoCircularProgress(
+                      progress: animatedProgress,
+                      maxProgress: 100,
+                      size: 220,
+                      strokeWidth: 15,
+                      color: Theme.of(context).colorScheme.primary,
+                      trackColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${animatedProgress.toStringAsFixed(1)}%',
+                            style: const TextStyle(
+                              fontSize: 40,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
+                          Text(
+                            'Bible Completed',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const Gap(8),
+                          Text(
+                            'Tap for details',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   );
@@ -94,10 +83,9 @@ class StatsScreen extends ConsumerWidget {
               // ANIMATED STAT CARDS
               Row(
                 children: [
-                  // Streak Card (Counts up from 0)
+                  // Streak Card
                   Expanded(
                     child: TweenAnimationBuilder<int>(
-                      // Forces restart
                       key: ValueKey("streak_${stats.streak}"),
                       tween: IntTween(begin: 0, end: stats.streak),
                       duration: const Duration(milliseconds: 1500),
@@ -112,12 +100,11 @@ class StatsScreen extends ConsumerWidget {
                       },
                     ),
                   ),
-                  const Gap(16),
+                  const Gap(12),
                   
-                  // Chapters Read Card (Counts up from 0)
+                  // Chapters Read Card
                   Expanded(
                     child: TweenAnimationBuilder<int>(
-                      // Forces restart
                       key: ValueKey("chapters_${stats.totalChaptersRead}"),
                       tween: IntTween(begin: 0, end: stats.totalChaptersRead),
                       duration: const Duration(milliseconds: 1500),
@@ -126,8 +113,27 @@ class StatsScreen extends ConsumerWidget {
                         return _StatCard(
                           icon: Icons.auto_stories,
                           iconColor: Colors.blue,
-                          label: "Chapters Read",
+                          label: "Chapters",
                           value: "$animatedChapters",
+                        );
+                      },
+                    ),
+                  ),
+                  const Gap(12),
+
+                  // Books Finished Card
+                  Expanded(
+                    child: TweenAnimationBuilder<int>(
+                      key: ValueKey("books_${stats.booksCompleted}"),
+                      tween: IntTween(begin: 0, end: stats.booksCompleted),
+                      duration: const Duration(milliseconds: 1500),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, animatedBooks, _) {
+                        return _StatCard(
+                          icon: Icons.emoji_events,
+                          iconColor: Colors.amber,
+                          label: "Books",
+                          value: "$animatedBooks / 73",
                         );
                       },
                     ),
