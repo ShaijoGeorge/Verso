@@ -83,10 +83,9 @@ class StatsScreen extends ConsumerWidget {
               // ANIMATED STAT CARDS
               Row(
                 children: [
-                  // Streak Card (Counts up from 0)
+                  // Streak Card
                   Expanded(
                     child: TweenAnimationBuilder<int>(
-                      // Forces restart
                       key: ValueKey("streak_${stats.streak}"),
                       tween: IntTween(begin: 0, end: stats.streak),
                       duration: const Duration(milliseconds: 1500),
@@ -101,12 +100,11 @@ class StatsScreen extends ConsumerWidget {
                       },
                     ),
                   ),
-                  const Gap(16),
+                  const Gap(12),
                   
-                  // Chapters Read Card (Counts up from 0)
+                  // Chapters Read Card
                   Expanded(
                     child: TweenAnimationBuilder<int>(
-                      // Forces restart
                       key: ValueKey("chapters_${stats.totalChaptersRead}"),
                       tween: IntTween(begin: 0, end: stats.totalChaptersRead),
                       duration: const Duration(milliseconds: 1500),
@@ -115,8 +113,27 @@ class StatsScreen extends ConsumerWidget {
                         return _StatCard(
                           icon: Icons.auto_stories,
                           iconColor: Colors.blue,
-                          label: "Chapters Read",
+                          label: "Chapters",
                           value: "$animatedChapters",
+                        );
+                      },
+                    ),
+                  ),
+                  const Gap(12),
+
+                  // Books Finished Card
+                  Expanded(
+                    child: TweenAnimationBuilder<int>(
+                      key: ValueKey("books_${stats.booksCompleted}"),
+                      tween: IntTween(begin: 0, end: stats.booksCompleted),
+                      duration: const Duration(milliseconds: 1500),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, animatedBooks, _) {
+                        return _StatCard(
+                          icon: Icons.emoji_events,
+                          iconColor: Colors.amber,
+                          label: "Books",
+                          value: "$animatedBooks / 73",
                         );
                       },
                     ),
