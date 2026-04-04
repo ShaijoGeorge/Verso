@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/widgets/profile_drawer.dart';
 import '../../features/stats/providers/stats_providers.dart';
+import '../../features/stats/providers/activity_providers.dart';
 import '../../features/reading/providers/reading_providers.dart';
 import '../providers/connectivity_provider.dart';
 
@@ -21,15 +22,21 @@ class MainWrapper extends ConsumerStatefulWidget {
 class _MainWrapperState extends ConsumerState<MainWrapper> {
 
   void _goBranch(int index) {
-
-    // Home Page Animation Trigger (Eliminated provider, using invalidation)
-    if (index == 1 && widget.navigationShell.currentIndex != 1) {
+    // 0 = Home, 1 = Bible, 2 = Journal
+    
+    // Home Page Animation Trigger
+    if (index == 0 && widget.navigationShell.currentIndex != 0) {
       ref.invalidate(userStatsProvider);
     }
 
-    // Bible Pages Animation Trigger (New @riverpod notifier)
-    if ((index == 0 || index == 2) && widget.navigationShell.currentIndex != index) {
+    // Bible Pages Animation Trigger
+    if (index == 1 && widget.navigationShell.currentIndex != 1) {
       ref.read(biblePageTriggerProvider.notifier).increment();
+    }
+    
+    // Journal Trigger (Optional, but good for fresh data)
+    if (index == 2 && widget.navigationShell.currentIndex != 2) {
+      ref.invalidate(activityLogProvider);
     }
 
     widget.navigationShell.goBranch(
@@ -44,9 +51,9 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
 
     String title;
     switch (widget.navigationShell.currentIndex) {
-      case 0: title = 'Old Testament'; break;
-      case 1: title = 'Verso'; break;
-      case 2: title = 'New Testament'; break;
+      case 0: title = 'Verso'; break;
+      case 1: title = 'The Bible'; break;
+      case 2: title = 'Reading Journal'; break;
       default: title = 'Verso';
     }
 
@@ -55,14 +62,7 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
         title: Text(title),
         centerTitle: true,
 
-        actions: [
-          if (widget.navigationShell.currentIndex == 1) // Only show on Home tab
-            IconButton(
-              icon: const Icon(Icons.history),
-              tooltip: 'Reading Journal',
-              onPressed: () => context.push('/activity-log'),
-            ),
-        ],
+        actions: const [],
       ),
       drawer: const ProfileDrawer(),
       body: Column(
@@ -110,19 +110,19 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
         onDestinationSelected: _goBranch,
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.book_outlined),
-            selectedIcon: Icon(Icons.book),
-            label: 'Old Testament',
-          ),
-          NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
             label: 'Home',
           ),
           NavigationDestination(
-            icon: Icon(Icons.auto_stories_outlined),
-            selectedIcon: Icon(Icons.auto_stories),
-            label: 'New Testament',
+            icon: Icon(Icons.menu_book_outlined),
+            selectedIcon: Icon(Icons.book),
+            label: 'Bible',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.history_edu_outlined),
+            selectedIcon: Icon(Icons.history_edu),
+            label: 'Journal',
           ),
         ],
       ),
