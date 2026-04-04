@@ -9,6 +9,7 @@ import '../../../core/design/components/verso_progress_bar.dart';
 import '../../../core/design/components/verso_section_header.dart';
 import '../../../core/design/tokens/spacing.dart';
 import '../../../core/design/tokens/radii.dart';
+import '../../../core/design/tokens/colors.dart';
 import '../../../core/design/tokens/shadows.dart';
 import '../../../core/widgets/error_state_widget.dart';
 import '../../stats/providers/stats_providers.dart';
@@ -348,10 +349,10 @@ class _QuickStatsRow extends StatelessWidget {
             icon: Icons.local_fire_department_rounded,
             value: '${stats.streak}',
             label: 'Day Streak',
-            iconColor: isLight ? const Color(0xFFE65100) : const Color(0xFFFF9800),
+            iconColor: isLight ? AppColors.otColorLight : AppColors.otColorDark,
             bgColor: isLight
-                ? const Color(0xFFFFF3E0)
-                : const Color(0xFFE65100).withValues(alpha: 0.15),
+                ? AppColors.otColorLight.withValues(alpha: 0.08)
+                : AppColors.otColorLight.withValues(alpha: 0.15),
           ),
         ),
         const Gap(Spacing.sm),
@@ -372,10 +373,10 @@ class _QuickStatsRow extends StatelessWidget {
             icon: Icons.emoji_events_rounded,
             value: '${stats.booksCompleted}',
             label: 'Books Done',
-            iconColor: isLight ? const Color(0xFFC4973B) : const Color(0xFFA8864A),
+            iconColor: scheme.secondary,
             bgColor: isLight
-                ? const Color(0xFFFFF8E1)
-                : const Color(0xFFC4973B).withValues(alpha: 0.15),
+                ? scheme.secondaryContainer
+                : scheme.secondary.withValues(alpha: 0.15),
           ),
         ),
       ],
@@ -582,21 +583,24 @@ class _ContinueReadingCard extends StatelessWidget {
       child: Row(
         children: [
           // Book icon with testament color
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: (isOT
-                      ? const Color(0xFFE65100)
-                      : const Color(0xFF1565C0))
-                  .withValues(alpha: 0.1),
-              borderRadius: AppRadii.borderRadiusMD,
-            ),
-            child: Icon(
-              Icons.menu_book_rounded,
-              color: isOT ? const Color(0xFFE65100) : const Color(0xFF1565C0),
-              size: 28,
-            ),
-          ),
+          Builder(builder: (context) {
+            final isLight = Theme.of(context).brightness == Brightness.light;
+            final testamentColor = isOT
+                ? (isLight ? AppColors.otColorLight : AppColors.otColorDark)
+                : (isLight ? AppColors.ntColorLight : AppColors.ntColorDark);
+            return Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: testamentColor.withValues(alpha: 0.1),
+                borderRadius: AppRadii.borderRadiusMD,
+              ),
+              child: Icon(
+                Icons.menu_book_rounded,
+                color: testamentColor,
+                size: 28,
+              ),
+            );
+          }),
           const Gap(Spacing.md),
 
           // Book info
@@ -619,7 +623,11 @@ class _ContinueReadingCard extends StatelessWidget {
                 VersoProgressBar(
                   value: info.progress,
                   height: 6,
-                  color: isOT ? const Color(0xFFE65100) : const Color(0xFF1565C0),
+                  color: isOT
+                      ? (Theme.of(context).brightness == Brightness.light
+                          ? AppColors.otColorLight : AppColors.otColorDark)
+                      : (Theme.of(context).brightness == Brightness.light
+                          ? AppColors.ntColorLight : AppColors.ntColorDark),
                 ),
               ],
             ),
@@ -660,7 +668,7 @@ class _RecentActivityList extends StatelessWidget {
           child: VersoCard(
             border: isFinish
                 ? Border.all(
-                    color: const Color(0xFFC4973B).withValues(alpha: 0.4),
+                    color: scheme.secondary.withValues(alpha: 0.4),
                     width: 1.5,
                   )
                 : null,
@@ -671,7 +679,7 @@ class _RecentActivityList extends StatelessWidget {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: isFinish
-                        ? const Color(0xFFFFF8E1)
+                        ? scheme.secondaryContainer
                         : scheme.primaryContainer,
                     shape: BoxShape.circle,
                   ),
@@ -681,7 +689,7 @@ class _RecentActivityList extends StatelessWidget {
                         : Icons.auto_stories_rounded,
                     size: 18,
                     color: isFinish
-                        ? const Color(0xFFC4973B)
+                        ? scheme.secondary
                         : scheme.primary,
                   ),
                 ),
@@ -706,13 +714,13 @@ class _RecentActivityList extends StatelessWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFFF8E1),
+                                color: scheme.secondaryContainer,
                                 borderRadius: AppRadii.borderRadiusXS,
                               ),
                               child: Text(
                                 'Completed',
                                 style: textTheme.labelSmall?.copyWith(
-                                  color: const Color(0xFFC4973B),
+                                  color: scheme.secondary,
                                   fontSize: 10,
                                 ),
                               ),
