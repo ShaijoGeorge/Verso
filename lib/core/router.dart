@@ -15,7 +15,6 @@ import '../features/auth/screens/update_password_screen.dart';
 import '../features/auth/screens/profile_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
 import '../features/stats/screens/detailed_stats_screen.dart';
-import '../features/stats/screens/activity_analytics_screen.dart';
 import '../features/intro/screens/splash_screen.dart';
 import '../features/stats/screens/activity_log_screen.dart';
 import '../features/intro/screens/onboarding_screen.dart';
@@ -198,17 +197,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const DetailedStatsScreen(),
       ),
 
-      GoRoute(
-        path: '/detailed-activity',
-        parentNavigatorKey: rootNavigatorKey, // Covers the bottom bar
-        builder: (context, state) => const ActivityAnalyticsScreen(),
-      ),
-
-      GoRoute(
-        path: '/activity-log',
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const ActivityLogScreen(),
-      ),
     ],
   );
 });

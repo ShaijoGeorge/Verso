@@ -91,7 +91,7 @@ class HomeScreen extends ConsumerWidget {
                 VersoSectionHeader(
                   title: 'Recent Activity',
                   action: 'See All',
-                  onAction: () => context.push('/activity-log'),
+                  onAction: () => context.go('/journal'),
                 ),
                 const Gap(Spacing.md),
                 _RecentActivityList(
@@ -99,7 +99,8 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ],
 
-              const Gap(Spacing.xxl),
+              // Extra space so content isn't hidden behind the floating nav bar
+              const Gap(100),
             ],
           ),
         );
