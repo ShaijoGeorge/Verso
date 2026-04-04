@@ -419,138 +419,196 @@ class _ChapterTileState extends State<_ChapterTile>
     final textTheme = Theme.of(context).textTheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
     final isRead = widget.isRead;
+    final readAt = widget.readAt;
 
     showModalBottomSheet(
       context: context,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(AppRadii.xl),
-          topRight: Radius.circular(AppRadii.xl),
-        ),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(
-            Spacing.lg,
-            Spacing.sm,
-            Spacing.lg,
-            Spacing.lg,
+        return Container(
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            borderRadius: AppRadii.borderRadiusXL,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isLight ? 0.1 : 0.3),
+                blurRadius: 30,
+                offset: const Offset(0, -4),
+              ),
+            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Drag handle
+              // Top accent bar
               Container(
-                width: 36,
                 height: 4,
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
                 decoration: BoxDecoration(
-                  color: scheme.onSurfaceVariant.withValues(alpha: 0.3),
+                  color: scheme.onSurfaceVariant.withValues(alpha: 0.2),
                   borderRadius: AppRadii.borderRadiusFull,
                 ),
               ),
-              const Gap(Spacing.lg),
 
-              // Chapter icon with status ring
+              // Header with gradient
               Container(
-                padding: const EdgeInsets.all(16),
+                width: double.infinity,
+                margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                padding: const EdgeInsets.all(Spacing.lg),
                 decoration: BoxDecoration(
-                  color: isRead
-                      ? scheme.primary.withValues(alpha: isLight ? 0.1 : 0.15)
-                      : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isRead
-                        ? scheme.primary.withValues(alpha: 0.3)
-                        : scheme.outline.withValues(alpha: 0.15),
-                    width: 2,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isRead
+                        ? (isLight
+                            ? [scheme.primary, scheme.primary.withValues(alpha: 0.8)]
+                            : [scheme.primaryContainer, scheme.primaryContainer.withValues(alpha: 0.7)])
+                        : (isLight
+                            ? [scheme.surfaceContainerHighest, scheme.surfaceContainerHighest.withValues(alpha: 0.6)]
+                            : [scheme.surfaceContainerHighest.withValues(alpha: 0.5), scheme.surfaceContainerHighest.withValues(alpha: 0.3)]),
                   ),
+                  borderRadius: AppRadii.borderRadiusLG,
                 ),
-                child: Icon(
-                  isRead ? Icons.check_circle_rounded : Icons.circle_outlined,
-                  size: 32,
-                  color: isRead ? scheme.primary : scheme.onSurfaceVariant,
-                ),
-              ),
-              const Gap(Spacing.md),
-
-              // Title
-              Text(
-                '${widget.bookName} ${widget.chapterNum}',
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const Gap(Spacing.sm),
-
-              // Status pill
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(
-                  color: isRead
-                      ? scheme.primary.withValues(alpha: isLight ? 0.1 : 0.15)
-                      : scheme.surfaceContainerHighest,
-                  borderRadius: AppRadii.borderRadiusFull,
-                ),
-                child: Text(
-                  isRead ? 'Read' : 'Unread',
-                  style: textTheme.labelMedium?.copyWith(
-                    color: isRead ? scheme.primary : scheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-
-              // Timestamp (only if read)
-              if (isRead && widget.readAt != null) ...[
-                const Gap(Spacing.lg),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(Spacing.md),
-                  decoration: BoxDecoration(
-                    color: isLight
-                        ? scheme.surfaceContainerHighest.withValues(alpha: 0.4)
-                        : scheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                    borderRadius: AppRadii.borderRadiusMD,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.schedule_rounded,
-                        size: 18,
-                        color: scheme.onSurfaceVariant,
+                child: Column(
+                  children: [
+                    // Large chapter number
+                    Text(
+                      '${widget.chapterNum}',
+                      style: textTheme.displayLarge?.copyWith(
+                        color: isRead
+                            ? (isLight ? Colors.white : scheme.onPrimaryContainer)
+                            : scheme.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 48,
+                        height: 1,
                       ),
-                      const Gap(Spacing.sm),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    ),
+                    const Gap(Spacing.xs),
+                    Text(
+                      widget.bookName,
+                      style: textTheme.titleSmall?.copyWith(
+                        color: isRead
+                            ? (isLight
+                                ? Colors.white.withValues(alpha: 0.85)
+                                : scheme.onPrimaryContainer.withValues(alpha: 0.8))
+                            : scheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const Gap(Spacing.md),
+
+                    // Status pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isRead
+                            ? (isLight
+                                ? Colors.white.withValues(alpha: 0.2)
+                                : scheme.primary.withValues(alpha: 0.3))
+                            : scheme.outline.withValues(alpha: 0.1),
+                        borderRadius: AppRadii.borderRadiusFull,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            'Completed on',
-                            style: textTheme.labelSmall?.copyWith(
-                              color: scheme.onSurfaceVariant,
-                            ),
+                          Icon(
+                            isRead ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                            size: 14,
+                            color: isRead
+                                ? (isLight ? Colors.white : scheme.primary)
+                                : scheme.onSurfaceVariant,
                           ),
-                          const Gap(2),
+                          const Gap(6),
                           Text(
-                            DateFormat('EEEE, MMMM d, yyyy').format(widget.readAt!),
-                            style: textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            DateFormat('h:mm a').format(widget.readAt!),
-                            style: textTheme.bodySmall?.copyWith(
-                              color: scheme.onSurfaceVariant,
+                            isRead ? 'Read' : 'Not yet read',
+                            style: textTheme.labelMedium?.copyWith(
+                              color: isRead
+                                  ? (isLight ? Colors.white : scheme.primary)
+                                  : scheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Timestamp detail (only if read)
+              if (isRead && readAt != null) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(Spacing.md),
+                    decoration: BoxDecoration(
+                      color: isLight
+                          ? scheme.primary.withValues(alpha: 0.04)
+                          : scheme.primary.withValues(alpha: 0.08),
+                      borderRadius: AppRadii.borderRadiusMD,
+                      border: Border.all(
+                        color: scheme.primary.withValues(alpha: isLight ? 0.1 : 0.08),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        // Calendar icon container
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: scheme.primary.withValues(alpha: isLight ? 0.1 : 0.15),
+                            borderRadius: AppRadii.borderRadiusSM,
+                          ),
+                          child: Icon(
+                            Icons.calendar_today_rounded,
+                            size: 20,
+                            color: scheme.primary,
+                          ),
+                        ),
+                        const Gap(Spacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                DateFormat('EEEE, MMMM d, yyyy').format(readAt),
+                                style: textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const Gap(2),
+                              Text(
+                                'at ${DateFormat('h:mm a').format(readAt)}',
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
 
-              // Padding for safe area
-              SizedBox(height: MediaQuery.of(context).padding.bottom),
+              // Unread hint
+              if (!isRead)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Text(
+                    'Tap the chapter tile to mark it as read.',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+              // Safe area + bottom padding
+              Gap(Spacing.lg + MediaQuery.of(context).padding.bottom),
             ],
           ),
         );
