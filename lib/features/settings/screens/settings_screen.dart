@@ -7,6 +7,10 @@ import '../services/notification_service.dart';
 import '../../../core/widgets/error_state_widget.dart';
 import '../../../core/utils/app_error_handler.dart';
 import '../../../core/design/components/verso_snackbar.dart';
+import '../../../core/design/design.dart';
+import 'debug_cache_screen.dart';
+
+
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -203,11 +207,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               const Gap(8),
 
               // --- ABOUT SECTION ---
-              ListTile(
-                leading: const Icon(Icons.info_outline),
-                title: const Text('About Verso'),
-                subtitle: Text('Version $_version'),
+              Center(
+                child: GestureDetector(
+                  onLongPress: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const DebugCacheScreen()),
+                    );
+                  },
+                  child: Padding(
+                    padding: Spacing.allLG,
+                    child: Text(
+                      'Verso v$_version\nMade by Shaijo George',
+                      textAlign: TextAlign.center,
+                      style: AppTypography.labelSmall.copyWith(
+                        color: context.colors.onSurfaceVariant.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ),
+                ),
               ),
+
             ],
           );
         },
