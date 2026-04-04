@@ -7,8 +7,7 @@ import 'widgets/main_wrapper.dart';
 import 'widgets/not_found_screen.dart';
 import '../data/bible_data.dart';
 import '../features/home/screens/home_screen.dart';
-import '../features/reading/screens/old_testament_screen.dart';
-import '../features/reading/screens/new_testament_screen.dart';
+import '../features/reading/screens/bible_screen.dart';
 import '../features/reading/screens/chapters_screen.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/forgot_password_screen.dart';
@@ -138,14 +137,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           return MainWrapper(navigationShell: navigationShell);
         },
         branches: [
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/old-testament',
-                builder: (context, state) => const OldTestamentScreen(),
-              ),
-            ],
-          ),
+          // Branch 0: Home
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -154,11 +146,21 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
+          // Branch 1: Bible (The new combined screen)
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/new-testament',
-                builder: (context, state) => const NewTestamentScreen(),
+                path: '/bible',
+                builder: (context, state) => const BibleScreen(),
+              ),
+            ],
+          ),
+          // Branch 2: Journal (Activity Log)
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/journal',
+                builder: (context, state) => const ActivityLogScreen(),
               ),
             ],
           ),
