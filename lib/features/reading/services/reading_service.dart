@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/bible_repository.dart';
@@ -15,6 +17,9 @@ class ReadingService {
 
   // Mutex to prevent multiple sync loops from running concurrently
   bool _isSyncing = false;
+
+  // Debounce timer so rapid taps coalesce into one provider refresh
+  Timer? _refreshTimer;
 
   ReadingService(this._ref, this._repo, this._cache);
 
@@ -39,8 +44,9 @@ class ReadingService {
       isRead,
     );
 
-    // 3. Refresh the UI
-    _invalidateProviders(bookId);
+    // 3. Schedule a debounced provider refresh — rapid taps won't
+    //    restart the stream on every single toggle.
+    _scheduleRefresh();
 
     // 4. Trigger background sync if online
     _triggerSync();
@@ -59,16 +65,22 @@ class ReadingService {
       totalChapters,
     );
 
-    _invalidateProviders(bookId);
+    // Mark-all is a single action, refresh immediately
+    _invalidateProviders();
     _triggerSync();
   }
 
-  void _invalidateProviders(int bookId) {
+  void _scheduleRefresh() {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer(const Duration(milliseconds: 350), () {
+      _invalidateProviders();
+    });
+  }
+
+  void _invalidateProviders() {
     _ref.invalidate(globalProgressProvider);
     _ref.invalidate(userStatsProvider);
     _ref.invalidate(detailedStatsProvider);
-    _ref.invalidate(bookReadCountProvider(bookId));
-    _ref.invalidate(bookProgressProvider(bookId));
   }
 
   void _triggerSync() {
@@ -118,9 +130,9 @@ class ReadingService {
       }
     } finally {
       _isSyncing = false;
-
-      // Refresh to fetch official server state now that queue is processed
-      _ref.invalidate(globalProgressProvider);
+      // No invalidation here — the Supabase realtime stream already pushes
+      // the confirmed state, and the cache was updated in _invalidateProviders.
+      // A second invalidation here caused the chapter grid to blink.
     }
   }
 }
