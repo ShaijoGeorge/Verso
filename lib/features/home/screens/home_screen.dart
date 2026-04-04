@@ -778,40 +778,107 @@ class _DailyVerseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final isLight = Theme.of(context).brightness == Brightness.light;
 
-    return VersoCard(
-      color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
-      border: Border.all(color: Colors.transparent),
-      child: verseAsync.when(
-        // Use a fixed height placeholder while loading to prevent layout shifts
-        loading: () => const SizedBox(
-          height: 60,
-          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+    return verseAsync.when(
+      loading: () => _buildShell(
+        scheme: scheme,
+        isLight: isLight,
+        child: const SizedBox(
+          height: 48,
+          child: Center(
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
         ),
-        error: (err, _) => const SizedBox.shrink(), // Hide quietly on error
-        data: (verse) {
-          return Column(
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (verse) {
+        return _buildShell(
+          scheme: scheme,
+          isLight: isLight,
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Large decorative opening quote mark
               Text(
-                '"${verse['text']}"',
-                style: textTheme.bodyMedium?.copyWith(
-                  fontStyle: FontStyle.italic,
-                  height: 1.5,
+                '\u201C',
+                style: textTheme.displayLarge?.copyWith(
+                  color: scheme.secondary.withValues(alpha: 0.35),
+                  height: 0.9,
+                  fontSize: 48,
                 ),
               ),
-              const Gap(Spacing.xs),
-              Text(
-                '- ${verse['ref']}',
-                style: textTheme.labelMedium?.copyWith(
-                  color: scheme.primary,
-                  fontWeight: FontWeight.bold,
+              const Gap(Spacing.sm),
+
+              // Verse text + reference
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Gap(Spacing.sm),
+                    Text(
+                      verse['text'] as String,
+                      style: textTheme.bodyMedium?.copyWith(
+                        fontStyle: FontStyle.italic,
+                        height: 1.6,
+                        color: isLight
+                            ? scheme.onSurface.withValues(alpha: 0.85)
+                            : scheme.onSurface.withValues(alpha: 0.9),
+                      ),
+                    ),
+                    const Gap(Spacing.sm),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: scheme.secondary.withValues(alpha: isLight ? 0.1 : 0.15),
+                          borderRadius: AppRadii.borderRadiusFull,
+                        ),
+                        child: Text(
+                          verse['ref'] as String,
+                          style: textTheme.labelSmall?.copyWith(
+                            color: scheme.secondary,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
-          );
-        },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildShell({
+    required ColorScheme scheme,
+    required bool isLight,
+    required Widget child,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: Spacing.md,
+        vertical: Spacing.md,
       ),
+      decoration: BoxDecoration(
+        color: isLight
+            ? scheme.secondaryContainer.withValues(alpha: 0.3)
+            : scheme.secondaryContainer.withValues(alpha: 0.12),
+        borderRadius: AppRadii.borderRadiusLG,
+        border: Border.all(
+          color: scheme.secondary.withValues(alpha: isLight ? 0.12 : 0.08),
+        ),
+      ),
+      child: child,
     );
   }
 }
