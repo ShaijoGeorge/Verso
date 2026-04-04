@@ -28,7 +28,7 @@ class _BookGridState extends State<BookGrid> {
     final crossAxisCount = width > 600 ? 4 : 2;
 
     return GridView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
       cacheExtent: 500, // Smooth scrolling pre-load
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
