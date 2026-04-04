@@ -1,12 +1,763 @@
 import 'package:flutter/material.dart';
-import '../../stats/screens/stats_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 
-class HomeScreen extends StatelessWidget {
+import '../../../core/design/components/verso_card.dart';
+import '../../../core/design/components/verso_circular_progress.dart';
+import '../../../core/design/components/verso_progress_bar.dart';
+import '../../../core/design/components/verso_section_header.dart';
+import '../../../core/design/tokens/spacing.dart';
+import '../../../core/design/tokens/radii.dart';
+import '../../../core/design/tokens/shadows.dart';
+import '../../../core/widgets/error_state_widget.dart';
+import '../../stats/providers/stats_providers.dart';
+import '../../stats/providers/activity_providers.dart';
+import '../providers/home_providers.dart';
+
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final statsAsync = ref.watch(userStatsProvider);
+    final detailedAsync = ref.watch(detailedStatsProvider);
+    final continueAsync = ref.watch(continueReadingProvider);
+    final activityAsync = ref.watch(activityLogProvider);
+    final todayAsync = ref.watch(todayChaptersProvider);
+    final userName = ref.watch(userNameProvider);
+
+    return statsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => ErrorStateWidget(
+        error: err,
+        onRetry: () => ref.invalidate(userStatsProvider),
+      ),
+      data: (stats) {
+        final todayCount = todayAsync.whenData((v) => v).value ?? 0;
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // GREETING
+              _GreetingSection(
+                userName: userName,
+                streak: stats.streak,
+                progress: stats.totalProgress,
+                todayCount: todayCount,
+              ),
+              const Gap(Spacing.lg),
+
+              // HERO PROGRESS CARD
+              _HeroProgressCard(stats: stats, todayCount: todayCount),
+              const Gap(Spacing.lg),
+
+              // QUICK STATS
+              _QuickStatsRow(stats: stats),
+              const Gap(Spacing.xl),
+
+              // THIS WEEK
+              if (detailedAsync.hasValue) ...[
+                VersoSectionHeader(
+                  title: 'This Week',
+                  action: 'Details',
+                  onAction: () => context.push('/detailed-stats'),
+                ),
+                const Gap(Spacing.md),
+                _WeeklyChart(
+                  counts: detailedAsync.value!.last7DaysCounts,
+                  dates: detailedAsync.value!.last7DaysDates,
+                ),
+                const Gap(Spacing.xl),
+              ],
+
+              // CONTINUE READING
+              if (continueAsync.hasValue && continueAsync.value != null) ...[
+                VersoSectionHeader(title: 'Continue Reading'),
+                const Gap(Spacing.md),
+                _ContinueReadingCard(info: continueAsync.value!),
+                const Gap(Spacing.xl),
+              ],
+
+              // RECENT ACTIVITY
+              if (activityAsync.hasValue && activityAsync.value!.isNotEmpty) ...[
+                VersoSectionHeader(
+                  title: 'Recent Activity',
+                  action: 'See All',
+                  onAction: () => context.push('/activity-log'),
+                ),
+                const Gap(Spacing.md),
+                _RecentActivityList(
+                  groups: activityAsync.value!.take(3).toList(),
+                ),
+              ],
+
+              const Gap(Spacing.xxl),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// GREETING SECTION
+
+class _GreetingSection extends StatelessWidget {
+  final String userName;
+  final int streak;
+  final double progress;
+  final int todayCount;
+
+  const _GreetingSection({
+    required this.userName,
+    required this.streak,
+    required this.progress,
+    required this.todayCount,
+  });
+
+  @override
   Widget build(BuildContext context) {
-    // Just return the Stats Screen for now as our Dashboard
-    return const StatsScreen();
+    final textTheme = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '${getGreeting()}, $userName',
+          style: textTheme.headlineLarge,
+        ),
+        const Gap(Spacing.xs),
+        Text(
+          getMotivationalMessage(streak, progress, todayCount),
+          style: textTheme.bodyMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// HERO PROGRESS CARD
+
+class _HeroProgressCard extends StatelessWidget {
+  final UserStats stats;
+  final int todayCount;
+
+  const _HeroProgressCard({required this.stats, required this.todayCount});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
+    return GestureDetector(
+      onTap: () => context.push('/detailed-stats'),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(Spacing.lg),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isLight
+                ? [
+                    scheme.primary,
+                    scheme.primary.withValues(alpha: 0.85),
+                  ]
+                : [
+                    scheme.primaryContainer,
+                    scheme.primaryContainer.withValues(alpha: 0.7),
+                  ],
+          ),
+          borderRadius: AppRadii.borderRadiusXL,
+          boxShadow: AppShadows.lg,
+        ),
+        child: Row(
+          children: [
+            // Progress circle
+            TweenAnimationBuilder<double>(
+              key: ValueKey(stats),
+              tween: Tween<double>(begin: 0.0, end: stats.totalProgress),
+              duration: const Duration(milliseconds: 1500),
+              curve: Curves.easeOutCubic,
+              builder: (context, animatedProgress, _) {
+                return VersoCircularProgress(
+                  progress: animatedProgress,
+                  maxProgress: 100,
+                  size: 130,
+                  strokeWidth: 10,
+                  color: isLight
+                      ? Colors.white
+                      : scheme.primary,
+                  trackColor: isLight
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : scheme.primary.withValues(alpha: 0.2),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${animatedProgress.toStringAsFixed(1)}%',
+                        style: textTheme.titleLarge?.copyWith(
+                          color: isLight ? Colors.white : scheme.onPrimaryContainer,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        'complete',
+                        style: textTheme.labelSmall?.copyWith(
+                          color: isLight
+                              ? Colors.white.withValues(alpha: 0.8)
+                              : scheme.onPrimaryContainer.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            const Gap(Spacing.lg),
+
+            // Right side info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Bible Journey',
+                    style: textTheme.titleMedium?.copyWith(
+                      color: isLight ? Colors.white : scheme.onPrimaryContainer,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Gap(Spacing.sm),
+                  _HeroStatRow(
+                    icon: Icons.menu_book_rounded,
+                    text: '${stats.totalChaptersRead} / 1334 chapters',
+                    isLight: isLight,
+                    scheme: scheme,
+                  ),
+                  const Gap(Spacing.xs),
+                  _HeroStatRow(
+                    icon: Icons.emoji_events_rounded,
+                    text: '${stats.booksCompleted} / 73 books done',
+                    isLight: isLight,
+                    scheme: scheme,
+                  ),
+                  if (todayCount > 0) ...[
+                    const Gap(Spacing.xs),
+                    _HeroStatRow(
+                      icon: Icons.today_rounded,
+                      text: '$todayCount read today',
+                      isLight: isLight,
+                      scheme: scheme,
+                    ),
+                  ],
+                  const Gap(Spacing.md),
+                  Row(
+                    children: [
+                      Text(
+                        'Tap for details',
+                        style: textTheme.labelSmall?.copyWith(
+                          color: isLight
+                              ? Colors.white.withValues(alpha: 0.7)
+                              : scheme.onPrimaryContainer.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      const Gap(Spacing.xs),
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 14,
+                        color: isLight
+                            ? Colors.white.withValues(alpha: 0.7)
+                            : scheme.onPrimaryContainer.withValues(alpha: 0.5),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HeroStatRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final bool isLight;
+  final ColorScheme scheme;
+
+  const _HeroStatRow({
+    required this.icon,
+    required this.text,
+    required this.isLight,
+    required this.scheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isLight
+        ? Colors.white.withValues(alpha: 0.9)
+        : scheme.onPrimaryContainer.withValues(alpha: 0.8);
+
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: color),
+        const Gap(Spacing.sm),
+        Flexible(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// QUICK STATS ROW
+
+class _QuickStatsRow extends StatelessWidget {
+  final UserStats stats;
+
+  const _QuickStatsRow({required this.stats});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
+    return Row(
+      children: [
+        Expanded(
+          child: _QuickStatCard(
+            icon: Icons.local_fire_department_rounded,
+            value: '${stats.streak}',
+            label: 'Day Streak',
+            iconColor: isLight ? const Color(0xFFE65100) : const Color(0xFFFF9800),
+            bgColor: isLight
+                ? const Color(0xFFFFF3E0)
+                : const Color(0xFFE65100).withValues(alpha: 0.15),
+          ),
+        ),
+        const Gap(Spacing.sm),
+        Expanded(
+          child: _QuickStatCard(
+            icon: Icons.auto_stories_rounded,
+            value: '${stats.totalChaptersRead}',
+            label: 'Chapters',
+            iconColor: scheme.primary,
+            bgColor: isLight
+                ? scheme.primaryContainer
+                : scheme.primary.withValues(alpha: 0.15),
+          ),
+        ),
+        const Gap(Spacing.sm),
+        Expanded(
+          child: _QuickStatCard(
+            icon: Icons.emoji_events_rounded,
+            value: '${stats.booksCompleted}',
+            label: 'Books Done',
+            iconColor: isLight ? const Color(0xFFC4973B) : const Color(0xFFA8864A),
+            bgColor: isLight
+                ? const Color(0xFFFFF8E1)
+                : const Color(0xFFC4973B).withValues(alpha: 0.15),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _QuickStatCard extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color iconColor;
+  final Color bgColor;
+
+  const _QuickStatCard({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.iconColor,
+    required this.bgColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: Spacing.md, horizontal: Spacing.sm),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: AppRadii.borderRadiusLG,
+        border: Border.all(
+          color: scheme.outline.withValues(alpha: 0.08),
+        ),
+        boxShadow: AppShadows.sm,
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: AppRadii.borderRadiusSM,
+            ),
+            child: Icon(icon, size: 20, color: iconColor),
+          ),
+          const Gap(Spacing.sm),
+          TweenAnimationBuilder<int>(
+            key: ValueKey('stat_${label}_$value'),
+            tween: IntTween(begin: 0, end: int.tryParse(value) ?? 0),
+            duration: const Duration(milliseconds: 1200),
+            curve: Curves.easeOutCubic,
+            builder: (context, animatedVal, _) {
+              return Text(
+                '$animatedVal',
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              );
+            },
+          ),
+          Text(
+            label,
+            style: textTheme.labelSmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WEEKLY CHART (mini bar chart)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _WeeklyChart extends StatelessWidget {
+  final List<int> counts;
+  final List<DateTime> dates;
+
+  const _WeeklyChart({required this.counts, required this.dates});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final maxCount = counts.reduce((a, b) => a > b ? a : b);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final total = counts.reduce((a, b) => a + b);
+
+    const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+    return VersoCard(
+      child: Column(
+        children: [
+          // Summary row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '$total chapters',
+                style: textTheme.titleSmall,
+              ),
+              Text(
+                'this week',
+                style: textTheme.labelSmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const Gap(Spacing.md),
+
+          // Bar chart
+          SizedBox(
+            height: 100,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: List.generate(7, (i) {
+                final isToday = dates[i].year == today.year &&
+                    dates[i].month == today.month &&
+                    dates[i].day == today.day;
+                final fraction = maxCount > 0 ? counts[i] / maxCount : 0.0;
+
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (counts[i] > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Text(
+                              '${counts[i]}',
+                              style: textTheme.labelSmall?.copyWith(
+                                color: scheme.onSurfaceVariant,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                        TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 0, end: fraction),
+                          duration: const Duration(milliseconds: 800),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, val, _) {
+                            return Container(
+                              height: (val * 60).clamp(4.0, 60.0),
+                              decoration: BoxDecoration(
+                                color: isToday
+                                    ? scheme.primary
+                                    : (counts[i] > 0
+                                        ? scheme.primary.withValues(alpha: 0.4)
+                                        : scheme.surfaceContainerHighest),
+                                borderRadius: AppRadii.borderRadiusXS,
+                              ),
+                            );
+                          },
+                        ),
+                        const Gap(Spacing.xs),
+                        Text(
+                          dayLabels[dates[i].weekday - 1],
+                          style: textTheme.labelSmall?.copyWith(
+                            color: isToday
+                                ? scheme.primary
+                                : scheme.onSurfaceVariant,
+                            fontWeight: isToday ? FontWeight.bold : null,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONTINUE READING CARD
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ContinueReadingCard extends StatelessWidget {
+  final ContinueReadingInfo info;
+
+  const _ContinueReadingCard({required this.info});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final isOT = info.book.testament.name == 'old';
+
+    return VersoCard(
+      onTap: () => context.push('/book/${info.book.id}'),
+      child: Row(
+        children: [
+          // Book icon with testament color
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: (isOT
+                      ? const Color(0xFFE65100)
+                      : const Color(0xFF1565C0))
+                  .withValues(alpha: 0.1),
+              borderRadius: AppRadii.borderRadiusMD,
+            ),
+            child: Icon(
+              Icons.menu_book_rounded,
+              color: isOT ? const Color(0xFFE65100) : const Color(0xFF1565C0),
+              size: 28,
+            ),
+          ),
+          const Gap(Spacing.md),
+
+          // Book info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  info.book.name,
+                  style: textTheme.titleSmall,
+                ),
+                const Gap(2),
+                Text(
+                  '${info.chaptersRead} of ${info.book.chapters} chapters',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+                const Gap(Spacing.sm),
+                VersoProgressBar(
+                  value: info.progress,
+                  height: 6,
+                  color: isOT ? const Color(0xFFE65100) : const Color(0xFF1565C0),
+                ),
+              ],
+            ),
+          ),
+          const Gap(Spacing.sm),
+
+          // Arrow
+          Icon(
+            Icons.chevron_right_rounded,
+            color: scheme.onSurfaceVariant,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RECENT ACTIVITY LIST
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _RecentActivityList extends StatelessWidget {
+  final List<ActivityGroup> groups;
+
+  const _RecentActivityList({required this.groups});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Column(
+      children: groups.map((group) {
+        final isFinish = group.isFinish;
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: Spacing.sm),
+          child: VersoCard(
+            border: isFinish
+                ? Border.all(
+                    color: const Color(0xFFC4973B).withValues(alpha: 0.4),
+                    width: 1.5,
+                  )
+                : null,
+            child: Row(
+              children: [
+                // Icon
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isFinish
+                        ? const Color(0xFFFFF8E1)
+                        : scheme.primaryContainer,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isFinish
+                        ? Icons.emoji_events_rounded
+                        : Icons.auto_stories_rounded,
+                    size: 18,
+                    color: isFinish
+                        ? const Color(0xFFC4973B)
+                        : scheme.primary,
+                  ),
+                ),
+                const Gap(Spacing.md),
+
+                // Content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            group.book.name,
+                            style: textTheme.titleSmall,
+                          ),
+                          if (isFinish) ...[
+                            const Gap(Spacing.sm),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF8E1),
+                                borderRadius: AppRadii.borderRadiusXS,
+                              ),
+                              child: Text(
+                                'Completed',
+                                style: textTheme.labelSmall?.copyWith(
+                                  color: const Color(0xFFC4973B),
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const Gap(2),
+                      Text(
+                        group.description,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Time
+                Text(
+                  _formatTime(group.timestamp),
+                  style: textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  String _formatTime(DateTime dt) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dateOnly = DateTime(dt.year, dt.month, dt.day);
+
+    if (dateOnly == today) {
+      final h = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+      final m = dt.minute.toString().padLeft(2, '0');
+      final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+      return '$h:$m $ampm';
+    }
+
+    final yesterday = today.subtract(const Duration(days: 1));
+    if (dateOnly == yesterday) return 'Yesterday';
+
+    final diff = today.difference(dateOnly).inDays;
+    if (diff < 7) return '${diff}d ago';
+
+    return '${dt.month}/${dt.day}';
   }
 }
