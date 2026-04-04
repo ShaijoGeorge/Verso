@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../data/bible_data.dart';
+import '../../../core/design/tokens/spacing.dart';
 
 class BookProgressCard extends StatefulWidget {
   final BibleBook book;
@@ -22,35 +23,25 @@ class BookProgressCard extends StatefulWidget {
 }
 
 class _BookProgressCardState extends State<BookProgressCard> {
-  // This variable controls the width of the bar
   double _displayProgress = 0.0;
 
   @override
   void initState() {
     super.initState();
-    
+    _initProgress();
+  }
+
+  void _initProgress() {
     final realProgress = widget.book.chapters > 0 
-        ? widget.chaptersRead / widget.book.chapters 
-        : 0.0;
+        ? widget.chaptersRead / widget.book.chapters : 0.0;
 
     if (widget.shouldAnimateEntry) {
-      // SCENARIO 1: First time loading (Animate 0 -> X)
       _displayProgress = 0.0;
-      
-      // Tell the parent "I have started animating, don't ask me again"
       widget.onAnimationStarted?.call();
-
-      // Wait one frame, then trigger the animation to the real value
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {
-            _displayProgress = realProgress;
-          });
-        }
+        if (mounted) setState(() => _displayProgress = realProgress);
       });
     } else {
-      // SCENARIO 2: Scrolled back into view (Jump instantly to X)
-      // This prevents the "reloading" feel
       _displayProgress = realProgress;
     }
   }
@@ -58,44 +49,58 @@ class _BookProgressCardState extends State<BookProgressCard> {
   @override
   void didUpdateWidget(covariant BookProgressCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // SCENARIO 3: User marked a chapter as read (Animate Old -> New)
     if (oldWidget.chaptersRead != widget.chaptersRead) {
-      final newProgress = widget.book.chapters > 0 
-          ? widget.chaptersRead / widget.book.chapters 
-          : 0.0;
-      
       setState(() {
-        _displayProgress = newProgress;
+        _displayProgress = widget.book.chapters > 0 
+            ? widget.chaptersRead / widget.book.chapters : 0.0;
       });
+    }
+  }
+
+  // --- Helper method to determine the status icon ---
+  Widget _buildStatusIndicator(bool isCompleted, bool isInProgress, ColorScheme scheme) {
+    if (isCompleted) {
+      return Icon(Icons.check_circle_rounded, size: 18, color: Colors.amber.shade600); // ✓
+    } else if (isInProgress) {
+      return Icon(Icons.tonality_rounded, size: 18, color: scheme.primary); // ◐
+    } else {
+      return Icon(Icons.radio_button_unchecked_rounded, size: 18, color: scheme.outline); // ○
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final realProgress = widget.book.chapters > 0 
-        ? widget.chaptersRead / widget.book.chapters 
-        : 0.0;
+    final scheme = Theme.of(context).colorScheme;
+    final realProgress = widget.book.chapters > 0 ? widget.chaptersRead / widget.book.chapters : 0.0;
+    
     final bool isCompleted = realProgress >= 1.0;
+    final bool isInProgress = realProgress > 0 && !isCompleted;
+
+    // Define the card styling based on completion
+    final borderColor = isCompleted ? Colors.amber.shade400 : scheme.outline.withValues(alpha: 0.2);
+    final bgColor = isCompleted ? Colors.amber.withValues(alpha: 0.05) : scheme.surfaceContainerHighest;
 
     return GestureDetector(
       onTap: widget.onTap,
-      child: RepaintBoundary( // Performance optimization
+      child: RepaintBoundary(
         child: Container(
           clipBehavior: Clip.antiAlias, 
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            color: bgColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isCompleted 
-                  ? Theme.of(context).colorScheme.primary 
-                  : Colors.transparent,
-              width: 2,
-            ),
+            border: Border.all(color: borderColor, width: isCompleted ? 2 : 1),
+            // Add a subtle glow if completed
+            boxShadow: isCompleted ? [
+              BoxShadow(
+                color: Colors.amber.withValues(alpha: 0.1),
+                blurRadius: 8,
+                spreadRadius: 2,
+              )
+            ] : null,
           ),
           child: Stack(
             children: [
-              // Implicit Animation Widget
-              // It will automatically animate whenever _displayProgress changes
+              // Progress Fill
               AnimatedFractionallySizedBox(
                 duration: const Duration(milliseconds: 800),
                 curve: Curves.easeOutCubic,
@@ -103,33 +108,52 @@ class _BookProgressCardState extends State<BookProgressCard> {
                 alignment: Alignment.centerLeft,
                 child: Container(
                   color: isCompleted 
-                      ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3) 
-                      : Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                      ? Colors.amber.withValues(alpha: 0.15) 
+                      : scheme.primary.withValues(alpha: 0.1),
                 ),
               ),
 
+              // Content
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    // Book Name & Icon
                     Expanded(
-                      child: Text(
-                        widget.book.name,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                      child: Row(
+                        children: [
+                          _buildStatusIndicator(isCompleted, isInProgress, scheme),
+                          const SizedBox(width: Spacing.sm),
+                          Expanded(
+                            child: Text(
+                              widget.book.name,
+                              style: TextStyle(
+                                fontWeight: isCompleted ? FontWeight.bold : FontWeight.w600,
+                                fontSize: 15,
+                                color: scheme.onSurface,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    Text(
-                      "${widget.chaptersRead} / ${widget.book.chapters}",
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    
+                    // Chapter Fraction Badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: isCompleted ? Colors.amber.shade100 : scheme.surface.withValues(alpha: 0.8),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        "${widget.chaptersRead}/${widget.book.chapters}",
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: isCompleted ? Colors.amber.shade900 : scheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ],
