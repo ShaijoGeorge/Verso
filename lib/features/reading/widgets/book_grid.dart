@@ -21,57 +21,159 @@ class BookGrid extends StatefulWidget {
 class _BookGridState extends State<BookGrid> {
   // MEMORY: Keeps track of which books have already played their entry animation
   final Set<int> _hasAnimated = {};
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // Group books by category
+  Map<BookCategory, List<BibleBook>> _groupBooks(List<BibleBook> books) {
+    final Map<BookCategory, List<BibleBook>> groups = {};
+    for (var book in books) {
+      if (book.name.toLowerCase().contains(_searchQuery.toLowerCase())) {
+        groups.putIfAbsent(book.category, () => []).add(book);
+      }
+    }
+    return groups;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final groupedBooks = _groupBooks(widget.books);
+    final sortedCategories = BookCategory.values
+        .where((cat) => groupedBooks.containsKey(cat))
+        .toList();
+
     final width = MediaQuery.of(context).size.width;
     final crossAxisCount = width > 600 ? 4 : 2;
 
-    return GridView.builder(
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
-      cacheExtent: 500, // Smooth scrolling pre-load
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        childAspectRatio: 1.5,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemCount: widget.books.length,
-      itemBuilder: (context, index) {
-        final book = widget.books[index];
+    return CustomScrollView(
+      slivers: [
+        // 1. Search Bar
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) => setState(() => _searchQuery = val),
+              decoration: InputDecoration(
+                hintText: 'Search books...',
+                prefixIcon: Icon(Icons.search_rounded, 
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)),
+                filled: true,
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+            ),
+          ),
+        ),
 
-        return Consumer(
-          builder: (context, ref, child) {
-            final asyncCount = ref.watch(bookReadCountProvider(book.id));
+        // 2. Empty State
+        if (sortedCategories.isEmpty && _searchQuery.isNotEmpty)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.search_off_rounded, size: 48, color: Theme.of(context).colorScheme.outline),
+                  const SizedBox(height: 16),
+                  Text(
+                    "No matches for '$_searchQuery'",
+                    style: TextStyle(color: Theme.of(context).colorScheme.outline),
+                  ),
+                ],
+              ),
+            ),
+          ),
 
-            return asyncCount.when(
-              data: (count) => BookProgressCard(
-                book: book,
-                chaptersRead: count,
-                onTap: () => widget.onBookTap(book),
-                // LOGIC: Only animate if it's NOT in our memory set
-                shouldAnimateEntry: !_hasAnimated.contains(book.id),
-                onAnimationStarted: () {
-                  // Mark this book as "seen" so it doesn't animate again on scroll
-                  _hasAnimated.add(book.id); 
+        // 3. Category Sections
+        for (var category in sortedCategories) ...[
+          // Sticky Header Equivalent (Non-pinned for now)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+              child: Row(
+                children: [
+                  Text(
+                    category.displayName,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                          letterSpacing: 0.5,
+                        ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Divider(
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                      thickness: 1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Grid for this category
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                childAspectRatio: 1.6,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final book = groupedBooks[category]![index];
+
+                  return Consumer(
+                    builder: (context, ref, child) {
+                      final asyncCount = ref.watch(bookReadCountProvider(book.id));
+
+                      return asyncCount.when(
+                        data: (count) => BookProgressCard(
+                          book: book,
+                          chaptersRead: count,
+                          onTap: () => widget.onBookTap(book),
+                          shouldAnimateEntry: !_hasAnimated.contains(book.id),
+                          onAnimationStarted: () => _hasAnimated.add(book.id),
+                        ),
+                        loading: () => BookProgressCard(
+                          book: book,
+                          chaptersRead: 0,
+                          onTap: () {},
+                          shouldAnimateEntry: false,
+                        ),
+                        error: (_, __) => BookProgressCard(
+                          book: book,
+                          chaptersRead: 0,
+                          onTap: () {},
+                          shouldAnimateEntry: false,
+                        ),
+                      );
+                    },
+                  );
                 },
+                childCount: groupedBooks[category]!.length,
               ),
-              loading: () => BookProgressCard(
-                book: book,
-                chaptersRead: 0,
-                onTap: () {},
-                shouldAnimateEntry: false, // Don't animate placeholders
-              ),
-              error: (_, __) => BookProgressCard(
-                book: book,
-                chaptersRead: 0,
-                onTap: () {},
-                shouldAnimateEntry: false,
-              ),
-            );
-          },
-        );
-      },
+            ),
+          ),
+        ],
+
+        // 4. Bottom Spacing
+        const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
+      ],
     );
   }
 }
