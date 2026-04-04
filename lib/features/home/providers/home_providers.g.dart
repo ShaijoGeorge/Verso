@@ -136,3 +136,81 @@ final class UserNameProvider extends $FunctionalProvider<String, String, String>
 }
 
 String _$userNameHash() => r'368b25efe2692f4c23e975c656b647bc14eb75d3';
+
+@ProviderFor(verseRepository)
+final verseRepositoryProvider = VerseRepositoryProvider._();
+
+final class VerseRepositoryProvider extends $FunctionalProvider<VerseRepository,
+    VerseRepository, VerseRepository> with $Provider<VerseRepository> {
+  VerseRepositoryProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'verseRepositoryProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$verseRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<VerseRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  VerseRepository create(Ref ref) {
+    return verseRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(VerseRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<VerseRepository>(value),
+    );
+  }
+}
+
+String _$verseRepositoryHash() => r'd3970a185123a91743181b28453438309cded8a9';
+
+@ProviderFor(dailyVerse)
+final dailyVerseProvider = DailyVerseProvider._();
+
+final class DailyVerseProvider extends $FunctionalProvider<
+        AsyncValue<Map<String, dynamic>>,
+        Map<String, dynamic>,
+        FutureOr<Map<String, dynamic>>>
+    with
+        $FutureModifier<Map<String, dynamic>>,
+        $FutureProvider<Map<String, dynamic>> {
+  DailyVerseProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'dailyVerseProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$dailyVerseHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<Map<String, dynamic>> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Map<String, dynamic>> create(Ref ref) {
+    return dailyVerse(ref);
+  }
+}
+
+String _$dailyVerseHash() => r'e8280c5400cd7bcb01b7e040694ddc999ac57ab7';

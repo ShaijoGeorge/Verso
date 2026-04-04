@@ -26,6 +26,7 @@ class HomeScreen extends ConsumerWidget {
     final activityAsync = ref.watch(activityLogProvider);
     final todayAsync = ref.watch(todayChaptersProvider);
     final userName = ref.watch(userNameProvider);
+    final verseAsync = ref.watch(dailyVerseProvider);
 
     return statsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -48,6 +49,10 @@ class HomeScreen extends ConsumerWidget {
                 progress: stats.totalProgress,
                 todayCount: todayCount,
               ),
+              const Gap(Spacing.md),
+
+              // DAILY VERSE
+              _DailyVerseCard(verseAsync: verseAsync),
               const Gap(Spacing.lg),
 
               // HERO PROGRESS CARD
@@ -759,5 +764,54 @@ class _RecentActivityList extends StatelessWidget {
     if (diff < 7) return '${diff}d ago';
 
     return '${dt.month}/${dt.day}';
+  }
+}
+
+// DAILY VERSE CARD
+
+class _DailyVerseCard extends StatelessWidget {
+  final AsyncValue<Map<String, dynamic>> verseAsync;
+
+  const _DailyVerseCard({required this.verseAsync});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return VersoCard(
+      color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+      border: Border.all(color: Colors.transparent),
+      child: verseAsync.when(
+        // Use a fixed height placeholder while loading to prevent layout shifts
+        loading: () => const SizedBox(
+          height: 60,
+          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+        error: (err, _) => const SizedBox.shrink(), // Hide quietly on error
+        data: (verse) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '"${verse['text']}"',
+                style: textTheme.bodyMedium?.copyWith(
+                  fontStyle: FontStyle.italic,
+                  height: 1.5,
+                ),
+              ),
+              const Gap(Spacing.xs),
+              Text(
+                '- ${verse['ref']}',
+                style: textTheme.labelMedium?.copyWith(
+                  color: scheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }

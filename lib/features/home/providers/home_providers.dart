@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../reading/providers/reading_providers.dart';
 import '../../../data/bible_data.dart';
+import '../data/verse_repository.dart';
 
 
 part 'home_providers.g.dart';
@@ -105,4 +106,18 @@ String getMotivationalMessage(int streak, double progress, int todayCount) {
     return "You're past the halfway mark!";
   }
   return 'Open the Word and start your day.';
+}
+
+// Access to the repository for fetching verse data.
+// Kept alive to reuse the repository instance across the app.
+@Riverpod(keepAlive: true)
+VerseRepository verseRepository(Ref ref) {
+  return VerseRepository(Supabase.instance.client);
+}
+
+// Fetches the daily Scripture verse to display on the home screen.
+@riverpod
+Future<Map<String, dynamic>> dailyVerse(Ref ref) async {
+  final repo = ref.watch(verseRepositoryProvider);
+  return repo.getTodayVerse();
 }
