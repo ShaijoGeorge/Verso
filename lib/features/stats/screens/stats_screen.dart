@@ -93,9 +93,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
               controller: _tabController,
               children: [
                 OverviewTab(stats: stats),
-                WeeklyTab(stats: stats),
-                MonthlyTab(stats: stats),
-                YearlyTab(stats: stats),
+                WeeklyTab(),
+                MonthlyTab(),
+                YearlyTab(),
               ],
             ),
           ),

@@ -234,3 +234,155 @@ Future<DetailedStats> detailedStats(Ref ref) async {
     bookCompletionMap: bookCompletionMap,
   );
 }
+
+// --- WEEKLY PROVIDERS ---
+
+class WeeklyChartData {
+  final List<DateTime> dates;
+  final List<int> counts;
+  final int totalRead;
+  
+  WeeklyChartData(this.dates, this.counts, this.totalRead);
+}
+
+@riverpod
+class WeeklyOffset extends _$WeeklyOffset {
+  @override
+  int build() => 0;
+
+  void goBack() => state++;
+  void goForward() {
+    if (state > 0) state--;
+  }
+}
+
+@riverpod
+Future<WeeklyChartData> weeklyChartStats(Ref ref, int weeksAgo) async {
+  final history = await ref.watch(globalProgressProvider.future);
+  final readHistory = history.where((p) => p.isRead).toList();
+  
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final startOfWeek = today.subtract(Duration(days: (weeksAgo * 7)));
+
+  final dates = <DateTime>[];
+  final counts = <int>[];
+  int totalRead = 0;
+
+  for (int i = 6; i >= 0; i--) {
+    final date = startOfWeek.subtract(Duration(days: i));
+    dates.add(date);
+    
+    final count = readHistory.where((p) {
+      if (p.readAt == null) return false;
+      final pDate = p.readAt!;
+      return pDate.year == date.year &&
+          pDate.month == date.month &&
+          pDate.day == date.day;
+    }).length;
+    
+    counts.add(count);
+    totalRead += count;
+  }
+
+  return WeeklyChartData(dates, counts, totalRead);
+}
+
+// --- MONTHLY PROVIDERS ---
+
+class MonthlyChartData {
+  final int year;
+  final int month;
+  final Map<int, int> dailyCounts;
+  final int totalRead;
+  
+  MonthlyChartData(this.year, this.month, this.dailyCounts, this.totalRead);
+}
+
+@riverpod
+class MonthlyOffset extends _$MonthlyOffset {
+  @override
+  int build() => 0;
+
+  void goBack() => state++;
+  void goForward() {
+    if (state > 0) state--;
+  }
+}
+
+@riverpod
+Future<MonthlyChartData> monthlyChartStats(Ref ref, int monthsAgo) async {
+  final history = await ref.watch(globalProgressProvider.future);
+  final readHistory = history.where((p) => p.isRead).toList();
+  
+  final now = DateTime.now();
+  
+  // Calculate target month and year safely
+  int targetYear = now.year;
+  int targetMonth = now.month - monthsAgo;
+  
+  // If we go back past January, shift the year back
+  while (targetMonth <= 0) {
+    targetMonth += 12;
+    targetYear--;
+  }
+
+  final dailyCounts = <int, int>{};
+  int totalRead = 0;
+
+  final monthHistory = readHistory.where((p) =>
+      p.readAt != null &&
+      p.readAt!.year == targetYear &&
+      p.readAt!.month == targetMonth);
+
+  for (final entry in monthHistory) {
+    dailyCounts[entry.readAt!.day] = (dailyCounts[entry.readAt!.day] ?? 0) + 1;
+    totalRead++;
+  }
+
+  return MonthlyChartData(targetYear, targetMonth, dailyCounts, totalRead);
+}
+
+// --- YEARLY PROVIDERS ---
+
+class YearlyChartData {
+  final int year;
+  final Map<int, int> monthlyCounts;
+  final int totalRead;
+  
+  YearlyChartData(this.year, this.monthlyCounts, this.totalRead);
+}
+
+@riverpod
+class YearlyOffset extends _$YearlyOffset {
+  @override
+  int build() => 0;
+
+  void goBack() => state++;
+  void goForward() {
+    if (state > 0) state--;
+  }
+}
+
+@riverpod
+Future<YearlyChartData> yearlyChartStats(Ref ref, int yearsAgo) async {
+  final history = await ref.watch(globalProgressProvider.future);
+  final readHistory = history.where((p) => p.isRead).toList();
+  
+  final now = DateTime.now();
+  final targetYear = now.year - yearsAgo;
+
+  final monthlyCounts = <int, int>{};
+  int totalRead = 0;
+
+  final yearHistory = readHistory.where((p) => 
+      p.readAt != null && 
+      p.readAt!.year == targetYear);
+
+  for (final entry in yearHistory) {
+    monthlyCounts[entry.readAt!.month] = (monthlyCounts[entry.readAt!.month] ?? 0) + 1;
+    totalRead++;
+  }
+
+  return YearlyChartData(targetYear, monthlyCounts, totalRead);
+}
