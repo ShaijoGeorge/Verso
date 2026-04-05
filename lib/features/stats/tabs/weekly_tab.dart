@@ -1,218 +1,299 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:gap/gap.dart';
 import '../providers/stats_providers.dart';
+import '../widgets/time_period_navigator.dart';
 
-class WeeklyTab extends StatelessWidget {
-  final DetailedStats stats;
-
-  const WeeklyTab({super.key, required this.stats});
+class WeeklyTab extends ConsumerWidget {
+  const WeeklyTab({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
 
-    final total = stats.last7DaysCounts.reduce((a, b) => a + b);
-    final maxCount = stats.last7DaysCounts.reduce(max);
-    final maxY = maxCount > 10 ? maxCount.toDouble() + 3 : 12.0;
+    final offset = ref.watch(weeklyOffsetProvider);
+    final asyncData = ref.watch(weeklyChartStatsProvider(offset));
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header stat
-          Text(
-            'Last 7 Days',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const Gap(4),
-          RichText(
-            text: TextSpan(
-              style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
-              children: [
-                TextSpan(
-                  text: '$total chapters ',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: scheme.primary,
-                    fontSize: 16,
-                  ),
-                ),
-                const TextSpan(text: 'read this week'),
-              ],
-            ),
-          ),
-          const Gap(24),
+    return asyncData.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('Error: $err')),
+      data: (chartData) {
+        final total = chartData.totalRead;
+        final maxCount = chartData.counts.isEmpty ? 0 : chartData.counts.reduce(max);
+        final maxY = maxCount > 10 ? maxCount.toDouble() + 3 : 12.0;
 
-          // Bar Chart
-          SizedBox(
-            height: 280,
-            child: _AnimatedChartWrapper(
-              builder: (isAnimated) {
-                return BarChart(
-                  BarChartData(
-                    maxY: maxY,
-                    alignment: BarChartAlignment.spaceAround,
-                    barTouchData: BarTouchData(
-                      touchTooltipData: BarTouchTooltipData(
-                        getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                          final count = stats.last7DaysCounts[group.x];
-                          return BarTooltipItem(
-                            '$count chapters',
-                            TextStyle(
-                              color: scheme.onPrimary,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    titlesData: FlTitlesData(
-                      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 30,
-                          getTitlesWidget: (value, meta) {
-                            final index = value.toInt();
-                            if (index < 0 || index >= stats.last7DaysDates.length) {
-                              return const SizedBox();
-                            }
-                            final date = stats.last7DaysDates[index];
-                            final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Text(
-                                days[date.weekday - 1],
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: scheme.onSurfaceVariant,
+        final firstDate = chartData.dates.first;
+        final lastDate = chartData.dates.last;
+        final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        final rangeLabel = offset == 0
+            ? 'This Week'
+            : '${months[firstDate.month - 1]} ${firstDate.day} – ${months[lastDate.month - 1]} ${lastDate.day}';
+
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Period navigator
+              TimePeriodNavigator(
+                label: rangeLabel,
+                onPrevious: () => ref.read(weeklyOffsetProvider.notifier).goBack(),
+                onNext: offset > 0
+                    ? () => ref.read(weeklyOffsetProvider.notifier).goForward()
+                    : null,
+                onReset: offset > 0
+                    ? () => ref.read(weeklyOffsetProvider.notifier).state = 0
+                    : null,
+              ),
+              const Gap(16),
+
+              // Summary line
+              _SummaryLine(
+                highlight: '$total chapters',
+                suffix: offset == 0 ? 'read this week' : 'read that week',
+                scheme: scheme,
+              ),
+              const Gap(24),
+
+              // Bar Chart
+              SizedBox(
+                height: 260,
+                child: _AnimatedChartWrapper(
+                  key: ValueKey('weekly_chart_$offset'),
+                  builder: (isAnimated) {
+                    return BarChart(
+                      BarChartData(
+                        maxY: maxY,
+                        alignment: BarChartAlignment.spaceAround,
+                        barTouchData: BarTouchData(
+                          touchTooltipData: BarTouchTooltipData(
+                            getTooltipColor: (_) => scheme.primaryContainer,
+                            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                              final count = chartData.counts[group.x];
+                              return BarTooltipItem(
+                                '$count chapters',
+                                TextStyle(
+                                  color: scheme.onPrimaryContainer,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
                                 ),
-                              ),
-                            );
-                          },
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                      leftTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 30,
-                          interval: (maxY / 4).ceilToDouble().clamp(1, double.infinity),
-                          getTitlesWidget: (value, meta) {
-                            return Text(
-                              value.toInt().toString(),
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: scheme.onSurfaceVariant,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    gridData: FlGridData(
-                      show: true,
-                      drawVerticalLine: false,
-                      horizontalInterval: (maxY / 4).ceilToDouble().clamp(1, double.infinity),
-                      getDrawingHorizontalLine: (value) => FlLine(
-                        color: scheme.outline.withValues(alpha: 0.1),
-                        strokeWidth: 1,
-                      ),
-                    ),
-                    borderData: FlBorderData(show: false),
-                    barGroups: List.generate(7, (index) {
-                      final count = stats.last7DaysCounts[index].toDouble();
-                      final isToday = index == 6;
-                      return BarChartGroupData(
-                        x: index,
-                        barRods: [
-                          BarChartRodData(
-                            toY: isAnimated ? count : 0,
-                            width: 28,
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
-                            gradient: LinearGradient(
-                              begin: Alignment.bottomCenter,
-                              end: Alignment.topCenter,
-                              colors: isToday
-                                  ? [scheme.primary, scheme.primary.withValues(alpha: 0.7)]
-                                  : isLight
-                                      ? [const Color(0xFF7EB8E0), const Color(0xFFBBDEFB)]
-                                      : [const Color(0xFF1B3A5C), const Color(0xFF7EB8E0)],
+                        titlesData: FlTitlesData(
+                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 40,
+                              getTitlesWidget: (value, meta) {
+                                final index = value.toInt();
+                                if (index < 0 || index >= chartData.dates.length) {
+                                  return const SizedBox();
+                                }
+                                final date = chartData.dates[index];
+                                // Sunday-first labels
+                                const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                                final dayDate = DateTime(date.year, date.month, date.day);
+                                final isTodayCell = dayDate == today;
+
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        days[date.weekday - 1],
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: isTodayCell ? FontWeight.w700 : FontWeight.w500,
+                                          color: isTodayCell ? scheme.primary : scheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${date.day}',
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          color: isTodayCell
+                                              ? scheme.primary.withValues(alpha: 0.8)
+                                              : scheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                             ),
                           ),
-                        ],
-                      );
-                    }),
-                  ),
-                  duration: const Duration(milliseconds: 800),
-                  curve: Curves.easeOutCubic,
-                );
-              },
-            ),
-          ),
-          const Gap(24),
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 30,
+                              interval: (maxY / 4).ceilToDouble().clamp(1, double.infinity),
+                              getTitlesWidget: (value, meta) {
+                                return Text(
+                                  value.toInt().toString(),
+                                  style: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        gridData: FlGridData(
+                          show: true,
+                          drawVerticalLine: false,
+                          horizontalInterval: (maxY / 4).ceilToDouble().clamp(1, double.infinity),
+                          getDrawingHorizontalLine: (value) => FlLine(
+                            color: scheme.outline.withValues(alpha: 0.08),
+                            strokeWidth: 1,
+                          ),
+                        ),
+                        borderData: FlBorderData(show: false),
+                        barGroups: List.generate(7, (index) {
+                          final count = chartData.counts[index].toDouble();
+                          final dayDate = DateTime(
+                            chartData.dates[index].year,
+                            chartData.dates[index].month,
+                            chartData.dates[index].day,
+                          );
+                          final isToday = dayDate == today;
 
-          // Daily breakdown list
-          ...List.generate(7, (index) {
-            final date = stats.last7DaysDates[index];
-            final count = stats.last7DaysCounts[index];
-            final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            final isToday = index == 6;
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 70,
-                    child: Text(
-                      isToday ? 'Today' : '${months[date.month - 1]} ${date.day}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: isToday ? FontWeight.w600 : FontWeight.normal,
-                        color: isToday ? scheme.primary : scheme.onSurfaceVariant,
+                          return BarChartGroupData(
+                            x: index,
+                            barRods: [
+                              BarChartRodData(
+                                toY: isAnimated ? count : 0,
+                                width: 26,
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(8),
+                                ),
+                                gradient: LinearGradient(
+                                  begin: Alignment.bottomCenter,
+                                  end: Alignment.topCenter,
+                                  colors: isToday
+                                      ? [scheme.primary, scheme.primary.withValues(alpha: 0.7)]
+                                      : count > 0
+                                          ? isLight
+                                              ? [const Color(0xFF7EB8E0), const Color(0xFFBBDEFB)]
+                                              : [const Color(0xFF1B3A5C), const Color(0xFF7EB8E0)]
+                                          : [scheme.outline.withValues(alpha: 0.15),
+                                             scheme.outline.withValues(alpha: 0.08)],
+                                ),
+                              ),
+                            ],
+                          );
+                        }),
                       ),
+                      duration: const Duration(milliseconds: 800),
+                      curve: Curves.easeOutCubic,
+                    );
+                  },
+                ),
+              ),
+              const Gap(28),
+
+              // Daily breakdown
+              Text(
+                'Daily Breakdown',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
-                  ),
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: maxCount > 0 ? count / maxCount : 0,
-                        minHeight: 8,
-                        backgroundColor: scheme.outline.withValues(alpha: 0.1),
-                        valueColor: AlwaysStoppedAnimation(
-                          isToday ? scheme.primary : scheme.primary.withValues(alpha: 0.5),
+              ),
+              const Gap(12),
+              ...List.generate(7, (index) {
+                final date = chartData.dates[index];
+                final count = chartData.counts[index];
+                final dayDate = DateTime(date.year, date.month, date.day);
+                final isToday = dayDate == today;
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 72,
+                        child: Text(
+                          isToday ? 'Today' : '${months[date.month - 1]} ${date.day}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
+                            color: isToday ? scheme.primary : scheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                  const Gap(12),
-                  SizedBox(
-                    width: 20,
-                    child: Text(
-                      '$count',
-                      textAlign: TextAlign.end,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: scheme.onSurface,
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: maxCount > 0 ? count / maxCount : 0,
+                            minHeight: 8,
+                            backgroundColor: scheme.outline.withValues(alpha: 0.08),
+                            valueColor: AlwaysStoppedAnimation(
+                              isToday ? scheme.primary : scheme.primary.withValues(alpha: 0.45),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                      const Gap(12),
+                      SizedBox(
+                        width: 24,
+                        child: Text(
+                          '$count',
+                          textAlign: TextAlign.end,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: count > 0 ? scheme.onSurface : scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            );
-          }),
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SummaryLine extends StatelessWidget {
+  final String highlight;
+  final String suffix;
+  final ColorScheme scheme;
+
+  const _SummaryLine({
+    required this.highlight,
+    required this.suffix,
+    required this.scheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return RichText(
+      text: TextSpan(
+        style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
+        children: [
+          TextSpan(
+            text: '$highlight ',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: scheme.primary,
+              fontSize: 16,
+            ),
+          ),
+          TextSpan(text: suffix),
         ],
       ),
     );
@@ -221,7 +302,7 @@ class WeeklyTab extends StatelessWidget {
 
 class _AnimatedChartWrapper extends StatefulWidget {
   final Widget Function(bool isAnimated) builder;
-  const _AnimatedChartWrapper({required this.builder});
+  const _AnimatedChartWrapper({super.key, required this.builder});
 
   @override
   State<_AnimatedChartWrapper> createState() => _AnimatedChartWrapperState();

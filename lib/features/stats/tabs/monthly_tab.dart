@@ -1,98 +1,148 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import '../../../core/design/tokens/colors.dart';
 import '../providers/stats_providers.dart';
+import '../widgets/time_period_navigator.dart';
 
-class MonthlyTab extends StatelessWidget {
-  final DetailedStats stats;
-
-  const MonthlyTab({super.key, required this.stats});
+class MonthlyTab extends ConsumerWidget {
+  const MonthlyTab({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
-    final now = DateTime.now();
-    final totalThisMonth = stats.currentMonthDailyCounts.values.fold(0, (a, b) => a + b);
-    final daysWithReading = stats.currentMonthDailyCounts.values.where((v) => v > 0).length;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Text(
-            _monthName(now.month),
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+    final offset = ref.watch(monthlyOffsetProvider);
+    final asyncData = ref.watch(monthlyChartStatsProvider(offset));
+
+    return asyncData.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('Error: $err')),
+      data: (chartData) {
+        final daysWithReading = chartData.dailyCounts.values.where((v) => v > 0).length;
+        final label = '${_monthName(chartData.month)} ${chartData.year}';
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Period navigator
+              TimePeriodNavigator(
+                label: label,
+                onPrevious: () => ref.read(monthlyOffsetProvider.notifier).goBack(),
+                onNext: offset > 0
+                    ? () => ref.read(monthlyOffsetProvider.notifier).goForward()
+                    : null,
+                onReset: offset > 0
+                    ? () => ref.read(monthlyOffsetProvider.notifier).state = 0
+                    : null,
+              ),
+              const Gap(16),
+
+              // Summary
+              RichText(
+                text: TextSpan(
+                  style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
+                  children: [
+                    TextSpan(
+                      text: '${chartData.totalRead} chapters ',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: scheme.primary,
+                        fontSize: 16,
+                      ),
+                    ),
+                    TextSpan(
+                      text: daysWithReading > 0
+                          ? 'across $daysWithReading days'
+                          : 'no reading recorded',
+                    ),
+                  ],
                 ),
-          ),
-          const Gap(4),
-          RichText(
-            text: TextSpan(
-              style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
-              children: [
-                TextSpan(
-                  text: '$totalThisMonth chapters ',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: scheme.primary,
-                    fontSize: 16,
+              ),
+              const Gap(24),
+
+              // Heatmap Calendar
+              _HeatmapCalendar(
+                year: chartData.year,
+                month: chartData.month,
+                dailyCounts: chartData.dailyCounts,
+              ),
+              const Gap(20),
+
+              // Intensity legend
+              const _IntensityLegend(),
+              const Gap(28),
+
+              // Top reading days
+              if (chartData.dailyCounts.values.any((v) => v > 0)) ...[
+                Text(
+                  'Top Reading Days',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const Gap(12),
+                ..._topDays(context, chartData.dailyCounts, chartData.month, chartData.year),
+              ] else ...[
+                // Empty state for months with no data
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.calendar_today_outlined,
+                          size: 40,
+                          color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
+                        ),
+                        const Gap(12),
+                        Text(
+                          'No reading activity this month',
+                          style: TextStyle(
+                            color: scheme.onSurfaceVariant,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                TextSpan(text: 'across $daysWithReading days'),
               ],
-            ),
+            ],
           ),
-          const Gap(24),
-
-          // Heatmap Calendar
-          _HeatmapCalendar(
-            year: now.year,
-            month: now.month,
-            dailyCounts: stats.currentMonthDailyCounts,
-          ),
-          const Gap(24),
-
-          // Intensity legend
-          _IntensityLegend(),
-          const Gap(24),
-
-          // Top reading days
-          if (stats.currentMonthDailyCounts.isNotEmpty) ...[
-            Text(
-              'Top Reading Days',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const Gap(12),
-            ..._topDays(context, now),
-          ],
-        ],
-      ),
+        );
+      },
     );
   }
 
-  List<Widget> _topDays(BuildContext context, DateTime now) {
+  List<Widget> _topDays(BuildContext context, Map<int, int> dailyCounts, int month, int year) {
     final scheme = Theme.of(context).colorScheme;
-    final sorted = stats.currentMonthDailyCounts.entries.toList()
+    final sorted = dailyCounts.entries.where((e) => e.value > 0).toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
     return sorted.take(5).map((entry) {
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final entryDate = DateTime(year, month, entry.key);
+      final isToday = entryDate == today;
+
       return Padding(
-        padding: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.only(bottom: 10),
         child: Row(
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
                 color: scheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
               ),
               alignment: Alignment.center,
               child: Text(
@@ -100,21 +150,50 @@ class MonthlyTab extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: scheme.primary,
+                  fontSize: 15,
                 ),
               ),
             ),
             const Gap(12),
-            Text(
-              '${months[now.month - 1]} ${entry.key}',
-              style: const TextStyle(fontSize: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isToday ? 'Today' : '${months[month - 1]} ${entry.key}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
+                      color: isToday ? scheme.primary : scheme.onSurface,
+                    ),
+                  ),
+                  Text(
+                    '${entry.value} chapter${entry.value == 1 ? '' : 's'}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const Spacer(),
-            Text(
-              '${entry.value} chapters',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: scheme.primary,
+            // Mini bar indicator
+            Container(
+              width: 48,
+              height: 6,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(3),
+                color: scheme.outline.withValues(alpha: 0.1),
+              ),
+              child: FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: (entry.value / sorted.first.value).clamp(0.0, 1.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(3),
+                    color: scheme.primary,
+                  ),
+                ),
               ),
             ),
           ],
@@ -132,7 +211,9 @@ class MonthlyTab extends StatelessWidget {
   }
 }
 
-// Heatmap Calendar
+// ─────────────────────────────────────────────
+// Heatmap Calendar (Sunday-first)
+// ─────────────────────────────────────────────
 class _HeatmapCalendar extends StatelessWidget {
   final int year;
   final int month;
@@ -151,32 +232,31 @@ class _HeatmapCalendar extends StatelessWidget {
 
     final daysInMonth = DateUtils.getDaysInMonth(year, month);
     // Convert Dart weekday (1=Mon..7=Sun) to Sunday-first (0=Sun..6=Sat)
-    final dartWeekday = DateTime(year, month, 1).weekday; // 1=Mon, 7=Sun
-    final firstWeekday = dartWeekday % 7; // Sun=0, Mon=1, ..., Sat=6
+    final dartWeekday = DateTime(year, month, 1).weekday;
+    final firstWeekday = dartWeekday % 7;
     final maxCount = dailyCounts.values.isEmpty ? 1 : dailyCounts.values.reduce(max);
 
-    // Day labels (Sunday-first)
     const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
 
     return Column(
       children: [
-        // Day-of-week header row
+        // Day-of-week header
         Row(
-          children: [
-            const SizedBox(width: 0), // No left label column
-            ...dayLabels.map((d) => Expanded(
-                  child: Center(
-                    child: Text(
-                      d,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: scheme.onSurfaceVariant,
-                      ),
+          children: dayLabels.map((d) => Expanded(
+                child: Center(
+                  child: Text(
+                    d,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
                     ),
                   ),
-                )),
-          ],
+                ),
+              )).toList(),
         ),
         const Gap(8),
 
@@ -186,19 +266,16 @@ class _HeatmapCalendar extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 4),
             child: Row(
               children: List.generate(7, (dayOfWeek) {
-                // dayOfWeek: 0=Sun, 6=Sat
                 final dayNum = weekIndex * 7 + dayOfWeek - firstWeekday + 1;
 
                 if (dayNum < 1 || dayNum > daysInMonth) {
-                  // Empty cell (before month start or after month end)
                   return Expanded(child: AspectRatio(aspectRatio: 1, child: Container()));
                 }
 
                 final count = dailyCounts[dayNum] ?? 0;
                 final intensity = maxCount > 0 ? count / maxCount : 0.0;
-                final isToday = dayNum == DateTime.now().day &&
-                    month == DateTime.now().month &&
-                    year == DateTime.now().year;
+                final cellDate = DateTime(year, month, dayNum);
+                final isToday = cellDate == today;
 
                 return Expanded(
                   child: AspectRatio(
@@ -210,8 +287,8 @@ class _HeatmapCalendar extends StatelessWidget {
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 400),
                           decoration: BoxDecoration(
-                            color: _heatColor(intensity, isLight, scheme),
-                            borderRadius: BorderRadius.circular(4),
+                            color: _heatColor(intensity, isLight),
+                            borderRadius: BorderRadius.circular(5),
                             border: isToday
                                 ? Border.all(color: scheme.primary, width: 2)
                                 : null,
@@ -245,12 +322,12 @@ class _HeatmapCalendar extends StatelessWidget {
     return (totalSlots / 7).ceil();
   }
 
-  Color _heatColor(double intensity, bool isLight, ColorScheme scheme) {
+  Color _heatColor(double intensity, bool isLight) {
     if (intensity <= 0) {
       return isLight ? AppColors.backgroundLight : AppColors.backgroundDark;
     }
 
-    // Sacred Blue scale — uses the app's primary palette
+    // Sacred Blue scale
     if (intensity <= 0.25) {
       return isLight ? AppColors.primaryContainerLight : AppColors.primaryContainerDark;
     } else if (intensity <= 0.5) {
@@ -264,9 +341,11 @@ class _HeatmapCalendar extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// Intensity Legend (Less → More)
+// Intensity Legend
 // ─────────────────────────────────────────────
 class _IntensityLegend extends StatelessWidget {
+  const _IntensityLegend();
+
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
