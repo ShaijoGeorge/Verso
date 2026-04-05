@@ -207,9 +207,9 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
                 ),
                 const Gap(16),
                 FilledButton.icon(
-                  onPressed: () => context.go('/journal'),
+                  onPressed: () => context.go('/detailed-activity'),
                   icon: const Icon(Icons.auto_stories_rounded),
-                  label: const Text("View Reading Journal"),
+                  label: const Text(" View Full Analytics"),
                 ),
                 const Gap(24),
               ],
