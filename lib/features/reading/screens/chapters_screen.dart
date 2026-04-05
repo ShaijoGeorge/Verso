@@ -13,6 +13,7 @@ import '../../../core/design/components/verso_progress_bar.dart';
 import '../../../core/design/components/verso_snackbar.dart';
 import '../../../core/widgets/error_state_widget.dart';
 import '../../../core/utils/app_error_handler.dart';
+import '../../../data/local/entities/reading_progress.dart';
 import '../providers/reading_providers.dart';
 import '../services/reading_service.dart';
 
@@ -49,75 +50,84 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
           ),
         ],
       ),
-      body: progressAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => ErrorStateWidget(
-          error: err,
-          onRetry: () => ref.invalidate(bookProgressProvider(widget.book.id)),
+      body: _buildBody(progressAsync),
+    );
+  }
+
+  Widget _buildBody(AsyncValue<List<ReadingProgress>> progressAsync) {
+    // On first load (no data yet), show spinner.
+    // On refresh (provider invalidated but previous data exists), keep
+    // showing the grid so tiles don't vanish and blink.
+    if (progressAsync.isLoading && !progressAsync.hasValue) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (progressAsync.hasError && !progressAsync.hasValue) {
+      return ErrorStateWidget(
+        error: progressAsync.error!,
+        onRetry: () => ref.invalidate(bookProgressProvider(widget.book.id)),
+      );
+    }
+
+    final progressList = progressAsync.value ?? [];
+    final readDataMap = <int, DateTime?>{};
+    int readCount = 0;
+
+    for (final p in progressList) {
+      if (p.isRead) {
+        readDataMap[p.chapterNumber] = p.readAt;
+        readCount++;
+      }
+    }
+
+    final progress = widget.book.chapters > 0
+        ? readCount / widget.book.chapters
+        : 0.0;
+    final isComplete = readCount >= widget.book.chapters;
+
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: _HeroHeader(
+            book: widget.book,
+            readCount: readCount,
+            progress: progress,
+            isComplete: isComplete,
+          ),
         ),
-        data: (progressList) {
-          final readDataMap = <int, DateTime?>{};
-          int readCount = 0;
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+          sliver: SliverGrid(
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 72,
+              childAspectRatio: 1.0,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final chapterNum = index + 1;
+                final isRead = readDataMap.containsKey(chapterNum);
+                final readAt = readDataMap[chapterNum];
 
-          for (final p in progressList) {
-            if (p.isRead) {
-              readDataMap[p.chapterNumber] = p.readAt;
-              readCount++;
-            }
-          }
-
-          final progress = widget.book.chapters > 0
-              ? readCount / widget.book.chapters
-              : 0.0;
-          final isComplete = readCount >= widget.book.chapters;
-
-          return CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: _HeroHeader(
-                  book: widget.book,
-                  readCount: readCount,
-                  progress: progress,
-                  isComplete: isComplete,
-                ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 72,
-                    childAspectRatio: 1.0,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final chapterNum = index + 1;
-                      final isRead = readDataMap.containsKey(chapterNum);
-                      final readAt = readDataMap[chapterNum];
-
-                      return _ChapterTile(
-                        bookName: widget.book.name,
-                        chapterNum: chapterNum,
-                        isRead: isRead,
-                        readAt: readAt,
-                        onTap: (newStatus) {
-                          ref.read(readingServiceProvider).toggleChapter(
-                                widget.book.id,
-                                chapterNum,
-                                newStatus,
-                              );
-                        },
-                      );
-                    },
-                    childCount: widget.book.chapters,
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
+                return _ChapterTile(
+                  bookName: widget.book.name,
+                  chapterNum: chapterNum,
+                  isRead: isRead,
+                  readAt: readAt,
+                  onTap: (newStatus) {
+                    ref.read(readingServiceProvider).toggleChapter(
+                          widget.book.id,
+                          chapterNum,
+                          newStatus,
+                        );
+                  },
+                );
+              },
+              childCount: widget.book.chapters,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -375,6 +385,10 @@ class _ChapterTileState extends State<_ChapterTile>
   late AnimationController _scaleCtrl;
   late Animation<double> _scaleAnim;
 
+  // Guards the optimistic state so intermediate provider rebuilds
+  // don't revert the tile and cause visual blinks.
+  bool _isOptimistic = false;
+
   @override
   void initState() {
     super.initState();
@@ -398,6 +412,12 @@ class _ChapterTileState extends State<_ChapterTile>
   void didUpdateWidget(covariant _ChapterTile oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.isRead != widget.isRead) {
+      if (_isOptimistic && widget.isRead != _isRead) {
+        // Provider hasn't caught up yet — keep the optimistic state
+        return;
+      }
+      // Provider confirmed or changed externally — accept it without animation
+      _isOptimistic = false;
       _isRead = widget.isRead;
     }
   }
@@ -405,8 +425,46 @@ class _ChapterTileState extends State<_ChapterTile>
   void _handleTap() {
     HapticFeedback.lightImpact();
     _scaleCtrl.forward().then((_) => _scaleCtrl.reverse());
+    _isOptimistic = true;
     setState(() => _isRead = !_isRead);
     widget.onTap(_isRead);
+  }
+
+  // Cache decoration objects to prevent AnimatedContainer from
+  // re-animating on every rebuild when the value hasn't changed.
+  BoxDecoration? _cachedDecoration;
+  bool? _cachedIsRead;
+  Brightness? _cachedBrightness;
+
+  BoxDecoration _getDecoration(ColorScheme scheme, bool isLight) {
+    if (_cachedIsRead == _isRead && _cachedBrightness == (isLight ? Brightness.light : Brightness.dark)) {
+      return _cachedDecoration!;
+    }
+    _cachedIsRead = _isRead;
+    _cachedBrightness = isLight ? Brightness.light : Brightness.dark;
+    _cachedDecoration = BoxDecoration(
+      color: _isRead
+          ? scheme.primary
+          : (isLight
+              ? scheme.surface
+              : scheme.surfaceContainerHighest.withValues(alpha: 0.5)),
+      borderRadius: AppRadii.borderRadiusMD,
+      border: _isRead
+          ? null
+          : Border.all(
+              color: scheme.outline.withValues(alpha: isLight ? 0.15 : 0.1),
+            ),
+      boxShadow: _isRead
+          ? [
+              BoxShadow(
+                color: scheme.primary.withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ]
+          : AppShadows.sm,
+    );
+    return _cachedDecoration!;
   }
 
   void _handleLongPress() {
@@ -629,28 +687,7 @@ class _ChapterTileState extends State<_ChapterTile>
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeOutCubic,
-          decoration: BoxDecoration(
-            color: _isRead
-                ? scheme.primary
-                : (isLight
-                    ? scheme.surface
-                    : scheme.surfaceContainerHighest.withValues(alpha: 0.5)),
-            borderRadius: AppRadii.borderRadiusMD,
-            border: _isRead
-                ? null
-                : Border.all(
-                    color: scheme.outline.withValues(alpha: isLight ? 0.15 : 0.1),
-                  ),
-            boxShadow: _isRead
-                ? [
-                    BoxShadow(
-                      color: scheme.primary.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ]
-                : AppShadows.sm,
-          ),
+          decoration: _getDecoration(scheme, isLight),
           child: Stack(
             alignment: Alignment.center,
             children: [
