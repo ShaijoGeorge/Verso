@@ -69,7 +69,7 @@ class HomeScreen extends ConsumerWidget {
                 VersoSectionHeader(
                   title: 'This Week',
                   action: 'Details',
-                  onAction: () => context.push('/detailed-stats'),
+                  onAction: () => context.go('/stats?tab=weekly'),
                 ),
                 const Gap(Spacing.md),
                 _WeeklyChart(
@@ -163,134 +163,110 @@ class _HeroProgressCard extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
 
-    return GestureDetector(
-      onTap: () => context.push('/detailed-stats'),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(Spacing.lg),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isLight
-                ? [
-                    scheme.primary,
-                    scheme.primary.withValues(alpha: 0.85),
-                  ]
-                : [
-                    scheme.primaryContainer,
-                    scheme.primaryContainer.withValues(alpha: 0.7),
-                  ],
-          ),
-          borderRadius: AppRadii.borderRadiusXL,
-          boxShadow: AppShadows.lg,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(Spacing.lg),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isLight
+              ? [
+                  scheme.primary,
+                  scheme.primary.withValues(alpha: 0.85),
+                ]
+              : [
+                  scheme.primaryContainer,
+                  scheme.primaryContainer.withValues(alpha: 0.7),
+                ],
         ),
-        child: Row(
-          children: [
-            // Progress circle
-            TweenAnimationBuilder<double>(
-              key: ValueKey(stats),
-              tween: Tween<double>(begin: 0.0, end: stats.totalProgress),
-              duration: const Duration(milliseconds: 1500),
-              curve: Curves.easeOutCubic,
-              builder: (context, animatedProgress, _) {
-                return VersoCircularProgress(
-                  progress: animatedProgress,
-                  maxProgress: 100,
-                  size: 130,
-                  strokeWidth: 10,
-                  color: isLight
-                      ? Colors.white
-                      : scheme.primary,
-                  trackColor: isLight
-                      ? Colors.white.withValues(alpha: 0.2)
-                      : scheme.primary.withValues(alpha: 0.2),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '${animatedProgress.toStringAsFixed(1)}%',
-                        style: textTheme.titleLarge?.copyWith(
-                          color: isLight ? Colors.white : scheme.onPrimaryContainer,
-                          fontWeight: FontWeight.bold,
-                        ),
+        borderRadius: AppRadii.borderRadiusXL,
+        boxShadow: AppShadows.lg,
+      ),
+      child: Row(
+        children: [
+          // Progress circle
+          TweenAnimationBuilder<double>(
+            key: ValueKey(stats),
+            tween: Tween<double>(begin: 0.0, end: stats.totalProgress),
+            duration: const Duration(milliseconds: 1500),
+            curve: Curves.easeOutCubic,
+            builder: (context, animatedProgress, _) {
+              return VersoCircularProgress(
+                progress: animatedProgress,
+                maxProgress: 100,
+                size: 130,
+                strokeWidth: 10,
+                color: isLight
+                    ? Colors.white
+                    : scheme.primary,
+                trackColor: isLight
+                    ? Colors.white.withValues(alpha: 0.2)
+                    : scheme.primary.withValues(alpha: 0.2),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${animatedProgress.toStringAsFixed(1)}%',
+                      style: textTheme.titleLarge?.copyWith(
+                        color: isLight ? Colors.white : scheme.onPrimaryContainer,
+                        fontWeight: FontWeight.bold,
                       ),
-                      Text(
-                        'complete',
-                        style: textTheme.labelSmall?.copyWith(
-                          color: isLight
-                              ? Colors.white.withValues(alpha: 0.8)
-                              : scheme.onPrimaryContainer.withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-            const Gap(Spacing.lg),
-
-            // Right side info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Bible Journey',
-                    style: textTheme.titleMedium?.copyWith(
-                      color: isLight ? Colors.white : scheme.onPrimaryContainer,
-                      fontWeight: FontWeight.bold,
                     ),
+                    Text(
+                      'complete',
+                      style: textTheme.labelSmall?.copyWith(
+                        color: isLight
+                            ? Colors.white.withValues(alpha: 0.8)
+                            : scheme.onPrimaryContainer.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          const Gap(Spacing.lg),
+
+          // Right side info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Bible Journey',
+                  style: textTheme.titleMedium?.copyWith(
+                    color: isLight ? Colors.white : scheme.onPrimaryContainer,
+                    fontWeight: FontWeight.bold,
                   ),
-                  const Gap(Spacing.sm),
-                  _HeroStatRow(
-                    icon: Icons.menu_book_rounded,
-                    text: '${stats.totalChaptersRead} / 1334 chapters',
-                    isLight: isLight,
-                    scheme: scheme,
-                  ),
+                ),
+                const Gap(Spacing.sm),
+                _HeroStatRow(
+                  icon: Icons.menu_book_rounded,
+                  text: '${stats.totalChaptersRead} / 1334 chapters',
+                  isLight: isLight,
+                  scheme: scheme,
+                ),
+                const Gap(Spacing.xs),
+                _HeroStatRow(
+                  icon: Icons.emoji_events_rounded,
+                  text: '${stats.booksCompleted} / 73 books done',
+                  isLight: isLight,
+                  scheme: scheme,
+                ),
+                if (todayCount > 0) ...[
                   const Gap(Spacing.xs),
                   _HeroStatRow(
-                    icon: Icons.emoji_events_rounded,
-                    text: '${stats.booksCompleted} / 73 books done',
+                    icon: Icons.today_rounded,
+                    text: '$todayCount read today',
                     isLight: isLight,
                     scheme: scheme,
                   ),
-                  if (todayCount > 0) ...[
-                    const Gap(Spacing.xs),
-                    _HeroStatRow(
-                      icon: Icons.today_rounded,
-                      text: '$todayCount read today',
-                      isLight: isLight,
-                      scheme: scheme,
-                    ),
-                  ],
-                  const Gap(Spacing.md),
-                  Row(
-                    children: [
-                      Text(
-                        'Tap for details',
-                        style: textTheme.labelSmall?.copyWith(
-                          color: isLight
-                              ? Colors.white.withValues(alpha: 0.7)
-                              : scheme.onPrimaryContainer.withValues(alpha: 0.5),
-                        ),
-                      ),
-                      const Gap(Spacing.xs),
-                      Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 14,
-                        color: isLight
-                            ? Colors.white.withValues(alpha: 0.7)
-                            : scheme.onPrimaryContainer.withValues(alpha: 0.5),
-                      ),
-                    ],
-                  ),
                 ],
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

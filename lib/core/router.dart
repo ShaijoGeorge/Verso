@@ -8,13 +8,13 @@ import 'widgets/not_found_screen.dart';
 import '../data/bible_data.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/reading/screens/bible_screen.dart';
+import '../features/stats/screens/stats_screen.dart';
 import '../features/reading/screens/chapters_screen.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/forgot_password_screen.dart';
 import '../features/auth/screens/update_password_screen.dart';
 import '../features/auth/screens/profile_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
-import '../features/stats/screens/detailed_stats_screen.dart';
 import '../features/intro/screens/splash_screen.dart';
 import '../features/stats/screens/activity_log_screen.dart';
 import '../features/intro/screens/onboarding_screen.dart';
@@ -154,7 +154,23 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Branch 2: Journal (Activity Log)
+          // Branch 2: Stats (Tabbed Stats Screen)
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/stats',
+                builder: (context, state) {
+                  final tab = state.uri.queryParameters['tab'];
+                  int initialIndex = 0;
+                  if (tab == 'weekly') initialIndex = 1;
+                  else if (tab == 'monthly') initialIndex = 2;
+                  else if (tab == 'yearly') initialIndex = 3;
+                  return StatsScreen(initialIndex: initialIndex);
+                },
+              ),
+            ],
+          ),
+          // Branch 3: Journal (Activity Log)
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -190,13 +206,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SettingsScreen(),
       ),
 
-      // Detailed Stats Route
-      GoRoute(
-        path: '/detailed-stats',
-        parentNavigatorKey: rootNavigatorKey, // Covers the bottom nav bar
-        builder: (context, state) => const DetailedStatsScreen(),
-      ),
-
+      // Old detailed-stats and detailed-activity routes removed
+      // Stats are now consolidated into the tabbed StatsScreen on Home
     ],
   );
 });

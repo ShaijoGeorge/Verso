@@ -108,6 +108,10 @@ class DetailedStats {
   final Map<int, int> currentMonthDailyCounts;
   final Map<int, int> currentYearMonthlyCounts;
   final double averageChaptersPerDay;
+  final int streak;
+
+  /// Per-book completion: bookId → fraction (0.0 to 1.0)
+  final Map<int, double> bookCompletionMap;
 
   DetailedStats({
     required this.otRead,
@@ -123,6 +127,8 @@ class DetailedStats {
     required this.currentMonthDailyCounts,
     required this.currentYearMonthlyCounts,
     required this.averageChaptersPerDay,
+    required this.streak,
+    required this.bookCompletionMap,
   });
 }
 
@@ -158,6 +164,13 @@ Future<DetailedStats> detailedStats(Ref ref) async {
         ntBooksCompleted++;
       }
     }
+  }
+
+  // Per-book completion fractions for the 73-book grid
+  final Map<int, double> bookCompletionMap = {};
+  for (final book in kBibleBooks) {
+    final readCount = readChaptersByBook[book.id]?.length ?? 0;
+    bookCompletionMap[book.id] = book.chapters > 0 ? readCount / book.chapters : 0.0;
   }
 
   final now = DateTime.now();
@@ -217,5 +230,7 @@ Future<DetailedStats> detailedStats(Ref ref) async {
     currentMonthDailyCounts: currentMonthDailyCounts,
     currentYearMonthlyCounts: currentYearMonthlyCounts,
     averageChaptersPerDay: dailyRate,
+    streak: _calculateStreak(history),
+    bookCompletionMap: bookCompletionMap,
   );
 }

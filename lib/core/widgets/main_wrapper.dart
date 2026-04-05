@@ -24,7 +24,7 @@ class MainWrapper extends ConsumerStatefulWidget {
 class _MainWrapperState extends ConsumerState<MainWrapper> {
 
   void _goBranch(int index) {
-    // 0 = Home, 1 = Bible, 2 = Journal
+    // 0 = Home, 1 = Bible, 2 = Stats, 3 = Journal
 
     // Home Page Animation Trigger
     if (index == 0 && widget.navigationShell.currentIndex != 0) {
@@ -36,8 +36,13 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
       ref.read(biblePageTriggerProvider.notifier).increment();
     }
 
-    // Journal Trigger
+    // Stats Tab Trigger — refresh detailed stats
     if (index == 2 && widget.navigationShell.currentIndex != 2) {
+      ref.invalidate(detailedStatsProvider);
+    }
+
+    // Journal Trigger
+    if (index == 3 && widget.navigationShell.currentIndex != 3) {
       ref.invalidate(activityLogProvider);
     }
 
@@ -57,7 +62,8 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
     switch (widget.navigationShell.currentIndex) {
       case 0: title = 'Verso'; break;
       case 1: title = 'The Bible'; break;
-      case 2: title = 'Reading Journal'; break;
+      case 2: title = 'Stats'; break;
+      case 3: title = 'Reading Journal'; break;
       default: title = 'Verso';
     }
 
@@ -131,6 +137,7 @@ class _VersoBottomNav extends StatelessWidget {
   static const _items = [
     _NavItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
     _NavItem(icon: Icons.menu_book_outlined, activeIcon: Icons.menu_book_rounded, label: 'Bible'),
+    _NavItem(icon: Icons.bar_chart_outlined, activeIcon: Icons.bar_chart_rounded, label: 'Stats'),
     _NavItem(icon: Icons.history_edu_outlined, activeIcon: Icons.history_edu_rounded, label: 'Journal'),
   ];
 
