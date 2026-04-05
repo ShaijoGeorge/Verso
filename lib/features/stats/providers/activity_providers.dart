@@ -1,7 +1,12 @@
 import 'package:collection/collection.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../../reading/providers/reading_providers.dart';
 import '../../../data/bible_data.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../../data/local/entities/reading_progress.dart';
+import '../../../core/services/offline_cache_service.dart';
+import '../../../core/providers/connectivity_provider.dart';
 
 part 'activity_providers.g.dart';
 
@@ -87,7 +92,7 @@ class ActivityGroup {
     if (isBulkAction) return 'Marked ${chapters.length} chapters as read';
     if (chapters.length == 1) return 'Read Chapter ${chapters.first}';
 
-    // Sort chapters to handle "1, 2, 3"
+    // Sort chapters to handle "1, 2, 3" properly
     chapters.sort();
     // Check if consecutive (simple check)
     bool isConsecutive = true;
@@ -102,15 +107,54 @@ class ActivityGroup {
   }
 }
 
-// Activity Log Provider (Grouped by Date)
+// --- CORE OFFLINE-FIRST LOGIC ---
+
+/// Fetches reading history. Handles network checks, caching, and optimistic UI updates.
+Future<List<ReadingProgress>> _fetchOfflineFirstHistory(Ref ref) async {
+  final repo = ref.watch(bibleRepositoryProvider);
+  final isConnected = ref.watch(connectivityProvider);
+  final cacheService = OfflineCacheService();
+  
+  // We need the user ID to apply pending writes locally
+  final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+
+  List<ReadingProgress> history = [];
+
+  if (isConnected) {
+    try {
+      // 1. Try fetching fresh data from the cloud
+      history = await repo.getAllProgressSnapshot();
+      // 2. Silently cache it for the next time we go offline
+      cacheService.cacheProgress(history);
+    } catch (_) {
+      // If the network call fails (e.g., spotty connection), fallback to cache
+      history = await cacheService.getCachedProgress();
+    }
+  } else {
+    // 3. We are definitively offline, use the cache
+    history = await cacheService.getCachedProgress();
+  }
+
+  // 4. Merge any pending actions the user JUST took 
+  // so the Journal immediately reflects their progress even before it syncs.
+  final queue = await cacheService.getWriteQueue();
+  if (queue.isNotEmpty && userId.isNotEmpty) {
+    history = cacheService.mergeWithPendingWrites(history, queue, userId);
+  }
+
+  return history;
+}
+
+// --- Providers ---
 
 @riverpod
 Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
   // WATCH the filter - if filter changes, this entire function re-runs
   final filter = ref.watch(activityFilterStateProvider);
 
-  // Fetch ALL raw history
-  final allHistory = await ref.watch(bibleRepositoryProvider).getAllProgressSnapshot();
+  // Use our new Offline-First helper, and copy to a mutable list so we can sort it
+  final rawHistory = await _fetchOfflineFirstHistory(ref);
+  final allHistory = List<ReadingProgress>.from(rawHistory);
 
   // Detect Completed Books
   final Map<int, DateTime> bookCompletionTimes = {};
@@ -207,7 +251,9 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
 
 @riverpod
 Future<List<BibleBook>> booksWithActivity(Ref ref) async {
-  final allHistory = await ref.watch(bibleRepositoryProvider).getAllProgressSnapshot();
+  // Use our new Offline-First helper so the dropdown works offline!
+  final allHistory = await _fetchOfflineFirstHistory(ref);
   final bookIds = allHistory.map((p) => p.bookId).toSet();
+  
   return kBibleBooks.where((b) => bookIds.contains(b.id)).toList();
 }
