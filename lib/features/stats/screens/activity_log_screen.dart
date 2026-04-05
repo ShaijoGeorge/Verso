@@ -356,6 +356,7 @@ class _FilterBar extends StatelessWidget {
       context: context,
       firstDate: DateTime(2020),
       lastDate: now,
+      initialEntryMode: DatePickerEntryMode.calendarOnly,
       initialDateRange: filter.startDate != null && filter.endDate != null
           ? DateTimeRange(start: filter.startDate!, end: filter.endDate!)
           : null,
