@@ -30,104 +30,87 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Journal'),
-        centerTitle: true,
-        actions: [
-          if (filter.isActive)
-            IconButton(
-              icon: const Icon(Icons.filter_list_off),
-              tooltip: 'Clear Filters',
-              onPressed: () {
-                HapticFeedback.lightImpact();
-                ref.read(activityFilterStateProvider.notifier).clearFilters();
-              },
+    return Column(
+      children: [
+        // Filter Bar
+        _FilterBar(ref: ref, filter: filter, colorScheme: colorScheme),
+
+        // Content
+        Expanded(
+          child: activityAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => ErrorStateWidget(
+              error: e,
+              onRetry: () => ref.invalidate(activityLogProvider),
             ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Filter Bar
-          _FilterBar(ref: ref, filter: filter, colorScheme: colorScheme),
-
-          // Content
-          Expanded(
-            child: activityAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => ErrorStateWidget(
-                error: e,
-                onRetry: () => ref.invalidate(activityLogProvider),
-              ),
-              data: (grouped) {
-                if (grouped.isEmpty) {
-                  return _EmptyState(
-                    isFiltered: filter.isActive,
-                    onClearFilters: () {
-                      ref.read(activityFilterStateProvider.notifier).clearFilters();
-                    },
-                  );
-                }
-
-                // Sorted date keys (newest first)
-                final dateKeys = grouped.keys.toList()
-                  ..sort((a, b) => b.compareTo(a));
-
-                return RefreshIndicator(
-                  onRefresh: _onRefresh,
-                  displacement: 40,
-                  color: colorScheme.primary,
-                  child: CustomScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(
-                      parent: BouncingScrollPhysics(),
-                    ),
-                    slivers: [
-                      // Top padding
-                      const SliverPadding(padding: EdgeInsets.only(top: 8)),
-
-                      for (int di = 0; di < dateKeys.length; di++) ...[
-                        SliverMainAxisGroup(
-                          slivers: [
-                            // Sticky Date Header
-                            SliverPersistentHeader(
-                              pinned: true,
-                              delegate: _StickyDateHeaderDelegate(
-                                date: dateKeys[di],
-                                colorScheme: colorScheme,
-                              ),
-                            ),
-                            // Activity Items for this date
-                            SliverPadding(
-                              padding: const EdgeInsets.symmetric(horizontal: 20),
-                              sliver: SliverList.builder(
-                                itemCount: grouped[dateKeys[di]]!.length,
-                                itemBuilder: (context, index) {
-                                  final entries = grouped[dateKeys[di]]!;
-                                  final group = entries[index];
-                                  final isLast = (di == dateKeys.length - 1) &&
-                                      (index == entries.length - 1);
-
-                                  return _ActivityCard(
-                                    group: group,
-                                    isLast: isLast,
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-
-                      // Bottom safe area
-                      const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
-                    ],
-                  ),
+            data: (grouped) {
+              if (grouped.isEmpty) {
+                return _EmptyState(
+                  isFiltered: filter.isActive,
+                  onClearFilters: () {
+                    ref.read(activityFilterStateProvider.notifier).clearFilters();
+                  },
                 );
-              },
-            ),
+              }
+
+              // Sorted date keys (newest first)
+              final dateKeys = grouped.keys.toList()
+                ..sort((a, b) => b.compareTo(a));
+
+              return RefreshIndicator(
+                onRefresh: _onRefresh,
+                displacement: 40,
+                color: colorScheme.primary,
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  slivers: [
+                    // Top padding
+                    const SliverPadding(padding: EdgeInsets.only(top: 8)),
+
+                    for (int di = 0; di < dateKeys.length; di++) ...[
+                      SliverMainAxisGroup(
+                        slivers: [
+                          // Sticky Date Header
+                          SliverPersistentHeader(
+                            pinned: true,
+                            delegate: _StickyDateHeaderDelegate(
+                              date: dateKeys[di],
+                              colorScheme: colorScheme,
+                            ),
+                          ),
+                          // Activity Items for this date
+                          SliverPadding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            sliver: SliverList.builder(
+                              itemCount: grouped[dateKeys[di]]!.length,
+                              itemBuilder: (context, index) {
+                                final entries = grouped[dateKeys[di]]!;
+                                final group = entries[index];
+                                final isLast = (di == dateKeys.length - 1) &&
+                                    (index == entries.length - 1);
+
+                                return _ActivityCard(
+                                  group: group,
+                                  isLast: isLast,
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+
+                    // Bottom safe area
+                    const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
+                  ],
+                ),
+              );
+            },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -261,6 +244,27 @@ class _FilterBar extends StatelessWidget {
               ),
             ),
           ),
+
+          // Clear Filters button
+          if (filter.isActive) ...[
+            const Gap(8),
+            Container(
+              decoration: BoxDecoration(
+                color: colorScheme.errorContainer.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: IconButton(
+                icon: Icon(Icons.filter_list_off, size: 20, color: colorScheme.error),
+                tooltip: 'Clear Filters',
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(),
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  ref.read(activityFilterStateProvider.notifier).clearFilters();
+                },
+              ),
+            ),
+          ],
         ],
       ),
     );
