@@ -96,7 +96,7 @@ class HomeScreen extends ConsumerWidget {
                 ),
                 const Gap(Spacing.md),
                 _RecentActivityList(
-                  groups: activityAsync.value!.take(3).toList(),
+                  groups: activityAsync.value!.values.expand((g) => g).take(3).toList(),
                 ),
               ],
 
