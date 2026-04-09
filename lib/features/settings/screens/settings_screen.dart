@@ -6,7 +6,6 @@ import '../providers/settings_providers.dart';
 import '../services/notification_service.dart';
 import '../../../core/widgets/error_state_widget.dart';
 import '../../../core/utils/app_error_handler.dart';
-import '../../../core/design/components/verso_snackbar.dart';
 import '../../../core/design/design.dart';
 import 'debug_cache_screen.dart';
 
