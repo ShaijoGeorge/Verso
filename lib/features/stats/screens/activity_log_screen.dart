@@ -15,7 +15,6 @@ class ActivityLogScreen extends ConsumerStatefulWidget {
 }
 
 class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
-
   Future<void> _onRefresh() async {
     HapticFeedback.mediumImpact();
     ref.invalidate(activityLogProvider);
@@ -48,7 +47,9 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
                 return _EmptyState(
                   isFiltered: filter.isActive,
                   onClearFilters: () {
-                    ref.read(activityFilterStateProvider.notifier).clearFilters();
+                    ref
+                        .read(activityFilterStateProvider.notifier)
+                        .clearFilters();
                   },
                 );
               }
@@ -157,14 +158,17 @@ class _FilterBar extends StatelessWidget {
                 return GestureDetector(
                   onTap: () => _showBookPicker(context, books),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: filter.bookId != null
                           ? colorScheme.primaryContainer
-                          : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                          : colorScheme.surfaceContainerHighest
+                              .withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(10),
                       border: filter.bookId != null
-                          ? Border.all(color: colorScheme.primary.withValues(alpha: 0.3))
+                          ? Border.all(
+                              color: colorScheme.primary.withValues(alpha: 0.3))
                           : null,
                     ),
                     child: Row(
@@ -183,7 +187,9 @@ class _FilterBar extends StatelessWidget {
                             selectedBook?.name ?? 'All Books',
                             style: TextStyle(
                               fontSize: 13,
-                              fontWeight: filter.bookId != null ? FontWeight.w600 : FontWeight.w400,
+                              fontWeight: filter.bookId != null
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
                               color: filter.bookId != null
                                   ? colorScheme.primary
                                   : colorScheme.onSurfaceVariant,
@@ -213,10 +219,12 @@ class _FilterBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: filter.startDate != null
                     ? colorScheme.primaryContainer
-                    : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    : colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(10),
                 border: filter.startDate != null
-                    ? Border.all(color: colorScheme.primary.withValues(alpha: 0.3))
+                    ? Border.all(
+                        color: colorScheme.primary.withValues(alpha: 0.3))
                     : null,
               ),
               child: Row(
@@ -234,7 +242,9 @@ class _FilterBar extends StatelessWidget {
                     _dateLabel(),
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight: filter.startDate != null ? FontWeight.w600 : FontWeight.w400,
+                      fontWeight: filter.startDate != null
+                          ? FontWeight.w600
+                          : FontWeight.w400,
                       color: filter.startDate != null
                           ? colorScheme.primary
                           : colorScheme.onSurfaceVariant,
@@ -254,7 +264,8 @@ class _FilterBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: IconButton(
-                icon: Icon(Icons.filter_list_off, size: 20, color: colorScheme.error),
+                icon: Icon(Icons.filter_list_off,
+                    size: 20, color: colorScheme.error),
                 tooltip: 'Clear Filters',
                 padding: const EdgeInsets.all(8),
                 constraints: const BoxConstraints(),
@@ -307,8 +318,8 @@ class _FilterBar extends StatelessWidget {
                   child: Text(
                     'Filter by Book',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                 ),
                 Expanded(
@@ -319,30 +330,38 @@ class _FilterBar extends StatelessWidget {
                       ListTile(
                         leading: Icon(
                           Icons.library_books_rounded,
-                          color: filter.bookId == null ? colorScheme.primary : null,
+                          color: filter.bookId == null
+                              ? colorScheme.primary
+                              : null,
                         ),
                         title: const Text('All Books'),
                         selected: filter.bookId == null,
                         selectedColor: colorScheme.primary,
                         onTap: () {
-                          ref.read(activityFilterStateProvider.notifier).setBookFilter(null);
+                          ref
+                              .read(activityFilterStateProvider.notifier)
+                              .setBookFilter(null);
                           Navigator.pop(ctx);
                         },
                       ),
                       const Divider(),
                       ...books.map((book) => ListTile(
-                        leading: Icon(
-                          Icons.book_rounded,
-                          color: filter.bookId == book.id ? colorScheme.primary : null,
-                        ),
-                        title: Text(book.name),
-                        selected: filter.bookId == book.id,
-                        selectedColor: colorScheme.primary,
-                        onTap: () {
-                          ref.read(activityFilterStateProvider.notifier).setBookFilter(book.id);
-                          Navigator.pop(ctx);
-                        },
-                      )),
+                            leading: Icon(
+                              Icons.book_rounded,
+                              color: filter.bookId == book.id
+                                  ? colorScheme.primary
+                                  : null,
+                            ),
+                            title: Text(book.name),
+                            selected: filter.bookId == book.id,
+                            selectedColor: colorScheme.primary,
+                            onTap: () {
+                              ref
+                                  .read(activityFilterStateProvider.notifier)
+                                  .setBookFilter(book.id);
+                              Navigator.pop(ctx);
+                            },
+                          )),
                     ],
                   ),
                 ),
@@ -375,7 +394,9 @@ class _FilterBar extends StatelessWidget {
     );
 
     if (result != null) {
-      ref.read(activityFilterStateProvider.notifier).setDateRange(result.start, result.end);
+      ref
+          .read(activityFilterStateProvider.notifier)
+          .setDateRange(result.start, result.end);
     }
   }
 }
@@ -394,7 +415,8 @@ class _StickyDateHeaderDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => 48.0;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
     final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
 
     return Container(
@@ -513,7 +535,9 @@ class _ActivityCard extends StatelessWidget {
               Expanded(
                 child: Container(
                   width: 2,
-                  color: isLast ? Colors.transparent : Colors.grey.withValues(alpha: 0.3),
+                  color: isLast
+                      ? Colors.transparent
+                      : Colors.grey.withValues(alpha: 0.3),
                 ),
               ),
             ],
@@ -571,7 +595,8 @@ class _StandardCard extends StatelessWidget {
             children: [
               Text(
                 group.book.name,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const Spacer(),
               Text(
@@ -662,17 +687,20 @@ class _CompletionCard extends StatelessWidget {
           Positioned(
             right: 12,
             top: 8,
-            child: Icon(Icons.auto_awesome, size: 16, color: Colors.amber.withValues(alpha: 0.3)),
+            child: Icon(Icons.auto_awesome,
+                size: 16, color: Colors.amber.withValues(alpha: 0.3)),
           ),
           Positioned(
             right: 40,
             top: 20,
-            child: Icon(Icons.auto_awesome, size: 10, color: Colors.amber.withValues(alpha: 0.2)),
+            child: Icon(Icons.auto_awesome,
+                size: 10, color: Colors.amber.withValues(alpha: 0.2)),
           ),
           Positioned(
             right: 24,
             bottom: 16,
-            child: Icon(Icons.auto_awesome, size: 12, color: Colors.amber.withValues(alpha: 0.25)),
+            child: Icon(Icons.auto_awesome,
+                size: 12, color: Colors.amber.withValues(alpha: 0.25)),
           ),
 
           // Content
@@ -714,7 +742,9 @@ class _CompletionCard extends StatelessWidget {
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 17,
-                              color: isDark ? Colors.amber.shade200 : Colors.amber.shade900,
+                              color: isDark
+                                  ? Colors.amber.shade200
+                                  : Colors.amber.shade900,
                             ),
                           ),
                           const Gap(2),
@@ -723,7 +753,9 @@ class _CompletionCard extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
-                              color: isDark ? Colors.amber.shade300 : Colors.amber.shade800,
+                              color: isDark
+                                  ? Colors.amber.shade300
+                                  : Colors.amber.shade800,
                             ),
                           ),
                         ],
@@ -733,7 +765,9 @@ class _CompletionCard extends StatelessWidget {
                       DateFormat('h:mm a').format(group.timestamp),
                       style: TextStyle(
                         fontSize: 12,
-                        color: isDark ? Colors.amber.shade400 : Colors.amber.shade700,
+                        color: isDark
+                            ? Colors.amber.shade400
+                            : Colors.amber.shade700,
                       ),
                     ),
                   ],
@@ -747,10 +781,13 @@ class _CompletionCard extends StatelessWidget {
                     _Tag(
                       text: group.timeOfDay,
                       color: Colors.amber.shade100.withValues(alpha: 0.5),
-                      textColor: isDark ? Colors.amber.shade300 : Colors.amber.shade800,
+                      textColor: isDark
+                          ? Colors.amber.shade300
+                          : Colors.amber.shade800,
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: Colors.amber.shade100,
                         borderRadius: BorderRadius.circular(6),
@@ -758,7 +795,8 @@ class _CompletionCard extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.star_rounded, size: 12, color: Colors.amber.shade800),
+                          Icon(Icons.star_rounded,
+                              size: 12, color: Colors.amber.shade800),
                           const Gap(4),
                           Text(
                             '${group.book.chapters} Chapters',
@@ -777,7 +815,9 @@ class _CompletionCard extends StatelessWidget {
                 Text(
                   group.description,
                   style: TextStyle(
-                    color: isDark ? Colors.amber.shade400 : Colors.amber.shade800.withValues(alpha: 0.7),
+                    color: isDark
+                        ? Colors.amber.shade400
+                        : Colors.amber.shade800.withValues(alpha: 0.7),
                   ),
                 ),
               ],

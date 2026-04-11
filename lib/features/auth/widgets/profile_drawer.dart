@@ -15,7 +15,7 @@ class ProfileDrawer extends ConsumerWidget {
     final user = userAsync.value;
 
     // 2. Get user metadata (like the name we saved during sign up)
-    final name = user?.userMetadata?['full_name'] ?? 'Reader';
+    final name = (user?.userMetadata?['full_name'] as String?) ?? 'Reader';
     final email = user?.email ?? '';
     // Generate a simple avatar initial
     final initial = name.isNotEmpty ? name[0].toUpperCase() : 'B';
@@ -52,7 +52,7 @@ class ProfileDrawer extends ConsumerWidget {
             title: const Text('Profile'),
             onTap: () {
               Navigator.pop(context); // Close drawer first
-              GoRouter.of(context).push('/profile');  // Navigate
+              GoRouter.of(context).push('/profile'); // Navigate
             },
           ),
           ListTile(
@@ -63,10 +63,10 @@ class ProfileDrawer extends ConsumerWidget {
               GoRouter.of(context).push('/settings'); // Navigate
             },
           ),
-          
+
           const Spacer(), // Pushes the logout button to the bottom
           const Divider(),
-          
+
           // Logout Button
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),

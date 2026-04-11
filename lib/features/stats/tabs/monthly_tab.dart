@@ -20,7 +20,8 @@ class MonthlyTab extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('Error: $err')),
       data: (chartData) {
-        final daysWithReading = chartData.dailyCounts.values.where((v) => v > 0).length;
+        final daysWithReading =
+            chartData.dailyCounts.values.where((v) => v > 0).length;
         final label = '${_monthName(chartData.month)} ${chartData.year}';
 
         return SingleChildScrollView(
@@ -31,7 +32,8 @@ class MonthlyTab extends ConsumerWidget {
               // Period navigator
               TimePeriodNavigator(
                 label: label,
-                onPrevious: () => ref.read(monthlyOffsetProvider.notifier).goBack(),
+                onPrevious: () =>
+                    ref.read(monthlyOffsetProvider.notifier).goBack(),
                 onNext: offset > 0
                     ? () => ref.read(monthlyOffsetProvider.notifier).goForward()
                     : null,
@@ -44,7 +46,8 @@ class MonthlyTab extends ConsumerWidget {
               // Summary
               RichText(
                 text: TextSpan(
-                  style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
+                  style:
+                      TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
                   children: [
                     TextSpan(
                       text: '${chartData.totalRead} chapters ',
@@ -85,7 +88,8 @@ class MonthlyTab extends ConsumerWidget {
                       ),
                 ),
                 const Gap(12),
-                ..._topDays(context, chartData.dailyCounts, chartData.month, chartData.year),
+                ..._topDays(context, chartData.dailyCounts, chartData.month,
+                    chartData.year),
               ] else ...[
                 // Empty state for months with no data
                 Center(
@@ -118,13 +122,26 @@ class MonthlyTab extends ConsumerWidget {
     );
   }
 
-  List<Widget> _topDays(BuildContext context, Map<int, int> dailyCounts, int month, int year) {
+  List<Widget> _topDays(
+      BuildContext context, Map<int, int> dailyCounts, int month, int year) {
     final scheme = Theme.of(context).colorScheme;
     final sorted = dailyCounts.entries.where((e) => e.value > 0).toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -204,8 +221,18 @@ class MonthlyTab extends ConsumerWidget {
 
   String _monthName(int m) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
     ];
     return months[m - 1];
   }
@@ -234,7 +261,8 @@ class _HeatmapCalendar extends StatelessWidget {
     // Convert Dart weekday (1=Mon..7=Sun) to Sunday-first (0=Sun..6=Sat)
     final dartWeekday = DateTime(year, month, 1).weekday;
     final firstWeekday = dartWeekday % 7;
-    final maxCount = dailyCounts.values.isEmpty ? 1 : dailyCounts.values.reduce(max);
+    final maxCount =
+        dailyCounts.values.isEmpty ? 1 : dailyCounts.values.reduce(max);
 
     const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -245,18 +273,20 @@ class _HeatmapCalendar extends StatelessWidget {
       children: [
         // Day-of-week header
         Row(
-          children: dayLabels.map((d) => Expanded(
-                child: Center(
-                  child: Text(
-                    d,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+          children: dayLabels
+              .map((d) => Expanded(
+                    child: Center(
+                      child: Text(
+                        d,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              )).toList(),
+                  ))
+              .toList(),
         ),
         const Gap(8),
 
@@ -269,7 +299,8 @@ class _HeatmapCalendar extends StatelessWidget {
                 final dayNum = weekIndex * 7 + dayOfWeek - firstWeekday + 1;
 
                 if (dayNum < 1 || dayNum > daysInMonth) {
-                  return Expanded(child: AspectRatio(aspectRatio: 1, child: Container()));
+                  return Expanded(
+                      child: AspectRatio(aspectRatio: 1, child: Container()));
                 }
 
                 final count = dailyCounts[dayNum] ?? 0;
@@ -298,7 +329,8 @@ class _HeatmapCalendar extends StatelessWidget {
                             '$dayNum',
                             style: TextStyle(
                               fontSize: 10,
-                              fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
+                              fontWeight:
+                                  isToday ? FontWeight.bold : FontWeight.w500,
                               color: intensity > 0.25
                                   ? Colors.white.withValues(alpha: 0.9)
                                   : scheme.onSurfaceVariant,
@@ -329,7 +361,9 @@ class _HeatmapCalendar extends StatelessWidget {
 
     // Sacred Blue scale
     if (intensity <= 0.25) {
-      return isLight ? AppColors.primaryContainerLight : AppColors.primaryContainerDark;
+      return isLight
+          ? AppColors.primaryContainerLight
+          : AppColors.primaryContainerDark;
     } else if (intensity <= 0.5) {
       return isLight ? const Color(0xFF7EB8E0) : const Color(0xFF1B3A5C);
     } else if (intensity <= 0.75) {
@@ -352,15 +386,26 @@ class _IntensityLegend extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
 
     final colors = isLight
-        ? [AppColors.backgroundLight, AppColors.primaryContainerLight,
-           const Color(0xFF7EB8E0), const Color(0xFF3B82C4), AppColors.primaryLight]
-        : [AppColors.backgroundDark, AppColors.primaryContainerDark,
-           const Color(0xFF1B3A5C), const Color(0xFF4A90D9), AppColors.primaryDark];
+        ? [
+            AppColors.backgroundLight,
+            AppColors.primaryContainerLight,
+            const Color(0xFF7EB8E0),
+            const Color(0xFF3B82C4),
+            AppColors.primaryLight
+          ]
+        : [
+            AppColors.backgroundDark,
+            AppColors.primaryContainerDark,
+            const Color(0xFF1B3A5C),
+            const Color(0xFF4A90D9),
+            AppColors.primaryDark
+          ];
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text('Less', style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
+        Text('Less',
+            style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
         const Gap(6),
         ...colors.map((c) => Container(
               width: 16,
@@ -372,7 +417,8 @@ class _IntensityLegend extends StatelessWidget {
               ),
             )),
         const Gap(6),
-        Text('More', style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
+        Text('More',
+            style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
       ],
     );
   }

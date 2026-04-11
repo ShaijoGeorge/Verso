@@ -1,7 +1,7 @@
 class UserSettings {
   final bool isDarkMode;
   final bool isReminderEnabled;
-  final int reminderHour;   // 0-23
+  final int reminderHour; // 0-23
   final int reminderMinute; // 0-59
 
   UserSettings({

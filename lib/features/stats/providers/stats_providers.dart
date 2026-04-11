@@ -5,8 +5,6 @@ import '../../../data/bible_data.dart';
 
 part 'stats_providers.g.dart';
 
-
-
 class UserStats {
   final int streak;
   final int totalChaptersRead;
@@ -61,11 +59,11 @@ int _calculateStreak(List<ReadingProgress> history) {
 Future<UserStats> userStats(Ref ref) async {
   // Watch the global stream's latest data
   final history = await ref.watch(globalProgressProvider.future);
-  
+
   final readHistory = history.where((p) => p.isRead).toList();
   final totalRead = readHistory.length;
   final streak = _calculateStreak(history);
-  
+
   // Calculate Books Completed
   int completedBooksCount = 0;
   final Map<int, Set<int>> readChaptersByBook = {};
@@ -170,7 +168,8 @@ Future<DetailedStats> detailedStats(Ref ref) async {
   final Map<int, double> bookCompletionMap = {};
   for (final book in kBibleBooks) {
     final readCount = readChaptersByBook[book.id]?.length ?? 0;
-    bookCompletionMap[book.id] = book.chapters > 0 ? readCount / book.chapters : 0.0;
+    bookCompletionMap[book.id] =
+        book.chapters > 0 ? readCount / book.chapters : 0.0;
   }
 
   final now = DateTime.now();
@@ -241,7 +240,7 @@ class WeeklyChartData {
   final List<DateTime> dates;
   final List<int> counts;
   final int totalRead;
-  
+
   WeeklyChartData(this.dates, this.counts, this.totalRead);
 }
 
@@ -260,7 +259,7 @@ class WeeklyOffset extends _$WeeklyOffset {
 Future<WeeklyChartData> weeklyChartStats(Ref ref, int weeksAgo) async {
   final history = await ref.watch(globalProgressProvider.future);
   final readHistory = history.where((p) => p.isRead).toList();
-  
+
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
   final startOfWeek = today.subtract(Duration(days: (weeksAgo * 7)));
@@ -272,7 +271,7 @@ Future<WeeklyChartData> weeklyChartStats(Ref ref, int weeksAgo) async {
   for (int i = 6; i >= 0; i--) {
     final date = startOfWeek.subtract(Duration(days: i));
     dates.add(date);
-    
+
     final count = readHistory.where((p) {
       if (p.readAt == null) return false;
       final pDate = p.readAt!;
@@ -280,7 +279,7 @@ Future<WeeklyChartData> weeklyChartStats(Ref ref, int weeksAgo) async {
           pDate.month == date.month &&
           pDate.day == date.day;
     }).length;
-    
+
     counts.add(count);
     totalRead += count;
   }
@@ -295,7 +294,7 @@ class MonthlyChartData {
   final int month;
   final Map<int, int> dailyCounts;
   final int totalRead;
-  
+
   MonthlyChartData(this.year, this.month, this.dailyCounts, this.totalRead);
 }
 
@@ -314,13 +313,13 @@ class MonthlyOffset extends _$MonthlyOffset {
 Future<MonthlyChartData> monthlyChartStats(Ref ref, int monthsAgo) async {
   final history = await ref.watch(globalProgressProvider.future);
   final readHistory = history.where((p) => p.isRead).toList();
-  
+
   final now = DateTime.now();
-  
+
   // Calculate target month and year safely
   int targetYear = now.year;
   int targetMonth = now.month - monthsAgo;
-  
+
   // If we go back past January, shift the year back
   while (targetMonth <= 0) {
     targetMonth += 12;
@@ -349,7 +348,7 @@ class YearlyChartData {
   final int year;
   final Map<int, int> monthlyCounts;
   final int totalRead;
-  
+
   YearlyChartData(this.year, this.monthlyCounts, this.totalRead);
 }
 
@@ -368,19 +367,19 @@ class YearlyOffset extends _$YearlyOffset {
 Future<YearlyChartData> yearlyChartStats(Ref ref, int yearsAgo) async {
   final history = await ref.watch(globalProgressProvider.future);
   final readHistory = history.where((p) => p.isRead).toList();
-  
+
   final now = DateTime.now();
   final targetYear = now.year - yearsAgo;
 
   final monthlyCounts = <int, int>{};
   int totalRead = 0;
 
-  final yearHistory = readHistory.where((p) => 
-      p.readAt != null && 
-      p.readAt!.year == targetYear);
+  final yearHistory = readHistory
+      .where((p) => p.readAt != null && p.readAt!.year == targetYear);
 
   for (final entry in yearHistory) {
-    monthlyCounts[entry.readAt!.month] = (monthlyCounts[entry.readAt!.month] ?? 0) + 1;
+    monthlyCounts[entry.readAt!.month] =
+        (monthlyCounts[entry.readAt!.month] ?? 0) + 1;
     totalRead++;
   }
 

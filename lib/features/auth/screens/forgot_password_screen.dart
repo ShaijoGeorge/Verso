@@ -18,7 +18,8 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
   @override
-  ConsumerState<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  ConsumerState<ForgotPasswordScreen> createState() =>
+      _ForgotPasswordScreenState();
 }
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
@@ -42,7 +43,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
     _slideUp = Tween<Offset>(
       begin: const Offset(0, 0.06),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic));
+    ).animate(
+        CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic));
     _animController.forward();
   }
 
@@ -123,7 +125,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                               position: _slideUp,
                               child: Column(
                                 children: [
-                                  const VersoHeaderIcon(icon: Icons.lock_reset_rounded),
+                                  const VersoHeaderIcon(
+                                      icon: Icons.lock_reset_rounded),
                                   const Gap(Spacing.lg),
                                   Text(
                                     'Reset Password',
@@ -150,8 +153,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                                       color: colorScheme.surface,
                                       borderRadius: AppRadii.borderRadiusXL,
                                       border: Border.all(
-                                        color: colorScheme.outline
-                                            .withValues(alpha: isDark ? 0.15 : 0.4),
+                                        color: colorScheme.outline.withValues(
+                                            alpha: isDark ? 0.15 : 0.4),
                                       ),
                                       boxShadow: isDark
                                           ? []
@@ -166,13 +169,15 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                                     ),
                                     padding: const EdgeInsets.all(Spacing.lg),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
                                       children: [
                                         VersoTextField(
                                           controller: _emailController,
                                           label: 'Email',
                                           icon: Icons.mail_outline_rounded,
-                                          keyboardType: TextInputType.emailAddress,
+                                          keyboardType:
+                                              TextInputType.emailAddress,
                                         ),
                                         const Gap(Spacing.lg),
                                         VersoGradientButton(

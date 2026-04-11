@@ -12,26 +12,29 @@ class VerseRepository {
   /// Called by the UI to get today's verse instantly.
   Future<Map<String, dynamic>> getTodayVerse() async {
     final todayDayOfYear = _getDayOfYear(DateTime.now());
-    
+
     // 1. Instantly fetch our local offline stash
     final localVerses = await _getLocalVerses();
-    
+
     // 2. Find today's verse
     Map<String, dynamic>? todayVerse;
     try {
-      todayVerse = localVerses.firstWhere(
-        (verse) => verse['day_of_year'] == todayDayOfYear
-      );
+      todayVerse = localVerses.firstWhere((verse) =>
+              (verse as Map<String, dynamic>)['day_of_year'] == todayDayOfYear)
+          as Map<String, dynamic>;
     } catch (_) {
       // It's okay if it fails, todayVerse stays null
     }
 
     // 3. BACKGROUND CHECK: Are we running low on verses?
-    final futureVersesCount = localVerses.where((v) => v['day_of_year'] >= todayDayOfYear).length;
-    
+    final futureVersesCount = localVerses
+        .where((v) =>
+            (v as Map<String, dynamic>)['day_of_year'] as int >= todayDayOfYear)
+        .length;
+
     if (futureVersesCount < 3) {
       // Fire-and-forget: we do NOT await this. It runs silently in the background.
-      _fetchAndCacheNextBatch(todayDayOfYear).ignore(); 
+      _fetchAndCacheNextBatch(todayDayOfYear).ignore();
     }
 
     // 4. Return the verse, or a safe fallback if they are offline and the cache is completely empty
@@ -54,13 +57,14 @@ class VerseRepository {
     final prefs = await SharedPreferences.getInstance();
     final jsonString = prefs.getString(_cacheKey);
     if (jsonString == null) return [];
-    return jsonDecode(jsonString);
+    return jsonDecode(jsonString) as List<dynamic>;
   }
 
   Future<void> _fetchAndCacheNextBatch(int startDay) async {
     try {
-      dev.log('Silently fetching next batch of verses from Supabase...', name: 'VerseRepo');
-      
+      dev.log('Silently fetching next batch of verses from Supabase...',
+          name: 'VerseRepo');
+
       final response = await _supabase
           .from('daily_verses')
           .select('day_of_year, reference, text')
@@ -70,10 +74,10 @@ class VerseRepository {
       // Save them directly to SharedPreferences for tomorrow
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_cacheKey, jsonEncode(response));
-      
     } catch (e) {
       // Silent failure. If they are offline, we just try again next time!
-      dev.log('Background verse fetch failed (likely offline). Safe to ignore.', error: e, name: 'VerseRepo');
+      dev.log('Background verse fetch failed (likely offline). Safe to ignore.',
+          error: e, name: 'VerseRepo');
     }
   }
 

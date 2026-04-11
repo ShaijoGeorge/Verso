@@ -62,8 +62,10 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
             controller: _tabController,
             labelColor: scheme.onPrimary,
             unselectedLabelColor: scheme.onSurfaceVariant,
-            labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-            unselectedLabelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+            labelStyle:
+                const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            unselectedLabelStyle:
+                const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
             indicator: BoxDecoration(
               color: scheme.primary,
               borderRadius: BorderRadius.circular(10),

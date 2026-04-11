@@ -9,8 +9,6 @@ import '../../../core/utils/app_error_handler.dart';
 import '../../../core/design/design.dart';
 import 'debug_cache_screen.dart';
 
-
-
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -71,7 +69,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         if (mounted) {
           VersoSnackbar.success(
             context,
-            message: 'Reminder set for ${_formatTime(picked.hour, picked.minute)}',
+            message:
+                'Reminder set for ${_formatTime(picked.hour, picked.minute)}',
           );
         }
       } catch (e) {
@@ -98,10 +97,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           return ListView(
             children: [
               const Gap(16),
-              
+
               // --- APPEARANCE SECTION ---
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Text(
                   'Appearance',
                   style: TextStyle(
@@ -114,30 +114,35 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: const Text('Dark Mode'),
                 secondary: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 500),
-                  transitionBuilder: (Widget child, Animation<double> animation) {
+                  transitionBuilder:
+                      (Widget child, Animation<double> animation) {
                     return RotationTransition(
                       turns: child.key == const ValueKey('dark_icon')
-                          ? Tween<double>(begin: 0.75, end: 1).animate(animation)
-                          : Tween<double>(begin: 0.75, end: 1).animate(animation),
+                          ? Tween<double>(begin: 0.75, end: 1)
+                              .animate(animation)
+                          : Tween<double>(begin: 0.75, end: 1)
+                              .animate(animation),
                       child: ScaleTransition(scale: animation, child: child),
                     );
                   },
                   child: settings.isDarkMode
                       ? const Icon(Icons.dark_mode, key: ValueKey('dark_icon'))
-                      : const Icon(Icons.light_mode, key: ValueKey('light_icon')),
+                      : const Icon(Icons.light_mode,
+                          key: ValueKey('light_icon')),
                 ),
                 value: settings.isDarkMode,
                 onChanged: (bool value) {
                   ref.read(currentSettingsProvider.notifier).toggleTheme(value);
                 },
               ),
-              
+
               const Divider(),
               const Gap(8),
 
               // --- NOTIFICATIONS SECTION ---
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Text(
                   'Reminders',
                   style: TextStyle(
@@ -146,7 +151,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ),
               ),
-              
+
               SwitchListTile(
                 title: const Text('Daily Reminder'),
                 subtitle: Text(settings.isReminderEnabled
@@ -169,37 +174,43 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         settings.reminderHour,
                         settings.reminderMinute,
                       );
-                      
+
                       if (mounted) {
-                        VersoSnackbar.success(context, message: 'Daily reminder enabled');
+                        VersoSnackbar.success(context,
+                            message: 'Daily reminder enabled');
                       }
                     } else {
                       await NotificationService().cancelReminders();
                     }
                   } catch (e) {
                     if (mounted) {
-                      VersoSnackbar.error(context, message: AppErrorHandler.getMessage(e));
+                      VersoSnackbar.error(context,
+                          message: AppErrorHandler.getMessage(e));
                     }
                   }
                 },
               ),
-              
+
               if (settings.isReminderEnabled)
                 ListTile(
                   title: const Text('Reminder Time'),
                   leading: const Icon(Icons.access_time),
                   trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      _formatTime(settings.reminderHour, settings.reminderMinute),
+                      _formatTime(
+                          settings.reminderHour, settings.reminderMinute),
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
-                  onTap: () => _pickTime(settings.reminderHour, settings.reminderMinute),
+                  onTap: () =>
+                      _pickTime(settings.reminderHour, settings.reminderMinute),
                 ),
 
               const Divider(),
@@ -210,7 +221,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 child: GestureDetector(
                   onLongPress: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const DebugCacheScreen()),
+                      MaterialPageRoute(
+                          builder: (_) => const DebugCacheScreen()),
                     );
                   },
                   child: Padding(
@@ -219,13 +231,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       'Verso v$_version\nMade by Shaijo George',
                       textAlign: TextAlign.center,
                       style: AppTypography.labelSmall.copyWith(
-                        color: context.colors.onSurfaceVariant.withValues(alpha: 0.5),
+                        color: context.colors.onSurfaceVariant
+                            .withValues(alpha: 0.5),
                       ),
                     ),
                   ),
                 ),
               ),
-
             ],
           );
         },

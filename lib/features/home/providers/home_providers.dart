@@ -4,7 +4,6 @@ import '../../reading/providers/reading_providers.dart';
 import '../../../data/bible_data.dart';
 import '../data/verse_repository.dart';
 
-
 part 'home_providers.g.dart';
 
 /// Info about a book the user was most recently reading (and hasn't finished).
@@ -27,7 +26,8 @@ class ContinueReadingInfo {
 @riverpod
 Future<ContinueReadingInfo?> continueReading(Ref ref) async {
   final history = await ref.watch(globalProgressProvider.future);
-  final readHistory = history.where((p) => p.isRead && p.readAt != null).toList();
+  final readHistory =
+      history.where((p) => p.isRead && p.readAt != null).toList();
 
   if (readHistory.isEmpty) return null;
 

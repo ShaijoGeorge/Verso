@@ -18,7 +18,7 @@ class OfflineCacheService {
     final jsonString = prefs.getString(_progressCacheKey);
     if (jsonString == null) return [];
 
-    final List<dynamic> decoded = json.decode(jsonString);
+    final decoded = json.decode(jsonString) as List<dynamic>;
     return decoded
         .map((e) => ReadingProgress.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -37,7 +37,7 @@ class OfflineCacheService {
     final jsonString = prefs.getString(_writeQueueKey);
     if (jsonString == null) return [];
 
-    final List<dynamic> decoded = json.decode(jsonString);
+    final decoded = json.decode(jsonString) as List<dynamic>;
     return decoded.cast<Map<String, dynamic>>();
   }
 

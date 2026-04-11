@@ -43,20 +43,24 @@ class OverviewShimmer extends StatelessWidget {
             const Gap(16),
 
             // Book grid placeholder (3 rows of boxes)
-            ...List.generate(3, (_) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                children: List.generate(10, (_) => Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(2),
-                    child: AspectRatio(
-                      aspectRatio: 1,
-                      child: _ShimmerBox(borderRadius: 4),
-                    ),
-                  ),
-                )),
-              ),
-            )),
+            ...List.generate(
+                3,
+                (_) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        children: List.generate(
+                            10,
+                            (_) => Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(2),
+                                    child: AspectRatio(
+                                      aspectRatio: 1,
+                                      child: _ShimmerBox(borderRadius: 4),
+                                    ),
+                                  ),
+                                )),
+                      ),
+                    )),
           ],
         ),
       ),
@@ -83,10 +87,12 @@ class WeeklyShimmer extends StatelessWidget {
             _ShimmerBox(height: 280, borderRadius: 12),
             const Gap(24),
             // Daily breakdown rows
-            ...List.generate(7, (_) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _ShimmerBox(height: 12, borderRadius: 4),
-            )),
+            ...List.generate(
+                7,
+                (_) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _ShimmerBox(height: 12, borderRadius: 4),
+                    )),
           ],
         ),
       ),
@@ -111,29 +117,35 @@ class MonthlyShimmer extends StatelessWidget {
             _ShimmerBox(width: 200, height: 14, borderRadius: 4),
             const Gap(24),
             // Calendar grid placeholder
-            ...List.generate(5, (_) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                children: List.generate(7, (_) => Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(2),
-                    child: AspectRatio(
-                      aspectRatio: 1,
-                      child: _ShimmerBox(borderRadius: 4),
-                    ),
-                  ),
-                )),
-              ),
-            )),
+            ...List.generate(
+                5,
+                (_) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        children: List.generate(
+                            7,
+                            (_) => Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(2),
+                                    child: AspectRatio(
+                                      aspectRatio: 1,
+                                      child: _ShimmerBox(borderRadius: 4),
+                                    ),
+                                  ),
+                                )),
+                      ),
+                    )),
             const Gap(24),
             // Legend
             _ShimmerBox(width: 200, height: 16, borderRadius: 4),
             const Gap(24),
             // Top days
-            ...List.generate(3, (_) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _ShimmerBox(height: 36, borderRadius: 8),
-            )),
+            ...List.generate(
+                3,
+                (_) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _ShimmerBox(height: 36, borderRadius: 8),
+                    )),
           ],
         ),
       ),

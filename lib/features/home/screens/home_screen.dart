@@ -88,7 +88,8 @@ class HomeScreen extends ConsumerWidget {
               ],
 
               // RECENT ACTIVITY
-              if (activityAsync.hasValue && activityAsync.value!.isNotEmpty) ...[
+              if (activityAsync.hasValue &&
+                  activityAsync.value!.isNotEmpty) ...[
                 VersoSectionHeader(
                   title: 'Recent Activity',
                   action: 'See All',
@@ -96,7 +97,10 @@ class HomeScreen extends ConsumerWidget {
                 ),
                 const Gap(Spacing.md),
                 _RecentActivityList(
-                  groups: activityAsync.value!.values.expand((g) => g).take(3).toList(),
+                  groups: activityAsync.value!.values
+                      .expand((g) => g)
+                      .take(3)
+                      .toList(),
                 ),
               ],
 
@@ -197,9 +201,7 @@ class _HeroProgressCard extends StatelessWidget {
                 maxProgress: 100,
                 size: 130,
                 strokeWidth: 10,
-                color: isLight
-                    ? Colors.white
-                    : scheme.primary,
+                color: isLight ? Colors.white : scheme.primary,
                 trackColor: isLight
                     ? Colors.white.withValues(alpha: 0.2)
                     : scheme.primary.withValues(alpha: 0.2),
@@ -209,7 +211,8 @@ class _HeroProgressCard extends StatelessWidget {
                     Text(
                       '${animatedProgress.toStringAsFixed(1)}%',
                       style: textTheme.titleLarge?.copyWith(
-                        color: isLight ? Colors.white : scheme.onPrimaryContainer,
+                        color:
+                            isLight ? Colors.white : scheme.onPrimaryContainer,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -298,7 +301,8 @@ class _HeroStatRow extends StatelessWidget {
         Flexible(
           child: Text(
             text,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
+            style:
+                Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
           ),
         ),
       ],
@@ -381,7 +385,8 @@ class _QuickStatCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: Spacing.md, horizontal: Spacing.sm),
+      padding: const EdgeInsets.symmetric(
+          vertical: Spacing.md, horizontal: Spacing.sm),
       decoration: BoxDecoration(
         color: scheme.surface,
         borderRadius: AppRadii.borderRadiusLG,
@@ -601,9 +606,11 @@ class _ContinueReadingCard extends StatelessWidget {
                   height: 6,
                   color: isOT
                       ? (Theme.of(context).brightness == Brightness.light
-                          ? AppColors.otColorLight : AppColors.otColorDark)
+                          ? AppColors.otColorLight
+                          : AppColors.otColorDark)
                       : (Theme.of(context).brightness == Brightness.light
-                          ? AppColors.ntColorLight : AppColors.ntColorDark),
+                          ? AppColors.ntColorLight
+                          : AppColors.ntColorDark),
                 ),
               ],
             ),
@@ -664,9 +671,7 @@ class _RecentActivityList extends StatelessWidget {
                         ? Icons.emoji_events_rounded
                         : Icons.auto_stories_rounded,
                     size: 18,
-                    color: isFinish
-                        ? scheme.secondary
-                        : scheme.primary,
+                    color: isFinish ? scheme.secondary : scheme.primary,
                   ),
                 ),
                 const Gap(Spacing.md),
@@ -820,7 +825,8 @@ class _DailyVerseCard extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: scheme.secondary.withValues(alpha: isLight ? 0.1 : 0.15),
+                          color: scheme.secondary
+                              .withValues(alpha: isLight ? 0.1 : 0.15),
                           borderRadius: AppRadii.borderRadiusFull,
                         ),
                         child: Text(

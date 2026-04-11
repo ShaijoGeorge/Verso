@@ -62,15 +62,22 @@ class _BookGridState extends State<BookGrid> {
               onChanged: (val) => setState(() => _searchQuery = val),
               decoration: InputDecoration(
                 hintText: 'Search books...',
-                prefixIcon: Icon(Icons.search_rounded, 
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)),
+                prefixIcon: Icon(Icons.search_rounded,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.5)),
                 filled: true,
-                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                fillColor: Theme.of(context)
+                    .colorScheme
+                    .surfaceContainerHighest
+                    .withValues(alpha: 0.5),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
             ),
           ),
@@ -84,11 +91,13 @@ class _BookGridState extends State<BookGrid> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.search_off_rounded, size: 48, color: Theme.of(context).colorScheme.outline),
+                  Icon(Icons.search_off_rounded,
+                      size: 48, color: Theme.of(context).colorScheme.outline),
                   const SizedBox(height: 16),
                   Text(
                     "No matches for '$_searchQuery'",
-                    style: TextStyle(color: Theme.of(context).colorScheme.outline),
+                    style:
+                        TextStyle(color: Theme.of(context).colorScheme.outline),
                   ),
                 ],
               ),
@@ -114,7 +123,10 @@ class _BookGridState extends State<BookGrid> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Divider(
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.1),
                       thickness: 1,
                     ),
                   ),
@@ -139,7 +151,8 @@ class _BookGridState extends State<BookGrid> {
 
                   return Consumer(
                     builder: (context, ref, child) {
-                      final asyncCount = ref.watch(bookReadCountProvider(book.id));
+                      final asyncCount =
+                          ref.watch(bookReadCountProvider(book.id));
 
                       return asyncCount.when(
                         data: (count) => BookProgressCard(

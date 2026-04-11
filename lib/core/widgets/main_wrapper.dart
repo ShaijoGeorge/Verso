@@ -22,7 +22,6 @@ class MainWrapper extends ConsumerStatefulWidget {
 }
 
 class _MainWrapperState extends ConsumerState<MainWrapper> {
-
   void _goBranch(int index) {
     // 0 = Home, 1 = Bible, 2 = Stats, 3 = Journal
 
@@ -60,11 +59,20 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
 
     String title;
     switch (widget.navigationShell.currentIndex) {
-      case 0: title = 'Verso'; break;
-      case 1: title = 'The Bible'; break;
-      case 2: title = 'Stats'; break;
-      case 3: title = 'Reading Journal'; break;
-      default: title = 'Verso';
+      case 0:
+        title = 'Verso';
+        break;
+      case 1:
+        title = 'The Bible';
+        break;
+      case 2:
+        title = 'Stats';
+        break;
+      case 3:
+        title = 'Reading Journal';
+        break;
+      default:
+        title = 'Verso';
     }
 
     return Scaffold(
@@ -135,10 +143,22 @@ class _VersoBottomNav extends StatelessWidget {
   });
 
   static const _items = [
-    _NavItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
-    _NavItem(icon: Icons.menu_book_outlined, activeIcon: Icons.menu_book_rounded, label: 'Bible'),
-    _NavItem(icon: Icons.bar_chart_outlined, activeIcon: Icons.bar_chart_rounded, label: 'Stats'),
-    _NavItem(icon: Icons.history_edu_outlined, activeIcon: Icons.history_edu_rounded, label: 'Journal'),
+    _NavItem(
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home_rounded,
+        label: 'Home'),
+    _NavItem(
+        icon: Icons.menu_book_outlined,
+        activeIcon: Icons.menu_book_rounded,
+        label: 'Bible'),
+    _NavItem(
+        icon: Icons.bar_chart_outlined,
+        activeIcon: Icons.bar_chart_rounded,
+        label: 'Stats'),
+    _NavItem(
+        icon: Icons.history_edu_outlined,
+        activeIcon: Icons.history_edu_rounded,
+        label: 'Journal'),
   ];
 
   @override
@@ -154,9 +174,8 @@ class _VersoBottomNav extends StatelessWidget {
         bottom: bottomPadding > 0 ? bottomPadding : 12,
       ),
       decoration: BoxDecoration(
-        color: isLight
-            ? scheme.surface
-            : scheme.surface.withValues(alpha: 0.95),
+        color:
+            isLight ? scheme.surface : scheme.surface.withValues(alpha: 0.95),
         borderRadius: AppRadii.borderRadiusXL,
         border: Border.all(
           color: scheme.outline.withValues(alpha: isLight ? 0.1 : 0.08),
@@ -259,9 +278,7 @@ class _NavItemWidget extends StatelessWidget {
                 isSelected ? item.activeIcon : item.icon,
                 key: ValueKey(isSelected),
                 size: isSelected ? 26 : 24,
-                color: isSelected
-                    ? scheme.primary
-                    : scheme.onSurfaceVariant,
+                color: isSelected ? scheme.primary : scheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 4),
@@ -272,9 +289,7 @@ class _NavItemWidget extends StatelessWidget {
               style: TextStyle(
                 fontSize: isSelected ? 11.5 : 11,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected
-                    ? scheme.primary
-                    : scheme.onSurfaceVariant,
+                color: isSelected ? scheme.primary : scheme.onSurfaceVariant,
                 letterSpacing: 0.2,
               ),
               child: Text(item.label),

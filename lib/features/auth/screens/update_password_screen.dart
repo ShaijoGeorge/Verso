@@ -19,7 +19,8 @@ class UpdatePasswordScreen extends ConsumerStatefulWidget {
   const UpdatePasswordScreen({super.key});
 
   @override
-  ConsumerState<UpdatePasswordScreen> createState() => _UpdatePasswordScreenState();
+  ConsumerState<UpdatePasswordScreen> createState() =>
+      _UpdatePasswordScreenState();
 }
 
 class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen>
@@ -47,7 +48,8 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen>
     _slideUp = Tween<Offset>(
       begin: const Offset(0, 0.06),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic));
+    ).animate(
+        CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic));
     _animController.forward();
   }
 
@@ -65,7 +67,8 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen>
 
     // Validation
     if (newPass.length < 6) {
-      VersoSnackbar.error(context, message: 'Password must be at least 6 characters');
+      VersoSnackbar.error(context,
+          message: 'Password must be at least 6 characters');
       return;
     }
 
@@ -139,7 +142,8 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen>
                               position: _slideUp,
                               child: Column(
                                 children: [
-                                  const VersoHeaderIcon(icon: Icons.shield_outlined),
+                                  const VersoHeaderIcon(
+                                      icon: Icons.shield_outlined),
                                   const Gap(Spacing.lg),
                                   Text(
                                     'Set New Password',
@@ -166,8 +170,8 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen>
                                       color: colorScheme.surface,
                                       borderRadius: AppRadii.borderRadiusXL,
                                       border: Border.all(
-                                        color: colorScheme.outline
-                                            .withValues(alpha: isDark ? 0.15 : 0.4),
+                                        color: colorScheme.outline.withValues(
+                                            alpha: isDark ? 0.15 : 0.4),
                                       ),
                                       boxShadow: isDark
                                           ? []
@@ -182,7 +186,8 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen>
                                     ),
                                     padding: const EdgeInsets.all(Spacing.lg),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
                                       children: [
                                         VersoTextField(
                                           controller: _passwordController,
@@ -193,19 +198,23 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen>
                                             icon: Icon(
                                               _isPasswordVisible
                                                   ? Icons.visibility_outlined
-                                                  : Icons.visibility_off_outlined,
+                                                  : Icons
+                                                      .visibility_off_outlined,
                                               size: 20,
-                                              color: colorScheme.onSurfaceVariant,
+                                              color:
+                                                  colorScheme.onSurfaceVariant,
                                             ),
                                             onPressed: () {
                                               setState(() =>
-                                                  _isPasswordVisible = !_isPasswordVisible);
+                                                  _isPasswordVisible =
+                                                      !_isPasswordVisible);
                                             },
                                           ),
                                         ),
                                         const Gap(Spacing.md),
                                         VersoTextField(
-                                          controller: _confirmPasswordController,
+                                          controller:
+                                              _confirmPasswordController,
                                           label: 'Confirm Password',
                                           icon: Icons.lock_outline_rounded,
                                           obscureText: !_isConfirmVisible,
@@ -213,13 +222,15 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen>
                                             icon: Icon(
                                               _isConfirmVisible
                                                   ? Icons.visibility_outlined
-                                                  : Icons.visibility_off_outlined,
+                                                  : Icons
+                                                      .visibility_off_outlined,
                                               size: 20,
-                                              color: colorScheme.onSurfaceVariant,
+                                              color:
+                                                  colorScheme.onSurfaceVariant,
                                             ),
                                             onPressed: () {
-                                              setState(
-                                                  () => _isConfirmVisible = !_isConfirmVisible);
+                                              setState(() => _isConfirmVisible =
+                                                  !_isConfirmVisible);
                                             },
                                           ),
                                         ),
