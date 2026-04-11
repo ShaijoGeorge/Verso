@@ -20,7 +20,9 @@ class ReadingProgress {
       bookId: json['book_id'] as int,
       chapterNumber: json['chapter_number'] as int,
       isRead: json['is_read'] as bool,
-      readAt: json['read_at'] != null ? DateTime.parse(json['read_at']) : null,
+      readAt: json['read_at'] != null
+          ? DateTime.parse(json['read_at'] as String)
+          : null,
     );
   }
 

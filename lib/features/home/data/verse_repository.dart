@@ -19,15 +19,18 @@ class VerseRepository {
     // 2. Find today's verse
     Map<String, dynamic>? todayVerse;
     try {
-      todayVerse = localVerses
-          .firstWhere((verse) => verse['day_of_year'] == todayDayOfYear);
+      todayVerse = localVerses.firstWhere((verse) =>
+              (verse as Map<String, dynamic>)['day_of_year'] == todayDayOfYear)
+          as Map<String, dynamic>;
     } catch (_) {
       // It's okay if it fails, todayVerse stays null
     }
 
     // 3. BACKGROUND CHECK: Are we running low on verses?
-    final futureVersesCount =
-        localVerses.where((v) => v['day_of_year'] >= todayDayOfYear).length;
+    final futureVersesCount = localVerses
+        .where((v) =>
+            (v as Map<String, dynamic>)['day_of_year'] as int >= todayDayOfYear)
+        .length;
 
     if (futureVersesCount < 3) {
       // Fire-and-forget: we do NOT await this. It runs silently in the background.
@@ -54,7 +57,7 @@ class VerseRepository {
     final prefs = await SharedPreferences.getInstance();
     final jsonString = prefs.getString(_cacheKey);
     if (jsonString == null) return [];
-    return jsonDecode(jsonString);
+    return jsonDecode(jsonString) as List<dynamic>;
   }
 
   Future<void> _fetchAndCacheNextBatch(int startDay) async {

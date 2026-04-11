@@ -136,7 +136,8 @@ class BibleRepository {
     if (data.isEmpty) return 0;
 
     final uniqueDays = (data as List)
-        .map((row) => DateTime.parse(row['read_at']))
+        .map((row) =>
+            DateTime.parse((row as Map<String, dynamic>)['read_at'] as String))
         .map((dt) => DateTime(dt.year, dt.month, dt.day))
         .toSet()
         .toList();
@@ -176,6 +177,8 @@ class BibleRepository {
         .eq('is_read', true); // Only fetch what is actually read
 
     final data = response as List<dynamic>;
-    return data.map((json) => ReadingProgress.fromJson(json)).toList();
+    return data
+        .map((json) => ReadingProgress.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 }

@@ -15,7 +15,7 @@ class ProfileDrawer extends ConsumerWidget {
     final user = userAsync.value;
 
     // 2. Get user metadata (like the name we saved during sign up)
-    final name = user?.userMetadata?['full_name'] ?? 'Reader';
+    final name = (user?.userMetadata?['full_name'] as String?) ?? 'Reader';
     final email = user?.email ?? '';
     // Generate a simple avatar initial
     final initial = name.isNotEmpty ? name[0].toUpperCase() : 'B';

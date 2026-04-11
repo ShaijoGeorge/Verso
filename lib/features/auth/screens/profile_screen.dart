@@ -28,7 +28,7 @@ class ProfileScreen extends ConsumerWidget {
         if (user == null)
           return const Scaffold(body: Center(child: Text('Not Logged In')));
 
-        final name = user.userMetadata?['full_name'] ?? 'Reader';
+        final name = (user.userMetadata?['full_name'] as String?) ?? 'Reader';
         final email = user.email ?? 'No Email';
         final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
 
