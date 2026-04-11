@@ -30,10 +30,10 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: '/',
-    
+
     // Refresh the router whenever Auth State changes (Login, Logout, Recovery)
     refreshListenable: GoRouterRefreshStream(authStream),
-    
+
     // Debug Log to help us see errors
     errorBuilder: (context, state) {
       return NotFoundScreen(error: state.error);
@@ -42,19 +42,20 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       // --- CRITICAL FIX START ---
       // Intercept the raw deep link from Android and convert it to a valid path
-      if (state.uri.scheme == 'io.supabase.flutter' && state.uri.host == 'reset-callback') {
+      if (state.uri.scheme == 'io.supabase.flutter' &&
+          state.uri.host == 'reset-callback') {
         return '/reset-callback';
       }
       // --- CRITICAL FIX END ---
 
       final session = Supabase.instance.client.auth.currentSession;
       final isLoggedIn = session != null;
-      
+
       final path = state.uri.path;
-      
+
       // Normalize path to handle potential trailing slashes
-      final cleanPath = path.endsWith('/') && path.length > 1 
-          ? path.substring(0, path.length - 1) 
+      final cleanPath = path.endsWith('/') && path.length > 1
+          ? path.substring(0, path.length - 1)
           : path;
 
       final isSplash = path == '/';
@@ -67,13 +68,17 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // Allow Splash Screen to stay
       if (isSplash) {
-        return null; 
+        return null;
       }
 
       // IF NOT LOGGED IN
       if (!isLoggedIn) {
         // Allow access to /onboarding alongside the auth pages
-        if (!isLoginRoute && !isForgotRoute && !isUpdatePasswordRoute && !isResetCallback && !isOnboardingRoute) {
+        if (!isLoginRoute &&
+            !isForgotRoute &&
+            !isUpdatePasswordRoute &&
+            !isResetCallback &&
+            !isOnboardingRoute) {
           return '/login';
         }
       }
@@ -81,7 +86,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       // IF LOGGED IN
       if (isLoggedIn) {
         // If they somehow navigate to /onboarding while logged in, send them Home
-        if (isLoginRoute || isForgotRoute || isResetCallback || isOnboardingRoute) {
+        if (isLoginRoute ||
+            isForgotRoute ||
+            isResetCallback ||
+            isOnboardingRoute) {
           return '/home';
         }
       }
@@ -110,12 +118,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/update-password',
         builder: (context, state) => const UpdatePasswordScreen(),
       ),
-      
+
       // The Callback Route (Loading Spinner)
       GoRoute(
         path: '/reset-callback',
         builder: (context, state) {
-
           // SAFETY NET:
           // If we are here, but Supabase already has a session, go Home immediately.
           // This handles cases where the auth state changed faster than the router could react.
@@ -162,8 +169,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                 builder: (context, state) {
                   final tab = state.uri.queryParameters['tab'];
                   int initialIndex = 0;
-                  if (tab == 'weekly') initialIndex = 1;
-                  else if (tab == 'monthly') initialIndex = 2;
+                  if (tab == 'weekly')
+                    initialIndex = 1;
+                  else if (tab == 'monthly')
+                    initialIndex = 2;
                   else if (tab == 'yearly') initialIndex = 3;
                   return StatsScreen(initialIndex: initialIndex);
                 },

@@ -13,16 +13,14 @@ class BibleRepository {
     final userId = _currentUserId;
     if (userId.isEmpty) return Stream.value([]);
 
-    return _supabase
-        .from('user_progress')
-        .stream(primaryKey: ['user_id', 'book_id', 'chapter_number'])
-        .map((data) {
-          // Filter for current user only
-          return data
-              .where((row) => row['user_id'] == userId)
-              .map((json) => ReadingProgress.fromJson(json))
-              .toList();
-        });
+    return _supabase.from('user_progress').stream(
+        primaryKey: ['user_id', 'book_id', 'chapter_number']).map((data) {
+      // Filter for current user only
+      return data
+          .where((row) => row['user_id'] == userId)
+          .map((json) => ReadingProgress.fromJson(json))
+          .toList();
+    });
   }
 
   // Get Realtime Stream for a specific Book
@@ -31,16 +29,14 @@ class BibleRepository {
     final userId = _currentUserId;
     if (userId.isEmpty) return Stream.value([]);
 
-    return _supabase
-        .from('user_progress')
-        .stream(primaryKey: ['user_id', 'book_id', 'chapter_number'])
-        .map((data) {
-          // Filter results locally to match the requested book and user
-          return data
-              .where((row) => row['user_id'] == userId && row['book_id'] == bookId)
-              .map((json) => ReadingProgress.fromJson(json))
-              .toList();
-        });
+    return _supabase.from('user_progress').stream(
+        primaryKey: ['user_id', 'book_id', 'chapter_number']).map((data) {
+      // Filter results locally to match the requested book and user
+      return data
+          .where((row) => row['user_id'] == userId && row['book_id'] == bookId)
+          .map((json) => ReadingProgress.fromJson(json))
+          .toList();
+    });
   }
 
   // 2. Toggle Chapter (Writes directly to Cloud)
@@ -74,16 +70,15 @@ class BibleRepository {
         .eq('user_id', userId)
         .eq('book_id', bookId)
         .eq('is_read', true);
-    
+
     // Create a Set of chapters that are ALREADY DONE
-    final finishedChapters = (existingData as List)
-        .map((e) => e['chapter_number'] as int)
-        .toSet();
+    final finishedChapters =
+        (existingData as List).map((e) => e['chapter_number'] as int).toSet();
 
     // Identify which chapters need updating (Missing or False)
     final List<int> chaptersToUpdate = [];
     final List<Map<String, dynamic>> newInserts = [];
-    
+
     for (int i = 1; i <= totalChapters; i++) {
       if (!finishedChapters.contains(i)) {
         chaptersToUpdate.add(i);
@@ -120,7 +115,7 @@ class BibleRepository {
         .count()
         .eq('user_id', userId)
         .eq('is_read', true);
-    
+
     return response;
   }
 
@@ -142,7 +137,7 @@ class BibleRepository {
 
     final uniqueDays = (data as List)
         .map((row) => DateTime.parse(row['read_at']))
-        .map((dt) => DateTime(dt.year, dt.month, dt.day)) 
+        .map((dt) => DateTime(dt.year, dt.month, dt.day))
         .toSet()
         .toList();
 

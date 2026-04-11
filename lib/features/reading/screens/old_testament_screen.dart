@@ -13,12 +13,11 @@ class OldTestamentScreen extends ConsumerWidget {
     // Watch the trigger!
     final refreshTrigger = ref.watch(biblePageTriggerProvider);
 
-
     return Scaffold(
       body: BookGrid(
         // Forces the Grid to "reset" its memory when you arrive
-        key: ValueKey("ot_grid_$refreshTrigger"), 
-        
+        key: ValueKey("ot_grid_$refreshTrigger"),
+
         books: oldTestamentBooks, // Ensure this list is imported
         onBookTap: (book) {
           context.push('/book/${book.id}');

@@ -35,8 +35,7 @@ OfflineCacheService offlineCacheService(Ref ref) {
 Stream<List<ReadingProgress>> globalProgress(Ref ref) async* {
   final repo = ref.watch(bibleRepositoryProvider);
   final cache = ref.watch(offlineCacheServiceProvider);
-  final userId =
-      Supabase.instance.client.auth.currentUser?.id ?? '';
+  final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
 
   // Emit cached data first for instant UI
   final cached = await cache.getCachedProgress();

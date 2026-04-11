@@ -22,13 +22,26 @@ class WeeklyTab extends ConsumerWidget {
       error: (err, stack) => Center(child: Text('Error: $err')),
       data: (chartData) {
         final total = chartData.totalRead;
-        final maxCount = chartData.counts.isEmpty ? 0 : chartData.counts.reduce(max);
+        final maxCount =
+            chartData.counts.isEmpty ? 0 : chartData.counts.reduce(max);
         final maxY = maxCount > 10 ? maxCount.toDouble() + 3 : 12.0;
 
         final firstDate = chartData.dates.first;
         final lastDate = chartData.dates.last;
-        final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        final months = [
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec'
+        ];
         final rangeLabel = offset == 0
             ? 'This Week'
             : '${months[firstDate.month - 1]} ${firstDate.day} – ${months[lastDate.month - 1]} ${lastDate.day}';
@@ -44,7 +57,8 @@ class WeeklyTab extends ConsumerWidget {
               // Period navigator
               TimePeriodNavigator(
                 label: rangeLabel,
-                onPrevious: () => ref.read(weeklyOffsetProvider.notifier).goBack(),
+                onPrevious: () =>
+                    ref.read(weeklyOffsetProvider.notifier).goBack(),
                 onNext: offset > 0
                     ? () => ref.read(weeklyOffsetProvider.notifier).goForward()
                     : null,
@@ -89,21 +103,33 @@ class WeeklyTab extends ConsumerWidget {
                           ),
                         ),
                         titlesData: FlTitlesData(
-                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          topTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
                           bottomTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
                               reservedSize: 40,
                               getTitlesWidget: (value, meta) {
                                 final index = value.toInt();
-                                if (index < 0 || index >= chartData.dates.length) {
+                                if (index < 0 ||
+                                    index >= chartData.dates.length) {
                                   return const SizedBox();
                                 }
                                 final date = chartData.dates[index];
                                 // Sunday-first labels
-                                const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                                final dayDate = DateTime(date.year, date.month, date.day);
+                                const days = [
+                                  'Mon',
+                                  'Tue',
+                                  'Wed',
+                                  'Thu',
+                                  'Fri',
+                                  'Sat',
+                                  'Sun'
+                                ];
+                                final dayDate =
+                                    DateTime(date.year, date.month, date.day);
                                 final isTodayCell = dayDate == today;
 
                                 return Padding(
@@ -115,8 +141,12 @@ class WeeklyTab extends ConsumerWidget {
                                         days[date.weekday - 1],
                                         style: TextStyle(
                                           fontSize: 11,
-                                          fontWeight: isTodayCell ? FontWeight.w700 : FontWeight.w500,
-                                          color: isTodayCell ? scheme.primary : scheme.onSurfaceVariant,
+                                          fontWeight: isTodayCell
+                                              ? FontWeight.w700
+                                              : FontWeight.w500,
+                                          color: isTodayCell
+                                              ? scheme.primary
+                                              : scheme.onSurfaceVariant,
                                         ),
                                       ),
                                       Text(
@@ -124,8 +154,10 @@ class WeeklyTab extends ConsumerWidget {
                                         style: TextStyle(
                                           fontSize: 9,
                                           color: isTodayCell
-                                              ? scheme.primary.withValues(alpha: 0.8)
-                                              : scheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                              ? scheme.primary
+                                                  .withValues(alpha: 0.8)
+                                              : scheme.onSurfaceVariant
+                                                  .withValues(alpha: 0.6),
                                         ),
                                       ),
                                     ],
@@ -138,11 +170,15 @@ class WeeklyTab extends ConsumerWidget {
                             sideTitles: SideTitles(
                               showTitles: true,
                               reservedSize: 30,
-                              interval: (maxY / 4).ceilToDouble().clamp(1, double.infinity),
+                              interval: (maxY / 4)
+                                  .ceilToDouble()
+                                  .clamp(1, double.infinity),
                               getTitlesWidget: (value, meta) {
                                 return Text(
                                   value.toInt().toString(),
-                                  style: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant),
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      color: scheme.onSurfaceVariant),
                                 );
                               },
                             ),
@@ -151,7 +187,9 @@ class WeeklyTab extends ConsumerWidget {
                         gridData: FlGridData(
                           show: true,
                           drawVerticalLine: false,
-                          horizontalInterval: (maxY / 4).ceilToDouble().clamp(1, double.infinity),
+                          horizontalInterval: (maxY / 4)
+                              .ceilToDouble()
+                              .clamp(1, double.infinity),
                           getDrawingHorizontalLine: (value) => FlLine(
                             color: scheme.outline.withValues(alpha: 0.08),
                             strokeWidth: 1,
@@ -180,13 +218,26 @@ class WeeklyTab extends ConsumerWidget {
                                   begin: Alignment.bottomCenter,
                                   end: Alignment.topCenter,
                                   colors: isToday
-                                      ? [scheme.primary, scheme.primary.withValues(alpha: 0.7)]
+                                      ? [
+                                          scheme.primary,
+                                          scheme.primary.withValues(alpha: 0.7)
+                                        ]
                                       : count > 0
                                           ? isLight
-                                              ? [const Color(0xFF7EB8E0), const Color(0xFFBBDEFB)]
-                                              : [const Color(0xFF1B3A5C), const Color(0xFF7EB8E0)]
-                                          : [scheme.outline.withValues(alpha: 0.15),
-                                             scheme.outline.withValues(alpha: 0.08)],
+                                              ? [
+                                                  const Color(0xFF7EB8E0),
+                                                  const Color(0xFFBBDEFB)
+                                                ]
+                                              : [
+                                                  const Color(0xFF1B3A5C),
+                                                  const Color(0xFF7EB8E0)
+                                                ]
+                                          : [
+                                              scheme.outline
+                                                  .withValues(alpha: 0.15),
+                                              scheme.outline
+                                                  .withValues(alpha: 0.08)
+                                            ],
                                 ),
                               ),
                             ],
@@ -222,11 +273,16 @@ class WeeklyTab extends ConsumerWidget {
                       SizedBox(
                         width: 72,
                         child: Text(
-                          isToday ? 'Today' : '${months[date.month - 1]} ${date.day}',
+                          isToday
+                              ? 'Today'
+                              : '${months[date.month - 1]} ${date.day}',
                           style: TextStyle(
                             fontSize: 13,
-                            fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
-                            color: isToday ? scheme.primary : scheme.onSurfaceVariant,
+                            fontWeight:
+                                isToday ? FontWeight.w700 : FontWeight.w500,
+                            color: isToday
+                                ? scheme.primary
+                                : scheme.onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -236,9 +292,12 @@ class WeeklyTab extends ConsumerWidget {
                           child: LinearProgressIndicator(
                             value: maxCount > 0 ? count / maxCount : 0,
                             minHeight: 8,
-                            backgroundColor: scheme.outline.withValues(alpha: 0.08),
+                            backgroundColor:
+                                scheme.outline.withValues(alpha: 0.08),
                             valueColor: AlwaysStoppedAnimation(
-                              isToday ? scheme.primary : scheme.primary.withValues(alpha: 0.45),
+                              isToday
+                                  ? scheme.primary
+                                  : scheme.primary.withValues(alpha: 0.45),
                             ),
                           ),
                         ),
@@ -252,7 +311,9 @@ class WeeklyTab extends ConsumerWidget {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: count > 0 ? scheme.onSurface : scheme.onSurfaceVariant,
+                            color: count > 0
+                                ? scheme.onSurface
+                                : scheme.onSurfaceVariant,
                           ),
                         ),
                       ),

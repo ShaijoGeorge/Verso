@@ -70,7 +70,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     super.dispose();
   }
 
-
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -86,7 +85,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           _nameController.text.trim(),
         );
         if (mounted) {
-          VersoSnackbar.success(context, message: 'Account created! Please Log In.');
+          VersoSnackbar.success(context,
+              message: 'Account created! Please Log In.');
           setState(() => _isSignUp = false);
         }
       } else {
@@ -156,13 +156,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           color: colorScheme.surface,
                           borderRadius: AppRadii.borderRadiusXL,
                           border: Border.all(
-                            color: colorScheme.outline.withValues(alpha: isDark ? 0.15 : 0.4),
+                            color: colorScheme.outline
+                                .withValues(alpha: isDark ? 0.15 : 0.4),
                           ),
                           boxShadow: isDark
                               ? []
                               : [
                                   BoxShadow(
-                                    color: AppColors.primaryLight.withValues(alpha: 0.06),
+                                    color: AppColors.primaryLight
+                                        .withValues(alpha: 0.06),
                                     blurRadius: 40,
                                     offset: const Offset(0, 16),
                                   ),
@@ -215,9 +217,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                             controller: _nameController,
                                             label: 'Full Name',
                                             icon: Icons.person_outline_rounded,
-                                            textCapitalization: TextCapitalization.words,
-                                            validator: (value) =>
-                                                value!.isEmpty ? 'Please enter your name' : null,
+                                            textCapitalization:
+                                                TextCapitalization.words,
+                                            validator: (value) => value!.isEmpty
+                                                ? 'Please enter your name'
+                                                : null,
                                           ),
                                           const Gap(Spacing.md),
                                         ],
@@ -232,8 +236,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 icon: Icons.mail_outline_rounded,
                                 keyboardType: TextInputType.emailAddress,
                                 autocorrect: false,
-                                validator: (value) =>
-                                    value!.contains('@') ? null : 'Please enter a valid email',
+                                validator: (value) => value!.contains('@')
+                                    ? null
+                                    : 'Please enter a valid email',
                               ),
                               const Gap(Spacing.md),
 
@@ -252,7 +257,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                     color: colorScheme.onSurfaceVariant,
                                   ),
                                   onPressed: () {
-                                    setState(() => _isPasswordVisible = !_isPasswordVisible);
+                                    setState(() => _isPasswordVisible =
+                                        !_isPasswordVisible);
                                   },
                                 ),
                                 validator: (value) => value!.length < 6
@@ -265,15 +271,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 Align(
                                   alignment: Alignment.centerRight,
                                   child: TextButton(
-                                    onPressed: () =>
-                                        GoRouter.of(context).push('/forgot-password'),
+                                    onPressed: () => GoRouter.of(context)
+                                        .push('/forgot-password'),
                                     style: TextButton.styleFrom(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: Spacing.sm,
                                         vertical: Spacing.xs,
                                       ),
                                       minimumSize: Size.zero,
-                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
                                     ),
                                     child: Text(
                                       'Forgot password?',
@@ -307,7 +314,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            _isSignUp ? 'Already have an account?' : 'New to Verso?',
+                            _isSignUp
+                                ? 'Already have an account?'
+                                : 'New to Verso?',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 14,
                               color: colorScheme.onSurfaceVariant,
@@ -316,7 +325,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           TextButton(
                             onPressed: _toggleMode,
                             style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: Spacing.sm),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: Spacing.sm),
                               minimumSize: Size.zero,
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),

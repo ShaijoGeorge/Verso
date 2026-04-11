@@ -49,7 +49,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     // Perform our routing
     if (!mounted) return;
-      
+
     final session = Supabase.instance.client.auth.currentSession;
     if (session != null) {
       context.go('/home');
@@ -97,11 +97,11 @@ class _SplashScreenState extends State<SplashScreen> {
                   style: TextStyle(
                     color: Colors.white54,
                     fontSize: 10,
-                    fontFamily: 'Metropolis', 
+                    fontFamily: 'Metropolis',
                     letterSpacing: 1.2,
                   ),
                 ),
-                const Gap(4), 
+                const Gap(4),
                 Text(
                   _version,
                   style: const TextStyle(

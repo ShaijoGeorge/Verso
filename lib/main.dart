@@ -10,9 +10,8 @@ import 'features/settings/providers/settings_providers.dart';
 import 'core/utils/verso_error_observer.dart';
 
 void main() async {
-
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // 1. Load the .env file
   await dotenv.load(fileName: ".env");
 
@@ -45,7 +44,6 @@ class BibliaApp extends ConsumerStatefulWidget {
 }
 
 class _BibliaAppState extends ConsumerState<BibliaApp> {
-  
   @override
   void initState() {
     super.initState();
@@ -65,7 +63,7 @@ class _BibliaAppState extends ConsumerState<BibliaApp> {
   Future<void> _initializeReminders() async {
     // Wait for settings to load
     await Future.delayed(const Duration(milliseconds: 500));
-    
+
     final settingsAsync = ref.read(currentSettingsProvider);
     settingsAsync.whenData((settings) async {
       if (settings.isReminderEnabled) {
@@ -90,8 +88,9 @@ class _BibliaAppState extends ConsumerState<BibliaApp> {
       darkTheme: AppTheme.darkTheme,
 
       // A duration of 500ms - 800ms is usually good for a "luxurious" feel.
-      themeAnimationDuration: const Duration(milliseconds: 600), 
-      themeAnimationCurve: Curves.easeInOutCubic, // Starts slow, speeds up, ends slow
+      themeAnimationDuration: const Duration(milliseconds: 600),
+      themeAnimationCurve:
+          Curves.easeInOutCubic, // Starts slow, speeds up, ends slow
 
       // Determine the ThemeMode based on the loaded settings
       themeMode: settingsAsync.when(

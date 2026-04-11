@@ -25,7 +25,8 @@ class BookCompletionGrid extends StatelessWidget {
           builder: (context, constraints) {
             // Aim for ~10 columns — adapt to width
             const crossAxisCount = 10;
-            final cellSize = (constraints.maxWidth - (crossAxisCount - 1) * 4) / crossAxisCount;
+            final cellSize = (constraints.maxWidth - (crossAxisCount - 1) * 4) /
+                crossAxisCount;
 
             return Wrap(
               spacing: 4,

@@ -21,7 +21,10 @@ class NotFoundScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .errorContainer
+                      .withValues(alpha: 0.3),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -50,7 +53,7 @@ class NotFoundScreen extends StatelessWidget {
                       height: 1.5,
                     ),
               ),
-              
+
               // Optional: Show technical error in Debug mode only
               if (error != null) ...[
                 const Gap(16),

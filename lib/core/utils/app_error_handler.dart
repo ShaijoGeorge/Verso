@@ -12,8 +12,8 @@ class AppErrorHandler {
         return "This email is already in use. Try logging in.";
       }
       return error.message; // Fallback to Supabase's message (usually readable)
-    } 
-    
+    }
+
     if (error is SocketException) {
       return "No internet connection. Please check your network.";
     }

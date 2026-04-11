@@ -70,7 +70,7 @@ class ActivityGroup {
   final BibleBook book;
   final List<int> chapters;
   final bool isBulkAction; // Was this likely a "Mark All Read"?
-  final bool isFinish;     // Did this complete the book?
+  final bool isFinish; // Did this complete the book?
 
   ActivityGroup({
     required this.timestamp,
@@ -114,7 +114,7 @@ Future<List<ReadingProgress>> _fetchOfflineFirstHistory(Ref ref) async {
   final repo = ref.watch(bibleRepositoryProvider);
   final isConnected = ref.watch(connectivityProvider);
   final cacheService = OfflineCacheService();
-  
+
   // We need the user ID to apply pending writes locally
   final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
 
@@ -135,7 +135,7 @@ Future<List<ReadingProgress>> _fetchOfflineFirstHistory(Ref ref) async {
     history = await cacheService.getCachedProgress();
   }
 
-  // 4. Merge any pending actions the user JUST took 
+  // 4. Merge any pending actions the user JUST took
   // so the Journal immediately reflects their progress even before it syncs.
   final queue = await cacheService.getWriteQueue();
   if (queue.isNotEmpty && userId.isNotEmpty) {
@@ -158,16 +158,17 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
 
   // Detect Completed Books
   final Map<int, DateTime> bookCompletionTimes = {};
-  
+
   // Group history by book to check completion status
   final historyByBook = groupBy(allHistory, (p) => p.bookId);
 
   for (final entry in historyByBook.entries) {
     final bookId = entry.key;
     final progressList = entry.value;
-    
+
     // Find the book definition to get total chapters
-    final book = kBibleBooks.firstWhere((b) => b.id == bookId, orElse: () => kBibleBooks.first);
+    final book = kBibleBooks.firstWhere((b) => b.id == bookId,
+        orElse: () => kBibleBooks.first);
 
     // Get unique read chapters
     final readChapterSet = progressList.map((p) => p.chapterNumber).toSet();
@@ -179,7 +180,7 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
           .where((d) => d != null)
           .cast<DateTime>()
           .toList();
-      
+
       if (dates.isNotEmpty) {
         dates.sort(); // Ascending
         // The last date is when the book was "Finished"
@@ -189,7 +190,8 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
   }
 
   // Sort by Time DESC (Newest first)
-  allHistory.sort((a, b) => (b.readAt ?? DateTime(0)).compareTo(a.readAt ?? DateTime(0)));
+  allHistory.sort(
+      (a, b) => (b.readAt ?? DateTime(0)).compareTo(a.readAt ?? DateTime(0)));
 
   final List<ActivityGroup> groups = [];
 
@@ -222,7 +224,8 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
     // Smart Grouping - same book, within 2 minutes = same session
     if (groups.isNotEmpty) {
       final lastGroup = groups.last;
-      final timeDiff = lastGroup.timestamp.difference(entry.readAt!).inMinutes.abs();
+      final timeDiff =
+          lastGroup.timestamp.difference(entry.readAt!).inMinutes.abs();
       if (lastGroup.book.id == book.id && timeDiff < 2) {
         lastGroup.chapters.add(entry.chapterNumber);
         continue;
@@ -240,7 +243,8 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
   // Group by Date for Sticky Headers
   final Map<DateTime, List<ActivityGroup>> grouped = {};
   for (final g in groups) {
-    final dateKey = DateTime(g.timestamp.year, g.timestamp.month, g.timestamp.day);
+    final dateKey =
+        DateTime(g.timestamp.year, g.timestamp.month, g.timestamp.day);
     grouped.putIfAbsent(dateKey, () => []).add(g);
   }
 
@@ -254,6 +258,6 @@ Future<List<BibleBook>> booksWithActivity(Ref ref) async {
   // Use our new Offline-First helper so the dropdown works offline!
   final allHistory = await _fetchOfflineFirstHistory(ref);
   final bookIds = allHistory.map((p) => p.bookId).toSet();
-  
+
   return kBibleBooks.where((b) => bookIds.contains(b.id)).toList();
 }

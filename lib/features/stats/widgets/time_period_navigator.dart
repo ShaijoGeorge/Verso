@@ -47,10 +47,12 @@ class TimePeriodNavigator extends StatelessWidget {
           // Center label - tappable to reset when not at present
           Expanded(
             child: GestureDetector(
-              onTap: !_isAtPresent ? () {
-                HapticFeedback.selectionClick();
-                onReset?.call();
-              } : null,
+              onTap: !_isAtPresent
+                  ? () {
+                      HapticFeedback.selectionClick();
+                      onReset?.call();
+                    }
+                  : null,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -80,10 +82,12 @@ class TimePeriodNavigator extends StatelessWidget {
           // Forward arrow
           _NavButton(
             icon: Icons.chevron_right_rounded,
-            onTap: onNext != null ? () {
-              HapticFeedback.selectionClick();
-              onNext!();
-            } : null,
+            onTap: onNext != null
+                ? () {
+                    HapticFeedback.selectionClick();
+                    onNext!();
+                  }
+                : null,
             scheme: scheme,
             isLight: isLight,
           ),

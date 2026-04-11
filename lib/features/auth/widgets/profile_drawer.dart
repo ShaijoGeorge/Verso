@@ -52,7 +52,7 @@ class ProfileDrawer extends ConsumerWidget {
             title: const Text('Profile'),
             onTap: () {
               Navigator.pop(context); // Close drawer first
-              GoRouter.of(context).push('/profile');  // Navigate
+              GoRouter.of(context).push('/profile'); // Navigate
             },
           ),
           ListTile(
@@ -63,10 +63,10 @@ class ProfileDrawer extends ConsumerWidget {
               GoRouter.of(context).push('/settings'); // Navigate
             },
           ),
-          
+
           const Spacer(), // Pushes the logout button to the bottom
           const Divider(),
-          
+
           // Logout Button
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),

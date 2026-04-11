@@ -17,7 +17,8 @@ class BibleScreen extends StatelessWidget {
           TabBar(
             indicatorSize: TabBarIndicatorSize.tab,
             labelColor: Theme.of(context).colorScheme.primary,
-            unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+            unselectedLabelColor:
+                Theme.of(context).colorScheme.onSurfaceVariant,
             tabs: const [
               Tab(text: 'Old Testament'),
               Tab(text: 'New Testament'),

@@ -77,7 +77,8 @@ class _TestamentRings extends StatelessWidget {
               totalChapters: 1074,
               booksCompleted: stats.otBooksCompleted,
               totalBooks: 46,
-              color: isLight ? const Color(0xFFE65100) : const Color(0xFFFF9800),
+              color:
+                  isLight ? const Color(0xFFE65100) : const Color(0xFFFF9800),
             ),
           ),
           // Vertical divider
@@ -94,7 +95,8 @@ class _TestamentRings extends StatelessWidget {
               totalChapters: 260,
               booksCompleted: stats.ntBooksCompleted,
               totalBooks: 27,
-              color: isLight ? const Color(0xFF1565C0) : const Color(0xFF64B5F6),
+              color:
+                  isLight ? const Color(0xFF1565C0) : const Color(0xFF64B5F6),
             ),
           ),
         ],

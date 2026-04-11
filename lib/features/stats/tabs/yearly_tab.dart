@@ -48,7 +48,8 @@ class YearlyTab extends ConsumerWidget {
               // Period navigator
               TimePeriodNavigator(
                 label: '${chartData.year}',
-                onPrevious: () => ref.read(yearlyOffsetProvider.notifier).goBack(),
+                onPrevious: () =>
+                    ref.read(yearlyOffsetProvider.notifier).goBack(),
                 onNext: offset > 0
                     ? () => ref.read(yearlyOffsetProvider.notifier).goForward()
                     : null,
@@ -61,7 +62,8 @@ class YearlyTab extends ConsumerWidget {
               // Summary
               RichText(
                 text: TextSpan(
-                  style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
+                  style:
+                      TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
                   children: [
                     TextSpan(
                       text: '${chartData.totalRead} chapters ',
@@ -73,7 +75,9 @@ class YearlyTab extends ConsumerWidget {
                     ),
                     TextSpan(
                       text: chartData.totalRead > 0
-                          ? (offset == 0 ? 'read this year' : 'read in ${chartData.year}')
+                          ? (offset == 0
+                              ? 'read this year'
+                              : 'read in ${chartData.year}')
                           : 'no reading recorded',
                     ),
                   ],
@@ -96,15 +100,19 @@ class YearlyTab extends ConsumerWidget {
                         gridData: FlGridData(
                           show: true,
                           drawVerticalLine: false,
-                          horizontalInterval: (maxY / 4).ceilToDouble().clamp(1, double.infinity),
+                          horizontalInterval: (maxY / 4)
+                              .ceilToDouble()
+                              .clamp(1, double.infinity),
                           getDrawingHorizontalLine: (value) => FlLine(
                             color: scheme.outline.withValues(alpha: 0.08),
                             strokeWidth: 1,
                           ),
                         ),
                         titlesData: FlTitlesData(
-                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          topTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
                           bottomTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
@@ -113,15 +121,20 @@ class YearlyTab extends ConsumerWidget {
                               getTitlesWidget: (value, meta) {
                                 final m = value.toInt();
                                 if (m < 1 || m > 12) return const SizedBox();
-                                final isCurrentMonth = offset == 0 && m == now.month;
+                                final isCurrentMonth =
+                                    offset == 0 && m == now.month;
                                 return Padding(
                                   padding: const EdgeInsets.only(top: 8),
                                   child: Text(
                                     _monthNameShort(m),
                                     style: TextStyle(
                                       fontSize: 10,
-                                      fontWeight: isCurrentMonth ? FontWeight.bold : FontWeight.normal,
-                                      color: isCurrentMonth ? scheme.primary : scheme.onSurfaceVariant,
+                                      fontWeight: isCurrentMonth
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                      color: isCurrentMonth
+                                          ? scheme.primary
+                                          : scheme.onSurfaceVariant,
                                     ),
                                   ),
                                 );
@@ -132,10 +145,14 @@ class YearlyTab extends ConsumerWidget {
                             sideTitles: SideTitles(
                               showTitles: true,
                               reservedSize: 35,
-                              interval: (maxY / 4).ceilToDouble().clamp(1, double.infinity),
+                              interval: (maxY / 4)
+                                  .ceilToDouble()
+                                  .clamp(1, double.infinity),
                               getTitlesWidget: (value, meta) => Text(
                                 value.toInt().toString(),
-                                style: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant),
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    color: scheme.onSurfaceVariant),
                               ),
                             ),
                           ),
@@ -143,7 +160,8 @@ class YearlyTab extends ConsumerWidget {
                         borderData: FlBorderData(show: false),
                         lineBarsData: [
                           LineChartBarData(
-                            spots: _generateSpots(isAnimated, maxMonthToShow, chartData),
+                            spots: _generateSpots(
+                                isAnimated, maxMonthToShow, chartData),
                             isCurved: true,
                             curveSmoothness: 0.3,
                             color: scheme.primary,
@@ -166,7 +184,8 @@ class YearlyTab extends ConsumerWidget {
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
                                 colors: [
-                                  scheme.primary.withValues(alpha: isLight ? 0.3 : 0.25),
+                                  scheme.primary
+                                      .withValues(alpha: isLight ? 0.3 : 0.25),
                                   scheme.primary.withValues(alpha: 0.02),
                                 ],
                               ),
@@ -215,7 +234,8 @@ class YearlyTab extends ConsumerWidget {
                       child: _YearCard(
                         label: 'Monthly Avg',
                         value: maxMonthToShow > 0
-                            ? (chartData.totalRead / maxMonthToShow).toStringAsFixed(1)
+                            ? (chartData.totalRead / maxMonthToShow)
+                                .toStringAsFixed(1)
                             : '0',
                         subtitle: 'chapters / month',
                         icon: Icons.show_chart_rounded,
@@ -256,7 +276,8 @@ class YearlyTab extends ConsumerWidget {
     );
   }
 
-  List<FlSpot> _generateSpots(bool animate, int maxMonthToShow, YearlyChartData data) {
+  List<FlSpot> _generateSpots(
+      bool animate, int maxMonthToShow, YearlyChartData data) {
     final spots = <FlSpot>[];
     for (int m = 1; m <= maxMonthToShow; m++) {
       final value = animate ? (data.monthlyCounts[m] ?? 0).toDouble() : 0.0;
@@ -266,8 +287,20 @@ class YearlyTab extends ConsumerWidget {
   }
 
   String _monthNameShort(int m) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
     if (m < 1 || m > 12) return '';
     return months[m - 1];
   }
@@ -314,7 +347,8 @@ class _YearCard extends StatelessWidget {
           Text(label,
               style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
           Text(value,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              style:
+                  const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
           Text(subtitle,
               style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
         ],

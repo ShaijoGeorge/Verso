@@ -79,9 +79,8 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
       }
     }
 
-    final progress = widget.book.chapters > 0
-        ? readCount / widget.book.chapters
-        : 0.0;
+    final progress =
+        widget.book.chapters > 0 ? readCount / widget.book.chapters : 0.0;
     final isComplete = readCount >= widget.book.chapters;
 
     return CustomScrollView(
@@ -225,9 +224,11 @@ class _HeroHeader extends StatelessWidget {
               children: [
                 // Category pill
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: scheme.primary.withValues(alpha: isLight ? 0.12 : 0.2),
+                    color:
+                        scheme.primary.withValues(alpha: isLight ? 0.12 : 0.2),
                     borderRadius: AppRadii.borderRadiusFull,
                   ),
                   child: Text(
@@ -437,7 +438,8 @@ class _ChapterTileState extends State<_ChapterTile>
   Brightness? _cachedBrightness;
 
   BoxDecoration _getDecoration(ColorScheme scheme, bool isLight) {
-    if (_cachedIsRead == _isRead && _cachedBrightness == (isLight ? Brightness.light : Brightness.dark)) {
+    if (_cachedIsRead == _isRead &&
+        _cachedBrightness == (isLight ? Brightness.light : Brightness.dark)) {
       return _cachedDecoration!;
     }
     _cachedIsRead = _isRead;
@@ -521,11 +523,26 @@ class _ChapterTileState extends State<_ChapterTile>
                     end: Alignment.bottomRight,
                     colors: isRead
                         ? (isLight
-                            ? [scheme.primary, scheme.primary.withValues(alpha: 0.8)]
-                            : [scheme.primaryContainer, scheme.primaryContainer.withValues(alpha: 0.7)])
+                            ? [
+                                scheme.primary,
+                                scheme.primary.withValues(alpha: 0.8)
+                              ]
+                            : [
+                                scheme.primaryContainer,
+                                scheme.primaryContainer.withValues(alpha: 0.7)
+                              ])
                         : (isLight
-                            ? [scheme.surfaceContainerHighest, scheme.surfaceContainerHighest.withValues(alpha: 0.6)]
-                            : [scheme.surfaceContainerHighest.withValues(alpha: 0.5), scheme.surfaceContainerHighest.withValues(alpha: 0.3)]),
+                            ? [
+                                scheme.surfaceContainerHighest,
+                                scheme.surfaceContainerHighest
+                                    .withValues(alpha: 0.6)
+                              ]
+                            : [
+                                scheme.surfaceContainerHighest
+                                    .withValues(alpha: 0.5),
+                                scheme.surfaceContainerHighest
+                                    .withValues(alpha: 0.3)
+                              ]),
                   ),
                   borderRadius: AppRadii.borderRadiusLG,
                 ),
@@ -536,7 +553,9 @@ class _ChapterTileState extends State<_ChapterTile>
                       '${widget.chapterNum}',
                       style: textTheme.displayLarge?.copyWith(
                         color: isRead
-                            ? (isLight ? Colors.white : scheme.onPrimaryContainer)
+                            ? (isLight
+                                ? Colors.white
+                                : scheme.onPrimaryContainer)
                             : scheme.onSurfaceVariant,
                         fontWeight: FontWeight.bold,
                         fontSize: 48,
@@ -550,7 +569,8 @@ class _ChapterTileState extends State<_ChapterTile>
                         color: isRead
                             ? (isLight
                                 ? Colors.white.withValues(alpha: 0.85)
-                                : scheme.onPrimaryContainer.withValues(alpha: 0.8))
+                                : scheme.onPrimaryContainer
+                                    .withValues(alpha: 0.8))
                             : scheme.onSurfaceVariant,
                       ),
                     ),
@@ -558,7 +578,8 @@ class _ChapterTileState extends State<_ChapterTile>
 
                     // Status pill
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 6),
                       decoration: BoxDecoration(
                         color: isRead
                             ? (isLight
@@ -571,7 +592,9 @@ class _ChapterTileState extends State<_ChapterTile>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            isRead ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                            isRead
+                                ? Icons.check_circle_rounded
+                                : Icons.radio_button_unchecked_rounded,
                             size: 14,
                             color: isRead
                                 ? (isLight ? Colors.white : scheme.primary)
@@ -607,7 +630,8 @@ class _ChapterTileState extends State<_ChapterTile>
                           : scheme.primary.withValues(alpha: 0.08),
                       borderRadius: AppRadii.borderRadiusMD,
                       border: Border.all(
-                        color: scheme.primary.withValues(alpha: isLight ? 0.1 : 0.08),
+                        color: scheme.primary
+                            .withValues(alpha: isLight ? 0.1 : 0.08),
                       ),
                     ),
                     child: Row(
@@ -616,7 +640,8 @@ class _ChapterTileState extends State<_ChapterTile>
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: scheme.primary.withValues(alpha: isLight ? 0.1 : 0.15),
+                            color: scheme.primary
+                                .withValues(alpha: isLight ? 0.1 : 0.15),
                             borderRadius: AppRadii.borderRadiusSM,
                           ),
                           child: Icon(

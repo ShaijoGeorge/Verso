@@ -29,8 +29,10 @@ class AppSemanticColors {
 
   Color get success => _isDark ? AppColors.successDark : AppColors.successLight;
   Color get streak => _isDark ? AppColors.streakDark : AppColors.streakLight;
-  Color get chartPurple => _isDark ? AppColors.chartPurpleDark : AppColors.chartPurpleLight;
-  Color get chartTeal => _isDark ? AppColors.chartTealDark : AppColors.chartTealLight;
+  Color get chartPurple =>
+      _isDark ? AppColors.chartPurpleDark : AppColors.chartPurpleLight;
+  Color get chartTeal =>
+      _isDark ? AppColors.chartTealDark : AppColors.chartTealLight;
   Color get otColor => _isDark ? AppColors.otColorDark : AppColors.otColorLight;
   Color get ntColor => _isDark ? AppColors.ntColorDark : AppColors.ntColorLight;
 }

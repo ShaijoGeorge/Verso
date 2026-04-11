@@ -26,41 +26,96 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   static const _pages = [
     _OnboardingPage(
       title: 'Track Every\nChapter',
-      subtitle: 'Tap to log your progress with a visual book grid. Never lose your place again.',
+      subtitle:
+          'Tap to log your progress with a visual book grid. Never lose your place again.',
       icon: Icons.grid_view_rounded,
       accentColor: Color(0xFF7EB8E0),
       gradientColors: [Color(0xFF0F2640), Color(0xFF1B3A5C)],
       illustrationElements: [
-        _FloatingElement(icon: Icons.menu_book_rounded, x: 0.15, y: 0.2, size: 28, delay: 0.0),
-        _FloatingElement(icon: Icons.check_circle_rounded, x: 0.75, y: 0.15, size: 22, delay: 0.3),
-        _FloatingElement(icon: Icons.bookmark_rounded, x: 0.82, y: 0.65, size: 24, delay: 0.6),
-        _FloatingElement(icon: Icons.auto_stories_rounded, x: 0.12, y: 0.7, size: 26, delay: 0.2),
+        _FloatingElement(
+            icon: Icons.menu_book_rounded,
+            x: 0.15,
+            y: 0.2,
+            size: 28,
+            delay: 0.0),
+        _FloatingElement(
+            icon: Icons.check_circle_rounded,
+            x: 0.75,
+            y: 0.15,
+            size: 22,
+            delay: 0.3),
+        _FloatingElement(
+            icon: Icons.bookmark_rounded,
+            x: 0.82,
+            y: 0.65,
+            size: 24,
+            delay: 0.6),
+        _FloatingElement(
+            icon: Icons.auto_stories_rounded,
+            x: 0.12,
+            y: 0.7,
+            size: 26,
+            delay: 0.2),
       ],
     ),
     _OnboardingPage(
       title: 'Build Your\nStreak',
-      subtitle: 'Read daily to build your streak. Consistency is the key to finishing the Bible.',
+      subtitle:
+          'Read daily to build your streak. Consistency is the key to finishing the Bible.',
       icon: Icons.local_fire_department_rounded,
       accentColor: Color(0xFFC4973B),
       gradientColors: [Color(0xFF3D2E14), Color(0xFF5C4520)],
       illustrationElements: [
-        _FloatingElement(icon: Icons.bolt_rounded, x: 0.18, y: 0.18, size: 24, delay: 0.1),
-        _FloatingElement(icon: Icons.star_rounded, x: 0.78, y: 0.22, size: 20, delay: 0.4),
-        _FloatingElement(icon: Icons.emoji_events_rounded, x: 0.80, y: 0.68, size: 26, delay: 0.5),
-        _FloatingElement(icon: Icons.calendar_today_rounded, x: 0.10, y: 0.65, size: 22, delay: 0.3),
+        _FloatingElement(
+            icon: Icons.bolt_rounded, x: 0.18, y: 0.18, size: 24, delay: 0.1),
+        _FloatingElement(
+            icon: Icons.star_rounded, x: 0.78, y: 0.22, size: 20, delay: 0.4),
+        _FloatingElement(
+            icon: Icons.emoji_events_rounded,
+            x: 0.80,
+            y: 0.68,
+            size: 26,
+            delay: 0.5),
+        _FloatingElement(
+            icon: Icons.calendar_today_rounded,
+            x: 0.10,
+            y: 0.65,
+            size: 22,
+            delay: 0.3),
       ],
     ),
     _OnboardingPage(
       title: 'See Your\nJourney',
-      subtitle: 'Visualize your progress with beautiful charts and detailed reading analytics.',
+      subtitle:
+          'Visualize your progress with beautiful charts and detailed reading analytics.',
       icon: Icons.insights_rounded,
       accentColor: Color(0xFFA78BFA),
       gradientColors: [Color(0xFF2D1B69), Color(0xFF4C2E91)],
       illustrationElements: [
-        _FloatingElement(icon: Icons.pie_chart_rounded, x: 0.15, y: 0.22, size: 24, delay: 0.2),
-        _FloatingElement(icon: Icons.trending_up_rounded, x: 0.80, y: 0.18, size: 22, delay: 0.0),
-        _FloatingElement(icon: Icons.bar_chart_rounded, x: 0.78, y: 0.70, size: 26, delay: 0.4),
-        _FloatingElement(icon: Icons.timeline_rounded, x: 0.12, y: 0.68, size: 22, delay: 0.6),
+        _FloatingElement(
+            icon: Icons.pie_chart_rounded,
+            x: 0.15,
+            y: 0.22,
+            size: 24,
+            delay: 0.2),
+        _FloatingElement(
+            icon: Icons.trending_up_rounded,
+            x: 0.80,
+            y: 0.18,
+            size: 22,
+            delay: 0.0),
+        _FloatingElement(
+            icon: Icons.bar_chart_rounded,
+            x: 0.78,
+            y: 0.70,
+            size: 26,
+            delay: 0.4),
+        _FloatingElement(
+            icon: Icons.timeline_rounded,
+            x: 0.12,
+            y: 0.68,
+            size: 22,
+            delay: 0.6),
       ],
     ),
   ];
@@ -110,7 +165,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.surfaceLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.surfaceLight,
       body: Stack(
         children: [
           // Page content
@@ -461,8 +517,10 @@ class _FloatingIcon extends StatelessWidget {
       builder: (context, child) {
         // Offset phase per element for organic movement
         final phase = element.delay * math.pi * 2;
-        final yOffset = math.sin(animationController.value * math.pi + phase) * 6;
-        final opacity = 0.5 + math.sin(animationController.value * math.pi + phase) * 0.3;
+        final yOffset =
+            math.sin(animationController.value * math.pi + phase) * 6;
+        final opacity =
+            0.5 + math.sin(animationController.value * math.pi + phase) * 0.3;
 
         return Transform.translate(
           offset: Offset(0, yOffset),
@@ -542,7 +600,9 @@ class _AnimatedCTAButton extends StatelessWidget {
             ),
             const Gap(8),
             Icon(
-              isLastPage ? Icons.arrow_forward_rounded : Icons.arrow_forward_rounded,
+              isLastPage
+                  ? Icons.arrow_forward_rounded
+                  : Icons.arrow_forward_rounded,
               color: Colors.white,
               size: 20,
             ),

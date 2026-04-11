@@ -5,7 +5,6 @@ import '../../../data/bible_data.dart';
 import '../widgets/book_grid.dart';
 import 'package:go_router/go_router.dart';
 
-
 class NewTestamentScreen extends ConsumerWidget {
   const NewTestamentScreen({super.key});
 
@@ -14,12 +13,11 @@ class NewTestamentScreen extends ConsumerWidget {
     // Watch the trigger!
     final refreshTrigger = ref.watch(biblePageTriggerProvider);
 
-
     return Scaffold(
       body: BookGrid(
         // MAGIC KEY: Forces the Grid to "reset" its memory when you arrive.
         key: ValueKey("nt_grid_$refreshTrigger"),
-        
+
         books: newTestamentBooks, // Ensure this list is imported
         onBookTap: (book) {
           context.push('/book/${book.id}');
