@@ -29,6 +29,11 @@ jobs:
           # Cache busting key: Change 'v1' to 'v2' if the cache ever corrupts again
           cache-key: "flutter-${{ runner.os }}-v1"
 
+      - name: Create dummy .env for CI
+        run: |
+          echo "SUPABASE_URL=https://dummy.supabase.co" > .env
+          echo "SUPABASE_ANON_KEY=dummy_key" >> .env
+
       - name: Install dependencies
         run: flutter pub get
 
@@ -62,6 +67,11 @@ jobs:
           cache: true
           cache-key: "flutter-${{ runner.os }}-v1"
 
+      - name: Create dummy .env for CI
+        run: |
+          echo "SUPABASE_URL=https://dummy.supabase.co" > .env
+          echo "SUPABASE_ANON_KEY=dummy_key" >> .env
+
       - name: Install dependencies
         run: flutter pub get
 
@@ -85,6 +95,11 @@ jobs:
           channel: 'stable'
           cache: true
           cache-key: "flutter-${{ runner.os }}-v1"
+
+      - name: Create dummy .env for CI
+        run: |
+          echo "SUPABASE_URL=https://dummy.supabase.co" > .env
+          echo "SUPABASE_ANON_KEY=dummy_key" >> .env
 
       - name: Install dependencies
         run: flutter pub get
