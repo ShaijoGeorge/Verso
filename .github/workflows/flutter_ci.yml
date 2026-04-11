@@ -26,6 +26,8 @@ jobs:
         with:
           channel: 'stable'
           cache: true
+          # Cache busting key: Change 'v1' to 'v2' if the cache ever corrupts again
+          cache-key: "flutter-${{ runner.os }}-v1"
 
       - name: Install dependencies
         run: flutter pub get
@@ -58,6 +60,7 @@ jobs:
         with:
           channel: 'stable'
           cache: true
+          cache-key: "flutter-${{ runner.os }}-v1"
 
       - name: Install dependencies
         run: flutter pub get
@@ -81,6 +84,7 @@ jobs:
         with:
           channel: 'stable'
           cache: true
+          cache-key: "flutter-${{ runner.os }}-v1"
 
       - name: Install dependencies
         run: flutter pub get
