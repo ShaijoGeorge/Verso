@@ -67,7 +67,7 @@ class HomeScreen extends ConsumerWidget {
               // THIS WEEK
               if (detailedAsync.hasValue) ...[
                 VersoSectionHeader(
-                  title: 'This Week',
+                  title: 'This week',
                   action: 'Details',
                   onAction: () => context.go('/stats?tab=weekly'),
                 ),
@@ -81,7 +81,7 @@ class HomeScreen extends ConsumerWidget {
 
               // CONTINUE READING
               if (continueAsync.hasValue && continueAsync.value != null) ...[
-                VersoSectionHeader(title: 'Continue Reading'),
+                VersoSectionHeader(title: 'Continue reading'),
                 const Gap(Spacing.md),
                 _ContinueReadingCard(info: continueAsync.value!),
                 const Gap(Spacing.xl),
@@ -91,8 +91,8 @@ class HomeScreen extends ConsumerWidget {
               if (activityAsync.hasValue &&
                   activityAsync.value!.isNotEmpty) ...[
                 VersoSectionHeader(
-                  title: 'Recent Activity',
-                  action: 'See All',
+                  title: 'Recent activity',
+                  action: 'See all',
                   onAction: () => context.go('/journal'),
                 ),
                 const Gap(Spacing.md),
@@ -237,7 +237,7 @@ class _HeroProgressCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Bible Journey',
+                  'Bible journey',
                   style: textTheme.titleMedium?.copyWith(
                     color: isLight ? Colors.white : scheme.onPrimaryContainer,
                     fontWeight: FontWeight.bold,
@@ -328,7 +328,7 @@ class _QuickStatsRow extends StatelessWidget {
           child: _QuickStatCard(
             icon: Icons.local_fire_department_rounded,
             value: '${stats.streak}',
-            label: 'Day Streak',
+            label: 'Day streak',
             iconColor: isLight ? AppColors.otColorLight : AppColors.otColorDark,
             bgColor: isLight
                 ? AppColors.otColorLight.withValues(alpha: 0.08)
@@ -352,7 +352,7 @@ class _QuickStatsRow extends StatelessWidget {
           child: _QuickStatCard(
             icon: Icons.emoji_events_rounded,
             value: '${stats.booksCompleted}',
-            label: 'Books Done',
+            label: 'Books completed',
             iconColor: scheme.secondary,
             bgColor: isLight
                 ? scheme.secondaryContainer
