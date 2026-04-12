@@ -7,6 +7,12 @@ on:
       - test
       - dev
       - master
+  push:
+    # Trigger the pipeline on direct pushes to these three integration branches
+    branches:
+      - test
+      - dev
+      - master
 
 # Concurrency group to cancel previous runs if a new commit is pushed to the PR
 concurrency:
