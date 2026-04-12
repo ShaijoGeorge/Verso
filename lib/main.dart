@@ -7,6 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/constants.dart';
 import 'features/settings/services/notification_service.dart';
 import 'features/settings/providers/settings_providers.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'core/providers/package_info_provider.dart';
 import 'core/utils/verso_error_observer.dart';
 
 void main() async {
@@ -27,8 +29,14 @@ void main() async {
   // Request Permissions (Important for Android 13+)
   await NotificationService().requestPermissions();
 
+  // Load Package Info synchronously before runApp
+  final packageInfo = await PackageInfo.fromPlatform();
+
   runApp(
     ProviderScope(
+      overrides: [
+        packageInfoProvider.overrideWithValue(packageInfo),
+      ],
       observers: [VersoErrorObserver()],
       child: const BibliaApp(),
     ),
