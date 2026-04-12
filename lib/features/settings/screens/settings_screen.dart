@@ -17,7 +17,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-
   String _formatTime(int hour, int minute) {
     final int h = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
     final String m = minute.toString().padLeft(2, '0');

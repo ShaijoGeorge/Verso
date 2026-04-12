@@ -21,7 +21,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     _startTimer();
   }
 
-
   void _startTimer() async {
     // Define our two tasks
     final minimumDelay = Future.delayed(const Duration(milliseconds: 1500));
