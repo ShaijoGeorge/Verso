@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:package_info_plus/package_info_plus.dart';
+import '../../../core/providers/package_info_provider.dart';
 import '../providers/settings_providers.dart';
 import '../services/notification_service.dart';
 import '../../../core/widgets/error_state_widget.dart';
@@ -17,22 +17,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  String _version = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadVersion();
-  }
-
-  Future<void> _loadVersion() async {
-    final info = await PackageInfo.fromPlatform();
-    if (mounted) {
-      setState(() {
-        _version = '${info.version} (${info.buildNumber})';
-      });
-    }
-  }
 
   String _formatTime(int hour, int minute) {
     final int h = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
@@ -228,7 +212,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   child: Padding(
                     padding: Spacing.allLG,
                     child: Text(
-                      'Verso v$_version\nMade by Shaijo George',
+                      'Verso v${ref.watch(packageInfoProvider).version}\nMade by Shaijo George',
                       textAlign: TextAlign.center,
                       style: AppTypography.labelSmall.copyWith(
                         color: context.colors.onSurfaceVariant

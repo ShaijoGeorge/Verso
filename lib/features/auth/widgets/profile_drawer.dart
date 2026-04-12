@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../core/providers/package_info_provider.dart';
 import '../../../core/design/tokens/colors.dart';
 import '../../../core/design/tokens/radii.dart';
 import '../../../core/design/tokens/spacing.dart';
@@ -82,7 +83,7 @@ class ProfileDrawer extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: Spacing.sm),
                     child: Text(
-                      'Verso v2.0.0',
+                      'Verso v${ref.watch(packageInfoProvider).version}',
                       style: GoogleFonts.dmSerifDisplay(
                         fontSize: 13,
                         color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
