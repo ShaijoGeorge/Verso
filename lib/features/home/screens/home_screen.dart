@@ -457,20 +457,12 @@ class _WeeklyChart extends StatelessWidget {
       child: Column(
         children: [
           // Summary row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '$total chapters',
-                style: textTheme.titleSmall,
-              ),
-              Text(
-                'this week',
-                style: textTheme.labelSmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            ],
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '$total chapters',
+              style: textTheme.titleSmall,
+            ),
           ),
           const Gap(Spacing.md),
 
