@@ -55,6 +55,8 @@ jobs:
   build_android:
     name: Build Android APK
     needs: analyze_and_test
+    # Optimization: Only run APK builds when merging/pushing to dev or master.
+    if: github.base_ref == 'dev' || github.base_ref == 'master' || github.ref_name == 'dev' || github.ref_name == 'master'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -87,9 +89,9 @@ jobs:
   build_ios:
     name: Build iOS App
     needs: analyze_and_test
-    # Optimization: Only run expensive Mac builds when merging to dev or master.
+    # Optimization: Only run expensive Mac builds when merging/pushing to dev or master.
     # Feature PRs to 'test' will skip this to save GitHub Action minutes.
-    if: github.base_ref == 'dev' || github.base_ref == 'master'
+    if: github.base_ref == 'dev' || github.base_ref == 'master' || github.ref_name == 'dev' || github.ref_name == 'master'
     runs-on: macos-latest
     steps:
       - name: Checkout code
