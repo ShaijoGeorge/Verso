@@ -29,9 +29,11 @@ class ProfileDrawer extends ConsumerWidget {
     final topPadding = MediaQuery.of(context).padding.top;
 
     return Drawer(
-      backgroundColor: isLight ? AppColors.backgroundLight : AppColors.backgroundDark,
+      backgroundColor:
+          isLight ? AppColors.backgroundLight : AppColors.backgroundDark,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.horizontal(right: Radius.circular(AppRadii.xl)),
+        borderRadius:
+            BorderRadius.horizontal(right: Radius.circular(AppRadii.xl)),
       ),
       child: Column(
         children: [
@@ -136,7 +138,8 @@ class _DrawerHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(Spacing.lg, topPadding + Spacing.lg, Spacing.lg, Spacing.lg),
+      padding: EdgeInsets.fromLTRB(
+          Spacing.lg, topPadding + Spacing.lg, Spacing.lg, Spacing.lg),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -253,7 +256,8 @@ class _DrawerMenuItem extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: scheme.primary.withValues(alpha: isLight ? 0.08 : 0.12),
+                    color:
+                        scheme.primary.withValues(alpha: isLight ? 0.08 : 0.12),
                     borderRadius: AppRadii.borderRadiusSM,
                   ),
                   child: Icon(
