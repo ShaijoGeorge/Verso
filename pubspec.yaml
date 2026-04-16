@@ -28,6 +28,8 @@ dependencies:
   # --- Data & Backend ---
   supabase_flutter: ^2.3.0      # Cloud Sync
   shared_preferences: ^2.5.5    # Simple Settings (Dark Mode)
+  drift: ^2.22.1                # Type-safe local SQL database
+  drift_flutter: ^0.2.4         # Flutter/SQLite binding for Drift
 
   flutter_local_notifications: ^21.0.0
   flutter_timezone: ^5.0.2
@@ -44,8 +46,9 @@ dev_dependencies:
     sdk: flutter
   
   # --- Code Generation ---
-  build_runner: ^2.4.8          
+  build_runner: ^2.4.8
   riverpod_generator: ^4.0.0+1
+  drift_dev: ^2.22.1            # Drift code generator
 
   flutter_launcher_icons: ^0.14.4
 
