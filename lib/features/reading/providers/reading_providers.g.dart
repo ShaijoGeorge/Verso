@@ -95,6 +95,47 @@ final class BibleRepositoryProvider extends $FunctionalProvider<BibleRepository,
 
 String _$bibleRepositoryHash() => r'5a30c2279c0a8fff477c8f224751fc75df275d08';
 
+@ProviderFor(appDatabase)
+final appDatabaseProvider = AppDatabaseProvider._();
+
+final class AppDatabaseProvider
+    extends $FunctionalProvider<AppDatabase, AppDatabase, AppDatabase>
+    with $Provider<AppDatabase> {
+  AppDatabaseProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'appDatabaseProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$appDatabaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<AppDatabase> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  AppDatabase create(Ref ref) {
+    return appDatabase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AppDatabase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AppDatabase>(value),
+    );
+  }
+}
+
+String _$appDatabaseHash() => r'448adad5717e7b1c0b3ca3ca7e03d0b2116237af';
+
 @ProviderFor(offlineCacheService)
 final offlineCacheServiceProvider = OfflineCacheServiceProvider._();
 
@@ -137,7 +178,7 @@ final class OfflineCacheServiceProvider extends $FunctionalProvider<
 }
 
 String _$offlineCacheServiceHash() =>
-    r'17e7e320bc21103489958a817dea88b0037d3593';
+    r'0693a5b02cc1367ac3a836abc4c7f55721d84ccb';
 
 @ProviderFor(globalProgress)
 final globalProgressProvider = GlobalProgressProvider._();

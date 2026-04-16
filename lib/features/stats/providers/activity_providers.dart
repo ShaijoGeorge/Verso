@@ -5,7 +5,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../reading/providers/reading_providers.dart';
 import '../../../data/bible_data.dart';
 import '../../../data/local/entities/reading_progress.dart';
-import '../../../core/services/offline_cache_service.dart';
 import '../../../core/providers/connectivity_provider.dart';
 
 part 'activity_providers.g.dart';
@@ -113,7 +112,7 @@ class ActivityGroup {
 Future<List<ReadingProgress>> _fetchOfflineFirstHistory(Ref ref) async {
   final repo = ref.watch(bibleRepositoryProvider);
   final isConnected = ref.watch(connectivityProvider);
-  final cacheService = OfflineCacheService();
+  final cacheService = ref.watch(offlineCacheServiceProvider);
 
   // We need the user ID to apply pending writes locally
   final userId = Supabase.instance.client.auth.currentUser?.id ?? '';

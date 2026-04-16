@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/bible_repository.dart';
 import '../../../data/local/entities/reading_progress.dart';
+import '../../../data/local/app_database.dart';
 import '../../../core/services/offline_cache_service.dart';
 
 part 'reading_providers.g.dart';
@@ -20,9 +21,18 @@ BibleRepository bibleRepository(Ref ref) {
   return BibleRepository(Supabase.instance.client);
 }
 
+// Single database instance shared across the app
+@Riverpod(keepAlive: true)
+AppDatabase appDatabase(Ref ref) {
+  final db = AppDatabase();
+  ref.onDispose(() => db.close());
+  return db;
+}
+
 @Riverpod(keepAlive: true)
 OfflineCacheService offlineCacheService(Ref ref) {
-  return OfflineCacheService();
+  final db = ref.watch(appDatabaseProvider);
+  return OfflineCacheService(db);
 }
 
 // GLOBAL PROGRESS STREAM (The Engine) — Offline-first with rubber-band prevention
