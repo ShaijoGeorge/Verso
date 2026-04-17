@@ -25,13 +25,35 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _pickTime(int currentHour, int currentMinute) async {
-    final TimeOfDay? picked = await showTimePicker(
+    // Presents Flutter's TimePickerDialog through showGeneralDialog so we can
+    // drive the entry with the app's branded fade + scale curve instead of the
+    // framework's default ~150ms dialog transition.
+    final TimeOfDay? picked = await showGeneralDialog<TimeOfDay>(
       context: context,
-      initialTime: TimeOfDay(hour: currentHour, minute: currentMinute),
-      builder: (BuildContext context, Widget? child) {
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 280),
+      pageBuilder: (BuildContext context, _, __) {
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
-          child: child!,
+          child: TimePickerDialog(
+            initialTime: TimeOfDay(hour: currentHour, minute: currentMinute),
+          ),
+        );
+      },
+      transitionBuilder: (_, animation, __, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.92, end: 1.0).animate(curved),
+            child: child,
+          ),
         );
       },
     );
