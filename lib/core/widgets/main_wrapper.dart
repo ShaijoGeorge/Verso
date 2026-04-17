@@ -167,6 +167,12 @@ class _VersoBottomNav extends StatelessWidget {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
+    // Map selected index -> alignment x in the range [-1, 1] so the pill sits
+    // centered on the selected slot. Formula derived from N equal-width slots.
+    final itemCount = _items.length;
+    final alignX =
+        itemCount > 1 ? -1.0 + (2.0 * currentIndex / (itemCount - 1)) : 0.0;
+
     return Container(
       margin: EdgeInsets.only(
         left: 16,
@@ -199,19 +205,46 @@ class _VersoBottomNav extends StatelessWidget {
         borderRadius: AppRadii.borderRadiusXL,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          child: Row(
-            children: List.generate(_items.length, (i) {
-              final item = _items[i];
-              final isSelected = currentIndex == i;
-
-              return Expanded(
-                child: _NavItemWidget(
-                  item: item,
-                  isSelected: isSelected,
-                  onTap: () => onTap(i),
+          child: Stack(
+            children: [
+              // Sliding pill: a single element that glides between slots.
+              // FractionallySizedBox sizes it to 1/N of the row, AnimatedAlign
+              // moves it; both together replace N per-item fade-in backgrounds.
+              Positioned.fill(
+                child: AnimatedAlign(
+                  alignment: Alignment(alignX, 0),
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  child: FractionallySizedBox(
+                    widthFactor: 1 / itemCount,
+                    heightFactor: 1.0,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: scheme.primary
+                            .withValues(alpha: isLight ? 0.1 : 0.15),
+                        borderRadius: AppRadii.borderRadiusLG,
+                      ),
+                    ),
+                  ),
                 ),
-              );
-            }),
+              ),
+              // Tap targets sit above the pill. They no longer render their
+              // own background — the sliding pill is the selection indicator.
+              Row(
+                children: List.generate(itemCount, (i) {
+                  final item = _items[i];
+                  final isSelected = currentIndex == i;
+
+                  return Expanded(
+                    child: _NavItemWidget(
+                      item: item,
+                      isSelected: isSelected,
+                      onTap: () => onTap(i),
+                    ),
+                  );
+                }),
+              ),
+            ],
           ),
         ),
       ),
@@ -245,21 +278,12 @@ class _NavItemWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final isLight = Theme.of(context).brightness == Brightness.light;
 
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOutCubic,
+      child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? scheme.primary.withValues(alpha: isLight ? 0.1 : 0.15)
-              : Colors.transparent,
-          borderRadius: AppRadii.borderRadiusLG,
-        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
