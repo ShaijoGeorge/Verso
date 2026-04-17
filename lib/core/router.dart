@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'transitions/animated_branch_container.dart';
+import 'transitions/app_page_transitions.dart';
 import 'widgets/main_wrapper.dart';
 import 'widgets/not_found_screen.dart';
 import '../data/bible_data.dart';
@@ -99,30 +101,45 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) => const SplashScreen(),
+        pageBuilder: (context, state) => AppPageTransitions.fade(
+          key: state.pageKey,
+          child: const SplashScreen(),
+        ),
       ),
       GoRoute(
         path: '/onboarding',
-        builder: (context, state) => const OnboardingScreen(),
+        pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
+          key: state.pageKey,
+          child: const OnboardingScreen(),
+        ),
       ),
       GoRoute(
         path: '/login',
-        builder: (context, state) => const LoginScreen(),
+        pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
+          key: state.pageKey,
+          child: const LoginScreen(),
+        ),
       ),
       GoRoute(
         path: '/forgot-password',
-        builder: (context, state) => const ForgotPasswordScreen(),
+        pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
+          key: state.pageKey,
+          child: const ForgotPasswordScreen(),
+        ),
       ),
       // NEW: The screen for setting a new password
       GoRoute(
         path: '/update-password',
-        builder: (context, state) => const UpdatePasswordScreen(),
+        pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
+          key: state.pageKey,
+          child: const UpdatePasswordScreen(),
+        ),
       ),
 
       // The Callback Route (Loading Spinner)
       GoRoute(
         path: '/reset-callback',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           // SAFETY NET:
           // If we are here, but Supabase already has a session, go Home immediately.
           // This handles cases where the auth state changed faster than the router could react.
@@ -132,15 +149,26 @@ final routerProvider = Provider<GoRouter>((ref) {
             Future.microtask(() => context.go('/home'));
           }
 
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+          return AppPageTransitions.fade(
+            key: state.pageKey,
+            child: const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            ),
           );
         },
       ),
 
-      StatefulShellRoute.indexedStack(
+      StatefulShellRoute(
         builder: (context, state, navigationShell) {
           return MainWrapper(navigationShell: navigationShell);
+        },
+        // Replaces the default IndexedStack with a cross-fading Stack while
+        // keeping every branch mounted (preserves per-tab state).
+        navigatorContainerBuilder: (context, navigationShell, children) {
+          return AnimatedBranchContainer(
+            currentIndex: navigationShell.currentIndex,
+            children: children,
+          );
         },
         branches: [
           // Branch 0: Home
@@ -148,7 +176,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/home',
-                builder: (context, state) => const HomeScreen(),
+                pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
+                  key: state.pageKey,
+                  child: const HomeScreen(),
+                ),
               ),
             ],
           ),
@@ -157,7 +188,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/bible',
-                builder: (context, state) => const BibleScreen(),
+                pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
+                  key: state.pageKey,
+                  child: const BibleScreen(),
+                ),
               ),
             ],
           ),
@@ -166,7 +200,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/stats',
-                builder: (context, state) {
+                pageBuilder: (context, state) {
                   final tab = state.uri.queryParameters['tab'];
                   int initialIndex = 0;
                   if (tab == 'weekly')
@@ -174,7 +208,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                   else if (tab == 'monthly')
                     initialIndex = 2;
                   else if (tab == 'yearly') initialIndex = 3;
-                  return StatsScreen(initialIndex: initialIndex);
+                  return AppPageTransitions.fadeThrough(
+                    key: state.pageKey,
+                    child: StatsScreen(initialIndex: initialIndex),
+                  );
                 },
               ),
             ],
@@ -184,7 +221,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/journal',
-                builder: (context, state) => const ActivityLogScreen(),
+                pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
+                  key: state.pageKey,
+                  child: const ActivityLogScreen(),
+                ),
               ),
             ],
           ),
@@ -194,10 +234,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/book/:bookId',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final bookId = int.parse(state.pathParameters['bookId']!);
           final book = kBibleBooks.firstWhere((b) => b.id == bookId);
-          return ChaptersScreen(book: book);
+          return AppPageTransitions.slideFromRight(
+            key: state.pageKey,
+            child: ChaptersScreen(book: book),
+          );
         },
       ),
 
@@ -205,14 +248,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const ProfileScreen(),
+        pageBuilder: (context, state) => AppPageTransitions.slideFromBottom(
+          key: state.pageKey,
+          child: const ProfileScreen(),
+        ),
       ),
 
       // Settings Route
       GoRoute(
         path: '/settings',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const SettingsScreen(),
+        pageBuilder: (context, state) => AppPageTransitions.slideFromBottom(
+          key: state.pageKey,
+          child: const SettingsScreen(),
+        ),
       ),
 
       // Old detailed-stats and detailed-activity routes removed
