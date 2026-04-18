@@ -355,8 +355,8 @@ class _DrawerHeader extends StatelessWidget {
                   AppColors.primaryLight.withValues(alpha: 0.85),
                 ]
               : [
+                  AppColors.primaryLight,
                   AppColors.primaryContainerDark,
-                  AppColors.primaryContainerDark.withValues(alpha: 0.8),
                 ],
         ),
       ),
