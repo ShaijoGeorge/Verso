@@ -313,10 +313,8 @@ class ProfileDrawer extends ConsumerWidget {
 
                         // Use a short delay to allow GoRouter to redirect to the /login route, then show the success message on the root app context so it survives the navigation stack being cleared.
                         Future.delayed(const Duration(milliseconds: 150), () {
-                          final rootContext = router
-                              .routerDelegate
-                              .navigatorKey
-                              .currentContext;
+                          final rootContext =
+                              router.routerDelegate.navigatorKey.currentContext;
                           if (rootContext != null && rootContext.mounted) {
                             VersoSnackbar.success(rootContext,
                                 message: 'Signed out successfully');
