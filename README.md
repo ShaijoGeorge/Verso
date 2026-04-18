@@ -1,3 +1,8 @@
+> **🚧 Verso v2 is currently under active development.**
+> The codebase in this repository (`dev`, `test` branches) reflects v2. The documentation below describes v1 and its code is in `master` branch.
+ 
+---
+
 # VERSO
 
 **VERSO** (formerly Biblia) is a modern Bible reading tracker application built with Flutter. It helps users track their reading progress across the Old and New Testaments, maintain daily reading streaks, and visualize their habits with detailed analytics.
