@@ -98,6 +98,13 @@ class OfflineCacheService {
     }
   }
 
+  /// Returns the number of pending (unsynced) writes in the offline queue.
+  /// This is a lightweight count query - no row deserialization needed.
+  Future<int> pendingWriteCount() async {
+    final count = await _db.offlineWriteQueue.count().getSingle();
+    return count;
+  }
+
   Future<void> clearWriteQueue() async {
     await _db.delete(_db.offlineWriteQueue).go();
   }
