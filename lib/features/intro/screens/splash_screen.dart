@@ -1,35 +1,24 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:package_info_plus/package_info_plus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/package_info_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:gap/gap.dart';
 import '../../settings/data/settings_repository.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
-  String _version = '';
-
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _loadVersion();
     _startTimer();
-  }
-
-  Future<void> _loadVersion() async {
-    final info = await PackageInfo.fromPlatform();
-    if (mounted) {
-      setState(() {
-        _version = "v${info.version}";
-      });
-    }
   }
 
   void _startTimer() async {
@@ -49,7 +38,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     // Perform our routing
     if (!mounted) return;
-      
+
     final session = Supabase.instance.client.auth.currentSession;
     if (session != null) {
       context.go('/home');
@@ -97,13 +86,13 @@ class _SplashScreenState extends State<SplashScreen> {
                   style: TextStyle(
                     color: Colors.white54,
                     fontSize: 10,
-                    fontFamily: 'Metropolis', 
+                    fontFamily: 'Metropolis',
                     letterSpacing: 1.2,
                   ),
                 ),
-                const Gap(4), 
+                const Gap(4),
                 Text(
-                  _version,
+                  "v${ref.watch(packageInfoProvider).version}",
                   style: const TextStyle(
                     color: Colors.white24,
                     fontSize: 10,

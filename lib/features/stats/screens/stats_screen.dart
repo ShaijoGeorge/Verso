@@ -1,191 +1,128 @@
-import 'package:dashed_circular_progress_bar/dashed_circular_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gap/gap.dart';
 import '../providers/stats_providers.dart';
+import '../widgets/shimmer_skeletons.dart';
+import '../tabs/overview_tab.dart';
+import '../tabs/weekly_tab.dart';
+import '../tabs/monthly_tab.dart';
+import '../tabs/yearly_tab.dart';
 import '../../../core/widgets/error_state_widget.dart';
-import 'package:go_router/go_router.dart';
 
-class StatsScreen extends ConsumerWidget {
-  const StatsScreen({super.key});
+class StatsScreen extends ConsumerStatefulWidget {
+  final int initialIndex;
+  const StatsScreen({super.key, this.initialIndex = 0});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final statsAsync = ref.watch(userStatsProvider);
+  ConsumerState<StatsScreen> createState() => _StatsScreenState();
+}
 
-    // No Scaffold, no AppBar here either
-    return statsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => ErrorStateWidget(
-        error: err,
-        onRetry: () => ref.invalidate(userStatsProvider),
-      ),
-      data: (stats) {
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              // ANIMATED CIRCULAR PROGRESS
-              // We use TweenAnimationBuilder to drive the value from 0 to actual progress
-              TweenAnimationBuilder<double>(
-                // Forces the animation to restart when stats object changes (identity)
-                key: ValueKey(stats),
-                tween: Tween<double>(begin: 0.0, end: stats.totalProgress),
-                duration: const Duration(milliseconds: 1500), // 1.5 seconds animation
-                curve: Curves.easeOutCubic, // Smooth slowdown at the end
-                builder: (context, animatedProgress, child) {
-                  return GestureDetector(
-                    onTap: () {
-                  // Navigate to Detailed Stats
-                      context.push('/detailed-stats');
-                    },
-                    child: SizedBox(
-                      width: 220,
-                      height: 220,
-                      child: DashedCircularProgressBar.aspectRatio(
-                        aspectRatio: 1,
-                        // Pass the animated value to the notifier
-                        valueNotifier: ValueNotifier(animatedProgress),
-                        progress: animatedProgress,
-                        maxProgress: 100,
-                        corners: StrokeCap.butt,
-                        foregroundColor: Theme.of(context).colorScheme.primary,
-                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        foregroundStrokeWidth: 15,
-                        backgroundStrokeWidth: 15,
-                        animation: false, // we using Tween
-                        child: Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '${animatedProgress.toStringAsFixed(1)}%',
-                                style: const TextStyle(
-                                  fontSize: 40,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                'Bible Completed',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                              const Gap(8),
-                              Text(
-                                'Tap for details',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const Gap(40),
+class _StatsScreenState extends ConsumerState<StatsScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
 
-              // ANIMATED STAT CARDS
-              Row(
-                children: [
-                  // Streak Card (Counts up from 0)
-                  Expanded(
-                    child: TweenAnimationBuilder<int>(
-                      // Forces restart
-                      key: ValueKey("streak_${stats.streak}"),
-                      tween: IntTween(begin: 0, end: stats.streak),
-                      duration: const Duration(milliseconds: 1500),
-                      curve: Curves.easeOutCubic,
-                      builder: (context, animatedStreak, _) {
-                        return _StatCard(
-                          icon: Icons.local_fire_department,
-                          iconColor: Colors.orange,
-                          label: "Current Streak",
-                          value: "$animatedStreak Days",
-                        );
-                      },
-                    ),
-                  ),
-                  const Gap(16),
-                  
-                  // Chapters Read Card (Counts up from 0)
-                  Expanded(
-                    child: TweenAnimationBuilder<int>(
-                      // Forces restart
-                      key: ValueKey("chapters_${stats.totalChaptersRead}"),
-                      tween: IntTween(begin: 0, end: stats.totalChaptersRead),
-                      duration: const Duration(milliseconds: 1500),
-                      curve: Curves.easeOutCubic,
-                      builder: (context, animatedChapters, _) {
-                        return _StatCard(
-                          icon: Icons.auto_stories,
-                          iconColor: Colors.blue,
-                          label: "Chapters Read",
-                          value: "$animatedChapters",
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(
+      length: 4,
+      vsync: this,
+      initialIndex: widget.initialIndex,
+    );
+  }
+
+  @override
+  void didUpdateWidget(StatsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialIndex != widget.initialIndex) {
+      _tabController.animateTo(widget.initialIndex);
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final statsAsync = ref.watch(detailedStatsProvider);
+    final scheme = Theme.of(context).colorScheme;
+
+    return Column(
+      children: [
+        // Tab Bar
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: TabBar(
+            controller: _tabController,
+            labelColor: scheme.onPrimary,
+            unselectedLabelColor: scheme.onSurfaceVariant,
+            labelStyle:
+                const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            unselectedLabelStyle:
+                const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+            indicator: BoxDecoration(
+              color: scheme.primary,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            indicatorSize: TabBarIndicatorSize.tab,
+            dividerColor: Colors.transparent,
+            splashFactory: NoSplash.splashFactory,
+            padding: const EdgeInsets.all(4),
+            tabs: const [
+              Tab(text: 'Overview'),
+              Tab(text: 'Weekly'),
+              Tab(text: 'Monthly'),
+              Tab(text: 'Yearly'),
             ],
           ),
-        );
-      },
+        ),
+
+        // Tab Content
+        Expanded(
+          child: statsAsync.when(
+            loading: () => _ShimmerTabView(tabController: _tabController),
+            error: (err, stack) => ErrorStateWidget(
+              error: err,
+              onRetry: () => ref.invalidate(detailedStatsProvider),
+            ),
+            data: (stats) => TabBarView(
+              controller: _tabController,
+              children: [
+                OverviewTab(stats: stats),
+                WeeklyTab(),
+                MonthlyTab(),
+                YearlyTab(),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String label;
-  final String value;
+/// Shows shimmer skeletons while data is loading — one per tab
+class _ShimmerTabView extends StatelessWidget {
+  final TabController tabController;
 
-  const _StatCard({
-    required this.icon,
-    required this.iconColor,
-    required this.label,
-    required this.value,
-  });
+  const _ShimmerTabView({required this.tabController});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
-        ),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 32, color: iconColor),
-          const Gap(8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
+    return TabBarView(
+      controller: tabController,
+      children: const [
+        OverviewShimmer(),
+        WeeklyShimmer(),
+        MonthlyShimmer(),
+        YearlyShimmer(),
+      ],
     );
   }
 }

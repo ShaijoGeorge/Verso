@@ -31,7 +31,8 @@ class VersoGradientButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = color ?? (isDark ? const Color(0xFF7EB8E0) : const Color(0xFF1B3A5C));
+    final primary =
+        color ?? (isDark ? const Color(0xFF7EB8E0) : const Color(0xFF1B3A5C));
 
     return Material(
       color: Colors.transparent,
@@ -44,7 +45,10 @@ class VersoGradientButton extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: isLoading
-                  ? [primary.withValues(alpha: 0.6), primary.withValues(alpha: 0.5)]
+                  ? [
+                      primary.withValues(alpha: 0.6),
+                      primary.withValues(alpha: 0.5)
+                    ]
                   : [primary, primary.withValues(alpha: 0.85)],
             ),
             borderRadius: AppRadii.borderRadiusMD,

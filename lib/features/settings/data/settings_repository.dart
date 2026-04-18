@@ -11,7 +11,7 @@ class SettingsRepository {
 
   Future<UserSettings> getSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     return UserSettings(
       isDarkMode: prefs.getBool(_kThemeKey) ?? false,
       isReminderEnabled: prefs.getBool(_kReminderEnabledKey) ?? false,

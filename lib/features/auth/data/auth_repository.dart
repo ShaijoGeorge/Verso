@@ -59,7 +59,7 @@ class AuthRepository {
   // Verify user identity before sensitive changes ---
   Future<void> reauthenticate(String currentPassword) async {
     final email = _supabase.auth.currentUser?.email;
-    if (email == null) throw 'User not logged in';
+    if (email == null) throw Exception('User not logged in');
 
     // Attempt to sign in. If it throws, the password is wrong.
     await _supabase.auth.signInWithPassword(

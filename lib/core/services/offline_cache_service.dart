@@ -1,87 +1,120 @@
-import 'dart:async';
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:drift/drift.dart';
+import '../../data/local/app_database.dart';
 import '../../data/local/entities/reading_progress.dart';
 
 class OfflineCacheService {
-  static const _progressCacheKey = 'cached_reading_progress';
-  static const _writeQueueKey = 'offline_write_queue';
+  final AppDatabase _db;
 
-  /// Mutex to serialize read-modify-write operations on SharedPreferences,
-  /// preventing rapid-fire taps from racing and overwriting each other.
-  final _lock = _AsyncLock();
+  OfflineCacheService(this._db);
 
   // --- Read Cache ---
 
   Future<List<ReadingProgress>> getCachedProgress() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_progressCacheKey);
-    if (jsonString == null) return [];
-
-    final List<dynamic> decoded = json.decode(jsonString);
-    return decoded
-        .map((e) => ReadingProgress.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final rows = await _db.select(_db.cachedProgress).get();
+    return rows.map(_rowToProgress).toList();
   }
 
   Future<void> cacheProgress(List<ReadingProgress> progress) async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = json.encode(progress.map((p) => p.toJson()).toList());
-    await prefs.setString(_progressCacheKey, jsonString);
+    // Replace the entire cache inside a single transaction so the
+    // table is never in a half-written state.
+    await _db.transaction(() async {
+      await _db.delete(_db.cachedProgress).go();
+      await _db.batch((batch) {
+        batch.insertAll(
+          _db.cachedProgress,
+          progress.map((p) => CachedProgressCompanion.insert(
+                userId: p.userId,
+                bookId: p.bookId,
+                chapterNumber: p.chapterNumber,
+                isRead: Value(p.isRead),
+                readAt: Value(p.readAt),
+              )),
+        );
+      });
+    });
   }
 
   // --- Write Queue ---
 
   Future<List<Map<String, dynamic>>> getWriteQueue() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_writeQueueKey);
-    if (jsonString == null) return [];
+    final rows = await (_db.select(_db.offlineWriteQueue)
+          ..orderBy([(t) => OrderingTerm.asc(t.id)]))
+        .get();
 
-    final List<dynamic> decoded = json.decode(jsonString);
-    return decoded.cast<Map<String, dynamic>>();
+    // Convert to the same Map format the rest of the app expects,
+    // so ReadingService and mergeWithPendingWrites keep working.
+    return rows.map((row) {
+      final map = <String, dynamic>{
+        'type': row.type,
+        'book_id': row.bookId,
+      };
+      if (row.type == 'toggle') {
+        map['chapter_number'] = row.chapterNumber;
+        map['is_read'] = row.isRead;
+      } else if (row.type == 'mark_book') {
+        map['total_chapters'] = row.totalChapters;
+      }
+      return map;
+    }).toList();
   }
 
   /// Enqueue a write operation, deduplicating toggle actions for the same chapter.
   Future<void> enqueueWrite(Map<String, dynamic> operation) async {
-    await _lock.run(() async {
-      final queue = await getWriteQueue();
-
-      // Deduplicate: if toggling the same chapter, replace the old entry
+    await _db.transaction(() async {
+      // Deduplicate: if toggling the same chapter, remove the old entry
       if (operation['type'] == 'toggle') {
-        queue.removeWhere((op) =>
-            op['type'] == 'toggle' &&
-            op['book_id'] == operation['book_id'] &&
-            op['chapter_number'] == operation['chapter_number']);
+        await (_db.delete(_db.offlineWriteQueue)
+              ..where((t) =>
+                  t.type.equals('toggle') &
+                  t.bookId.equals(operation['book_id'] as int) &
+                  t.chapterNumber.equals(operation['chapter_number'] as int)))
+            .go();
       }
 
-      queue.add(operation);
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_writeQueueKey, json.encode(queue));
+      await _db.into(_db.offlineWriteQueue).insert(
+            OfflineWriteQueueCompanion.insert(
+              type: operation['type'] as String,
+              bookId: operation['book_id'] as int,
+              chapterNumber: Value(operation['chapter_number'] as int?),
+              isRead: Value(operation['is_read'] as bool?),
+              totalChapters: Value(operation['total_chapters'] as int?),
+            ),
+          );
     });
   }
 
-  /// Remove a single action from the queue by index after successful sync.
+  /// Remove the first action from the queue after successful sync.
   Future<void> removeQueueAction(int index) async {
-    await _lock.run(() async {
-      final queue = await getWriteQueue();
-      if (index < queue.length) {
-        queue.removeAt(index);
-      }
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_writeQueueKey, json.encode(queue));
-    });
+    // Grab the row with the lowest id (FIFO front).
+    final front = await (_db.select(_db.offlineWriteQueue)
+          ..orderBy([(t) => OrderingTerm.asc(t.id)])
+          ..limit(1, offset: index))
+        .getSingleOrNull();
+
+    if (front != null) {
+      await (_db.delete(_db.offlineWriteQueue)
+            ..where((t) => t.id.equals(front.id)))
+          .go();
+    }
+  }
+
+  /// Returns the number of pending (unsynced) writes in the offline queue.
+  /// This is a lightweight count query - no row deserialization needed.
+  Future<int> pendingWriteCount() async {
+    final count = await _db.offlineWriteQueue.count().getSingle();
+    return count;
   }
 
   Future<void> clearWriteQueue() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_writeQueueKey);
+    await _db.delete(_db.offlineWriteQueue).go();
   }
 
   /// Clear all cached data and queued writes (used on logout).
   Future<void> clearAll() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_progressCacheKey);
-    await prefs.remove(_writeQueueKey);
+    await _db.transaction(() async {
+      await _db.delete(_db.cachedProgress).go();
+      await _db.delete(_db.offlineWriteQueue).go();
+    });
   }
 
   /// Apply a toggle operation to the cached progress optimistically.
@@ -91,27 +124,25 @@ class OfflineCacheService {
     int chapterNumber,
     bool isRead,
   ) async {
-    await _lock.run(() async {
-      final progress = await getCachedProgress();
-
-      // Remove existing entry for this chapter
-      progress.removeWhere(
-        (p) => p.bookId == bookId && p.chapterNumber == chapterNumber,
-      );
-
-      // Add updated entry
-      if (isRead) {
-        progress.add(ReadingProgress(
-          userId: userId,
-          bookId: bookId,
-          chapterNumber: chapterNumber,
-          isRead: true,
-          readAt: DateTime.now(),
-        ));
-      }
-
-      await cacheProgress(progress);
-    });
+    if (isRead) {
+      // Upsert: insert or update the chapter as read
+      await _db.into(_db.cachedProgress).insertOnConflictUpdate(
+            CachedProgressCompanion.insert(
+              userId: userId,
+              bookId: bookId,
+              chapterNumber: chapterNumber,
+              isRead: const Value(true),
+              readAt: Value(DateTime.now()),
+            ),
+          );
+    } else {
+      // Remove the chapter entry (marking as unread)
+      await (_db.delete(_db.cachedProgress)
+            ..where((t) =>
+                t.bookId.equals(bookId) &
+                t.chapterNumber.equals(chapterNumber)))
+          .go();
+    }
   }
 
   /// Apply a "mark book as read" operation to the cached progress optimistically.
@@ -120,30 +151,21 @@ class OfflineCacheService {
     int bookId,
     int totalChapters,
   ) async {
-    await _lock.run(() async {
-      final progress = await getCachedProgress();
-
-      // Find chapters already read for this book
-      final existingChapters = progress
-          .where((p) => p.bookId == bookId && p.isRead)
-          .map((p) => p.chapterNumber)
-          .toSet();
-
-      // Add missing chapters
-      final now = DateTime.now();
+    final now = DateTime.now();
+    await _db.batch((batch) {
       for (int i = 1; i <= totalChapters; i++) {
-        if (!existingChapters.contains(i)) {
-          progress.add(ReadingProgress(
+        batch.insert(
+          _db.cachedProgress,
+          CachedProgressCompanion.insert(
             userId: userId,
             bookId: bookId,
             chapterNumber: i,
-            isRead: true,
-            readAt: now,
-          ));
-        }
+            isRead: const Value(true),
+            readAt: Value(now),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
       }
-
-      await cacheProgress(progress);
     });
   }
 
@@ -200,24 +222,16 @@ class OfflineCacheService {
 
     return merged.values.toList();
   }
-}
 
-/// Simple async mutex to prevent concurrent read-modify-write races.
-class _AsyncLock {
-  Future<void>? _last;
+  // --- Helpers ---
 
-  Future<T> run<T>(Future<T> Function() action) {
-    final prev = _last;
-    final completer = Completer<void>();
-    _last = completer.future;
-
-    return Future(() async {
-      if (prev != null) await prev;
-      try {
-        return await action();
-      } finally {
-        completer.complete();
-      }
-    });
+  static ReadingProgress _rowToProgress(CachedProgressData row) {
+    return ReadingProgress(
+      userId: row.userId,
+      bookId: row.bookId,
+      chapterNumber: row.chapterNumber,
+      isRead: row.isRead,
+      readAt: row.readAt,
+    );
   }
 }

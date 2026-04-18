@@ -7,12 +7,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/constants.dart';
 import 'features/settings/services/notification_service.dart';
 import 'features/settings/providers/settings_providers.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'core/providers/package_info_provider.dart';
 import 'core/utils/verso_error_observer.dart';
 
 void main() async {
-
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // 1. Load the .env file
   await dotenv.load(fileName: ".env");
 
@@ -28,8 +29,14 @@ void main() async {
   // Request Permissions (Important for Android 13+)
   await NotificationService().requestPermissions();
 
+  // Load Package Info synchronously before runApp
+  final packageInfo = await PackageInfo.fromPlatform();
+
   runApp(
     ProviderScope(
+      overrides: [
+        packageInfoProvider.overrideWithValue(packageInfo),
+      ],
       observers: [VersoErrorObserver()],
       child: const BibliaApp(),
     ),
@@ -45,7 +52,6 @@ class BibliaApp extends ConsumerStatefulWidget {
 }
 
 class _BibliaAppState extends ConsumerState<BibliaApp> {
-  
   @override
   void initState() {
     super.initState();
@@ -65,7 +71,7 @@ class _BibliaAppState extends ConsumerState<BibliaApp> {
   Future<void> _initializeReminders() async {
     // Wait for settings to load
     await Future.delayed(const Duration(milliseconds: 500));
-    
+
     final settingsAsync = ref.read(currentSettingsProvider);
     settingsAsync.whenData((settings) async {
       if (settings.isReminderEnabled) {
@@ -90,8 +96,9 @@ class _BibliaAppState extends ConsumerState<BibliaApp> {
       darkTheme: AppTheme.darkTheme,
 
       // A duration of 500ms - 800ms is usually good for a "luxurious" feel.
-      themeAnimationDuration: const Duration(milliseconds: 600), 
-      themeAnimationCurve: Curves.easeInOutCubic, // Starts slow, speeds up, ends slow
+      themeAnimationDuration: const Duration(milliseconds: 600),
+      themeAnimationCurve:
+          Curves.easeInOutCubic, // Starts slow, speeds up, ends slow
 
       // Determine the ThemeMode based on the loaded settings
       themeMode: settingsAsync.when(

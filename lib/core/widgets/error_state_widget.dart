@@ -7,8 +7,8 @@ class ErrorStateWidget extends StatelessWidget {
   final VoidCallback? onRetry;
 
   const ErrorStateWidget({
-    super.key, 
-    required this.error, 
+    super.key,
+    required this.error,
     this.onRetry,
   });
 
@@ -31,8 +31,8 @@ class ErrorStateWidget extends StatelessWidget {
             Text(
               "Oops!",
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const Gap(8),
             Text(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_providers.dart';
 import '../../../core/widgets/error_state_widget.dart';
 import '../../../core/utils/app_error_handler.dart';
@@ -15,7 +16,8 @@ class ProfileScreen extends ConsumerWidget {
     final userAsync = ref.watch(authUserProvider);
 
     return userAsync.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (err, stack) => Scaffold(
         appBar: AppBar(title: const Text('My Profile')),
         body: ErrorStateWidget(
@@ -24,9 +26,10 @@ class ProfileScreen extends ConsumerWidget {
         ),
       ),
       data: (user) {
-        if (user == null) return const Scaffold(body: Center(child: Text('Not Logged In')));
+        if (user == null)
+          return const Scaffold(body: Center(child: Text('Not Logged In')));
 
-        final name = user.userMetadata?['full_name'] ?? 'Reader';
+        final name = (user.userMetadata?['full_name'] as String?) ?? 'Reader';
         final email = user.email ?? 'No Email';
         final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
 
@@ -37,15 +40,28 @@ class ProfileScreen extends ConsumerWidget {
             child: Column(
               children: [
                 const Gap(20),
-                CircleAvatar(
-                  radius: 60,
-                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                  child: Text(
-                    initial,
-                    style: TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    // Keep the squircle look proportionally scaled up from the drawer (16px for 56px size -> ~34px for 120px)
+                    borderRadius: BorderRadius.circular(32),
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.1),
+                      width: 2,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      initial,
+                      style: GoogleFonts.dmSerifDisplay(
+                        fontSize: 56,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
                     ),
                   ),
                 ),
@@ -66,14 +82,15 @@ class ProfileScreen extends ConsumerWidget {
                 const Gap(40),
 
                 // --- ACTION BUTTONS (Using Bottom Sheets) ---
-                
+
                 ListTile(
                   leading: const Icon(Icons.email_outlined),
                   title: const Text('Change Email'),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                   onTap: () => showModalBottomSheet(
                     context: context,
-                    isScrollControlled: true, // Allows sheet to expand with keyboard
+                    isScrollControlled:
+                        true, // Allows sheet to expand with keyboard
                     useSafeArea: true,
                     builder: (_) => const _ChangeEmailSheet(),
                   ),
@@ -120,7 +137,7 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
     final pass = _passwordController.text.trim();
 
     if (email.isEmpty || !email.contains('@') || pass.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Invalid input")));
+      VersoSnackbar.error(context, message: "Invalid input");
       return;
     }
 
@@ -131,12 +148,11 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
       await repo.reauthenticate(pass);
       // 2. Update Email
       await repo.updateEmail(email);
-      
+
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("Check your email (both old and new) to confirm."),
-        ));
+        VersoSnackbar.success(context,
+            message: "Check your email (both old and new) to confirm.");
       }
     } catch (e) {
       if (mounted) {
@@ -172,10 +188,13 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
               ),
             ),
             const Gap(24),
-            
+
             Text(
               "Change Email",
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const Gap(24),
@@ -197,7 +216,8 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
                 prefixIcon: const Icon(Icons.lock_outline),
                 border: const OutlineInputBorder(),
                 suffixIcon: IconButton(
-                  icon: Icon(_isObscure ? Icons.visibility : Icons.visibility_off),
+                  icon: Icon(
+                      _isObscure ? Icons.visibility : Icons.visibility_off),
                   onPressed: () => setState(() => _isObscure = !_isObscure),
                 ),
               ),
@@ -205,9 +225,13 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
             const Gap(32),
             FilledButton(
               onPressed: _isLoading ? null : _update,
-              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
-              child: _isLoading 
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)) 
+              style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50)),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2))
                   : const Text("Update Email"),
             ),
             const Gap(16),
@@ -223,14 +247,15 @@ class _ChangePasswordSheet extends ConsumerStatefulWidget {
   const _ChangePasswordSheet();
 
   @override
-  ConsumerState<_ChangePasswordSheet> createState() => _ChangePasswordSheetState();
+  ConsumerState<_ChangePasswordSheet> createState() =>
+      _ChangePasswordSheetState();
 }
 
 class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
   final _oldPassController = TextEditingController();
   final _newPassController = TextEditingController();
   final _confirmPassController = TextEditingController();
-  
+
   bool _isLoading = false;
   bool _obsOld = true;
   bool _obsNew = true;
@@ -242,11 +267,11 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
     final confirmPass = _confirmPassController.text.trim();
 
     if (newPass.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("New password is too short")));
+      VersoSnackbar.error(context, message: "New password is too short");
       return;
     }
     if (newPass != confirmPass) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Passwords do not match")));
+      VersoSnackbar.error(context, message: "Passwords do not match");
       return;
     }
 
@@ -260,7 +285,8 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
 
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Password updated successfully!")));
+        VersoSnackbar.success(context,
+            message: "Password updated successfully!");
       }
     } catch (e) {
       if (mounted) {
@@ -298,7 +324,10 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
 
             Text(
               "Change Password",
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const Gap(24),
@@ -316,7 +345,7 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
                 ),
               ),
             ),
-            
+
             // --- NEW: FORGOT PASSWORD BUTTON ---
             Align(
               alignment: Alignment.centerRight,
@@ -330,7 +359,7 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
                 child: const Text('Forgot Password?'),
               ),
             ),
-            
+
             TextField(
               controller: _newPassController,
               obscureText: _obsNew,
@@ -353,7 +382,8 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
                 prefixIcon: const Icon(Icons.check_circle_outline),
                 border: const OutlineInputBorder(),
                 suffixIcon: IconButton(
-                  icon: Icon(_obsConfirm ? Icons.visibility : Icons.visibility_off),
+                  icon: Icon(
+                      _obsConfirm ? Icons.visibility : Icons.visibility_off),
                   onPressed: () => setState(() => _obsConfirm = !_obsConfirm),
                 ),
               ),
@@ -361,9 +391,13 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
             const Gap(32),
             FilledButton(
               onPressed: _isLoading ? null : _update,
-              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
-              child: _isLoading 
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)) 
+              style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50)),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2))
                   : const Text("Update Password"),
             ),
             const Gap(16),

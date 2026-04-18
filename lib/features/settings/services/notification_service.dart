@@ -28,7 +28,8 @@ class NotificationService {
       ),
     );
 
-    _isInitialized = await _notificationsPlugin.initialize(settings: settings) ?? false;
+    _isInitialized =
+        await _notificationsPlugin.initialize(settings: settings) ?? false;
   }
 
   /// Timezone setup
@@ -131,7 +132,8 @@ class NotificationService {
   /// Helper: Find next instance of time
   tz.TZDateTime _nextInstance(int hour, int minute) {
     final now = tz.TZDateTime.now(tz.local);
-    var date = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    var date =
+        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
 
     if (date.isBefore(now)) {
       date = date.add(const Duration(days: 1));
