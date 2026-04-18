@@ -4,12 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../core/providers/package_info_provider.dart';
+import '../../../core/design/components/verso_snackbar.dart';
 import '../../../core/design/tokens/colors.dart';
 import '../../../core/design/tokens/radii.dart';
 import '../../../core/design/tokens/spacing.dart';
-import '../providers/auth_providers.dart';
+import '../../../core/providers/package_info_provider.dart';
+import '../../../core/router.dart';
 import '../../reading/providers/reading_providers.dart';
+import '../providers/auth_providers.dart';
 
 class ProfileDrawer extends ConsumerWidget {
   const ProfileDrawer({super.key});
@@ -301,10 +303,25 @@ class ProfileDrawer extends ConsumerWidget {
                         // Only proceed if user explicitly confirmed
                         if (confirmed != true) return;
 
+                        // Capture the router instance BEFORE the widget unmounts
+                        final router = ref.read(routerProvider);
+
                         // Close the drawer, then sign out
                         if (context.mounted) Navigator.pop(context);
                         await cacheService.clearAll();
                         await ref.read(authRepositoryProvider).signOut();
+
+                        // Use a short delay to allow GoRouter to redirect to the /login route, then show the success message on the root app context so it survives the navigation stack being cleared.
+                        Future.delayed(const Duration(milliseconds: 150), () {
+                          final rootContext = router
+                              .routerDelegate
+                              .navigatorKey
+                              .currentContext;
+                          if (rootContext != null && rootContext.mounted) {
+                            VersoSnackbar.success(rootContext,
+                                message: 'Signed out successfully');
+                          }
+                        });
                       },
                     ),
                   ),
