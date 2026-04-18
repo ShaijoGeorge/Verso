@@ -149,8 +149,9 @@ class YearlyTab extends ConsumerWidget {
                               getTitlesWidget: (value, meta) => Text(
                                 value.toInt().toString(),
                                 style: TextStyle(
-                                    fontSize: 10,
-                                    color: scheme.onSurfaceVariant,),
+                                  fontSize: 10,
+                                  color: scheme.onSurfaceVariant,
+                                ),
                               ),
                             ),
                           ),
@@ -159,7 +160,10 @@ class YearlyTab extends ConsumerWidget {
                         lineBarsData: [
                           LineChartBarData(
                             spots: _generateSpots(
-                                isAnimated, maxMonthToShow, chartData,),
+                              isAnimated,
+                              maxMonthToShow,
+                              chartData,
+                            ),
                             isCurved: true,
                             curveSmoothness: 0.3,
                             color: scheme.primary,
@@ -274,7 +278,10 @@ class YearlyTab extends ConsumerWidget {
   }
 
   List<FlSpot> _generateSpots(
-      bool animate, int maxMonthToShow, YearlyChartData data,) {
+    bool animate,
+    int maxMonthToShow,
+    YearlyChartData data,
+  ) {
     final spots = <FlSpot>[];
     for (var m = 1; m <= maxMonthToShow; m++) {
       final value = animate ? (data.monthlyCounts[m] ?? 0).toDouble() : 0.0;
@@ -304,7 +311,6 @@ class YearlyTab extends ConsumerWidget {
 }
 
 class _YearCard extends StatelessWidget {
-
   const _YearCard({
     required this.label,
     required this.value,
@@ -341,13 +347,18 @@ class _YearCard extends StatelessWidget {
             child: Icon(icon, size: 20, color: iconColor),
           ),
           const Gap(10),
-          Text(label,
-              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),),
-          Text(value,
-              style:
-                  const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),),
-          Text(subtitle,
-              style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),),
+          Text(
+            label,
+            style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+          ),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          Text(
+            subtitle,
+            style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+          ),
         ],
       ),
     );

@@ -24,7 +24,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   Future<void> _startTimer() async {
     // Define our two tasks
-    final minimumDelay = Future<void>.delayed(const Duration(milliseconds: 1500));
+    final minimumDelay =
+        Future<void>.delayed(const Duration(milliseconds: 1500));
     final checkOnboarding = SettingsRepository().hasSeenOnboarding();
 
     // Run them simultaneously: the minimum delay is already started above.

@@ -142,8 +142,8 @@ class BibleRepository {
     final uniqueDays = (data as List)
         .map(
           (row) => DateTime.parse(
-              (row as Map<String, dynamic>)['read_at'] as String,
-            ),
+            (row as Map<String, dynamic>)['read_at'] as String,
+          ),
         )
         .map((dt) => DateTime(dt.year, dt.month, dt.day))
         .toSet()

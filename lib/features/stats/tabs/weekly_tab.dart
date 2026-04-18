@@ -176,8 +176,9 @@ class WeeklyTab extends ConsumerWidget {
                                 return Text(
                                   value.toInt().toString(),
                                   style: TextStyle(
-                                      fontSize: 10,
-                                      color: scheme.onSurfaceVariant,),
+                                    fontSize: 10,
+                                    color: scheme.onSurfaceVariant,
+                                  ),
                                 );
                               },
                             ),
@@ -328,7 +329,6 @@ class WeeklyTab extends ConsumerWidget {
 }
 
 class _SummaryLine extends StatelessWidget {
-
   const _SummaryLine({
     required this.highlight,
     required this.suffix,
