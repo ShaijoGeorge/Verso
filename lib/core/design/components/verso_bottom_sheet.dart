@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../tokens/radii.dart';
-import '../tokens/spacing.dart';
+import 'package:verso/core/design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/spacing.dart';
 
 /// Standardized bottom sheet with drag handle and optional title.
 ///
@@ -12,25 +12,24 @@ import '../tokens/spacing.dart';
 /// );
 /// ```
 class VersoBottomSheet extends StatelessWidget {
-  final String? title;
-  final Widget child;
-
   const VersoBottomSheet({
+    required this.child,
     super.key,
     this.title,
-    required this.child,
   });
+  final String? title;
+  final Widget child;
 
   /// Shows this bottom sheet as a modal.
   static Future<T?> show<T>({
     required BuildContext context,
-    String? title,
     required Widget child,
+    String? title,
   }) {
     return showModalBottomSheet<T>(
       context: context,
       isScrollControlled: true,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(AppRadii.xl),
           topRight: Radius.circular(AppRadii.xl),

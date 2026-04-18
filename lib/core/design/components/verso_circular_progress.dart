@@ -13,6 +13,17 @@ import 'package:flutter/material.dart';
 /// )
 /// ```
 class VersoCircularProgress extends StatelessWidget {
+  const VersoCircularProgress({
+    required this.progress,
+    super.key,
+    this.maxProgress = 100,
+    this.size = 220,
+    this.strokeWidth = 15,
+    this.color,
+    this.trackColor,
+    this.child,
+  });
+
   /// Current progress value.
   final double progress;
 
@@ -33,17 +44,6 @@ class VersoCircularProgress extends StatelessWidget {
 
   /// Widget displayed in the center of the circle.
   final Widget? child;
-
-  const VersoCircularProgress({
-    super.key,
-    required this.progress,
-    this.maxProgress = 100,
-    this.size = 220,
-    this.strokeWidth = 15,
-    this.color,
-    this.trackColor,
-    this.child,
-  });
 
   @override
   Widget build(BuildContext context) {
@@ -67,12 +67,6 @@ class VersoCircularProgress extends StatelessWidget {
 }
 
 class _CircularProgressPainter extends CustomPainter {
-  final double progress;
-  final double maxProgress;
-  final double strokeWidth;
-  final Color progressColor;
-  final Color trackColor;
-
   _CircularProgressPainter({
     required this.progress,
     required this.maxProgress,
@@ -80,6 +74,11 @@ class _CircularProgressPainter extends CustomPainter {
     required this.progressColor,
     required this.trackColor,
   });
+  final double progress;
+  final double maxProgress;
+  final double strokeWidth;
+  final Color progressColor;
+  final Color trackColor;
 
   @override
   void paint(Canvas canvas, Size size) {

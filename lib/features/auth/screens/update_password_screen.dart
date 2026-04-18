@@ -3,17 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../providers/auth_providers.dart';
-import '../../../core/widgets/confirmation_view.dart';
-import '../../../core/utils/app_error_handler.dart';
-import '../../../core/design/components/verso_snackbar.dart';
-import '../../../core/design/components/verso_text_field.dart';
-import '../../../core/design/components/verso_gradient_button.dart';
-import '../../../core/design/components/verso_header_icon.dart';
-import '../../../core/design/components/verso_auth_gradient.dart';
-import '../../../core/design/tokens/colors.dart';
-import '../../../core/design/tokens/spacing.dart';
-import '../../../core/design/tokens/radii.dart';
+import 'package:verso/core/design/components/verso_auth_gradient.dart';
+import 'package:verso/core/design/components/verso_gradient_button.dart';
+import 'package:verso/core/design/components/verso_header_icon.dart';
+import 'package:verso/core/design/components/verso_snackbar.dart';
+import 'package:verso/core/design/components/verso_text_field.dart';
+import 'package:verso/core/design/tokens/colors.dart';
+import 'package:verso/core/design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/spacing.dart';
+import 'package:verso/core/utils/app_error_handler.dart';
+import 'package:verso/core/widgets/confirmation_view.dart';
+import 'package:verso/features/auth/providers/auth_providers.dart';
 
 class UpdatePasswordScreen extends ConsumerStatefulWidget {
   const UpdatePasswordScreen({super.key});
@@ -49,7 +49,8 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen>
       begin: const Offset(0, 0.06),
       end: Offset.zero,
     ).animate(
-        CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic));
+      CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
+    );
     _animController.forward();
   }
 
@@ -67,8 +68,10 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen>
 
     // Validation
     if (newPass.length < 6) {
-      VersoSnackbar.error(context,
-          message: 'Password must be at least 6 characters');
+      VersoSnackbar.error(
+        context,
+        message: 'Password must be at least 6 characters',
+      );
       return;
     }
 
@@ -143,7 +146,8 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen>
                               child: Column(
                                 children: [
                                   const VersoHeaderIcon(
-                                      icon: Icons.shield_outlined),
+                                    icon: Icons.shield_outlined,
+                                  ),
                                   const Gap(Spacing.lg),
                                   Text(
                                     'Set New Password',
@@ -171,7 +175,8 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen>
                                       borderRadius: AppRadii.borderRadiusXL,
                                       border: Border.all(
                                         color: colorScheme.outline.withValues(
-                                            alpha: isDark ? 0.15 : 0.4),
+                                          alpha: isDark ? 0.15 : 0.4,
+                                        ),
                                       ),
                                       boxShadow: isDark
                                           ? []
@@ -205,9 +210,10 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen>
                                                   colorScheme.onSurfaceVariant,
                                             ),
                                             onPressed: () {
-                                              setState(() =>
-                                                  _isPasswordVisible =
-                                                      !_isPasswordVisible);
+                                              setState(
+                                                () => _isPasswordVisible =
+                                                    !_isPasswordVisible,
+                                              );
                                             },
                                           ),
                                         ),
@@ -229,8 +235,10 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen>
                                                   colorScheme.onSurfaceVariant,
                                             ),
                                             onPressed: () {
-                                              setState(() => _isConfirmVisible =
-                                                  !_isConfirmVisible);
+                                              setState(
+                                                () => _isConfirmVisible =
+                                                    !_isConfirmVisible,
+                                              );
                                             },
                                           ),
                                         ),

@@ -5,5 +5,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 /// It MUST be overridden in `ProviderScope` when the app starts.
 final packageInfoProvider = Provider<PackageInfo>((ref) {
   throw UnimplementedError(
-      'packageInfoProvider must be overridden in main.dart');
+    'packageInfoProvider must be overridden in main.dart',
+  );
 });

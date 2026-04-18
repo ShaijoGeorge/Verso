@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../core/design/design.dart';
+import 'package:verso/core/design/design.dart';
 
 class DebugCacheScreen extends StatefulWidget {
   const DebugCacheScreen({super.key});
@@ -26,7 +26,7 @@ class _DebugCacheScreenState extends State<DebugCacheScreen>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(
+    _pulseAnimation = Tween<double>(begin: 0.4, end: 1).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
     _loadCache();
@@ -44,8 +44,8 @@ class _DebugCacheScreenState extends State<DebugCacheScreen>
     final prefs = await SharedPreferences.getInstance();
     final keys = prefs.getKeys().toList()..sort();
 
-    final Map<String, dynamic> prefsMap = {};
-    for (String key in keys) {
+    final prefsMap = <String, dynamic>{};
+    for (final key in keys) {
       prefsMap[key] = prefs.get(key);
     }
 
@@ -58,12 +58,14 @@ class _DebugCacheScreenState extends State<DebugCacheScreen>
   List<MapEntry<String, dynamic>> get _filteredEntries {
     if (_searchQuery.isEmpty) return _allPrefs.entries.toList();
     return _allPrefs.entries
-        .where((e) =>
-            e.key.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            e.value
-                .toString()
-                .toLowerCase()
-                .contains(_searchQuery.toLowerCase()))
+        .where(
+          (e) =>
+              e.key.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              e.value
+                  .toString()
+                  .toLowerCase()
+                  .contains(_searchQuery.toLowerCase()),
+        )
         .toList();
   }
 
@@ -97,8 +99,11 @@ class _DebugCacheScreenState extends State<DebugCacheScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: AppRadii.borderRadiusLG),
-        icon: Icon(Icons.warning_amber_rounded,
-            color: ctx.colors.error, size: 48),
+        icon: Icon(
+          Icons.warning_amber_rounded,
+          color: ctx.colors.error,
+          size: 48,
+        ),
         title: Text('Nuke the Cache?', style: AppTypography.titleLarge),
         content: Text(
           'This will permanently delete all offline reading progress, settings, and downloaded verses.\n\nThis action cannot be undone.',
@@ -113,7 +118,9 @@ class _DebugCacheScreenState extends State<DebugCacheScreen>
             onPressed: () => Navigator.pop(ctx, false),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(
-                  horizontal: Spacing.lg, vertical: Spacing.sm),
+                horizontal: Spacing.lg,
+                vertical: Spacing.sm,
+              ),
               shape:
                   RoundedRectangleBorder(borderRadius: AppRadii.borderRadiusSM),
             ),
@@ -125,7 +132,9 @@ class _DebugCacheScreenState extends State<DebugCacheScreen>
             style: FilledButton.styleFrom(
               backgroundColor: ctx.colors.error,
               padding: const EdgeInsets.symmetric(
-                  horizontal: Spacing.lg, vertical: Spacing.sm),
+                horizontal: Spacing.lg,
+                vertical: Spacing.sm,
+              ),
               shape:
                   RoundedRectangleBorder(borderRadius: AppRadii.borderRadiusSM),
             ),
@@ -135,13 +144,15 @@ class _DebugCacheScreenState extends State<DebugCacheScreen>
       ),
     );
 
-    if (confirm == true && mounted) {
+    if ((confirm ?? false) && mounted) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
       _loadCache();
       if (mounted) {
-        VersoSnackbar.success(context,
-            message: 'Cache obliterated. Fresh start! 🧹');
+        VersoSnackbar.success(
+          context,
+          message: 'Cache obliterated. Fresh start! 🧹',
+        );
       }
     }
   }
@@ -157,7 +168,7 @@ class _DebugCacheScreenState extends State<DebugCacheScreen>
     final typeIcon = _getTypeIcon(value);
     final isDark = context.isDark;
 
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -189,7 +200,11 @@ class _DebugCacheScreenState extends State<DebugCacheScreen>
                   // Header
                   Padding(
                     padding: const EdgeInsets.fromLTRB(
-                        Spacing.lg, Spacing.md, Spacing.lg, Spacing.sm),
+                      Spacing.lg,
+                      Spacing.md,
+                      Spacing.lg,
+                      Spacing.sm,
+                    ),
                     child: Row(
                       children: [
                         Container(
@@ -299,7 +314,10 @@ class _DebugCacheScreenState extends State<DebugCacheScreen>
             backgroundColor: context.colors.surface,
             flexibleSpace: FlexibleSpaceBar(
               titlePadding: const EdgeInsets.only(
-                  left: 56, bottom: Spacing.md, right: Spacing.md),
+                left: 56,
+                bottom: Spacing.md,
+                right: Spacing.md,
+              ),
               title: Text(
                 '🛠️ Cache Inspector',
                 style: AppTypography.titleSmall.copyWith(
@@ -408,8 +426,10 @@ class _DebugCacheScreenState extends State<DebugCacheScreen>
                 tooltip: 'Reload Cache',
               ),
               IconButton(
-                icon: Icon(Icons.delete_forever_rounded,
-                    color: context.colors.error),
+                icon: Icon(
+                  Icons.delete_forever_rounded,
+                  color: context.colors.error,
+                ),
                 onPressed: _allPrefs.isNotEmpty ? _clearCache : null,
                 tooltip: 'Nuke Cache',
               ),
@@ -420,7 +440,11 @@ class _DebugCacheScreenState extends State<DebugCacheScreen>
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
-                  Spacing.lg, Spacing.md, Spacing.lg, Spacing.sm),
+                Spacing.lg,
+                Spacing.md,
+                Spacing.lg,
+                Spacing.sm,
+              ),
               child: TextField(
                 onChanged: (v) => setState(() => _searchQuery = v),
                 style: AppTypography.bodyMedium,
@@ -514,7 +538,11 @@ class _DebugCacheScreenState extends State<DebugCacheScreen>
           else
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(
-                  Spacing.lg, Spacing.sm, Spacing.lg, Spacing.xxl),
+                Spacing.lg,
+                Spacing.sm,
+                Spacing.lg,
+                Spacing.xxl,
+              ),
               sliver: SliverList.builder(
                 itemCount: entries.length,
                 itemBuilder: (context, index) {
@@ -549,23 +577,24 @@ class _DebugCacheScreenState extends State<DebugCacheScreen>
 // Stat Chip (used in the header)
 
 class _StatChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String subtitle;
-  final Color color;
-
   const _StatChip({
     required this.icon,
     required this.label,
     required this.subtitle,
     required this.color,
   });
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: Spacing.sm, vertical: Spacing.xs),
+        horizontal: Spacing.sm,
+        vertical: Spacing.xs,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: AppRadii.borderRadiusSM,
@@ -597,15 +626,6 @@ class _StatChip extends StatelessWidget {
 // Cache Entry Card
 
 class _CacheEntryCard extends StatelessWidget {
-  final String entryKey;
-  final String value;
-  final String typeLabel;
-  final Color typeColor;
-  final IconData typeIcon;
-  final VoidCallback onTap;
-  final VoidCallback onLongPress;
-  final int index;
-
   const _CacheEntryCard({
     required this.entryKey,
     required this.value,
@@ -616,6 +636,14 @@ class _CacheEntryCard extends StatelessWidget {
     required this.onLongPress,
     required this.index,
   });
+  final String entryKey;
+  final String value;
+  final String typeLabel;
+  final Color typeColor;
+  final IconData typeIcon;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+  final int index;
 
   @override
   Widget build(BuildContext context) {
@@ -674,7 +702,9 @@ class _CacheEntryCard extends StatelessWidget {
                     // Type badge
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: Spacing.sm, vertical: Spacing.xs),
+                        horizontal: Spacing.sm,
+                        vertical: Spacing.xs,
+                      ),
                       decoration: BoxDecoration(
                         color: typeColor.withValues(alpha: 0.1),
                         borderRadius: AppRadii.borderRadiusFull,
@@ -739,8 +769,8 @@ class _CacheEntryCard extends StatelessWidget {
 // Decorative Grid Painter
 
 class _GridPainter extends CustomPainter {
-  final bool isDark;
   _GridPainter({required this.isDark});
+  final bool isDark;
 
   @override
   void paint(Canvas canvas, Size size) {

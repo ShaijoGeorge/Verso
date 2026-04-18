@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../tokens/spacing.dart';
-import '../tokens/radii.dart';
+import 'package:verso/core/design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/spacing.dart';
 
 /// Styled text field used across auth and form screens.
 ///
@@ -16,6 +16,18 @@ import '../tokens/radii.dart';
 /// )
 /// ```
 class VersoTextField extends StatelessWidget {
+  const VersoTextField({
+    required this.controller,
+    required this.label,
+    required this.icon,
+    super.key,
+    this.keyboardType,
+    this.autocorrect = true,
+    this.obscureText = false,
+    this.textCapitalization = TextCapitalization.none,
+    this.suffixIcon,
+    this.validator,
+  });
   final TextEditingController controller;
   final String label;
   final IconData icon;
@@ -25,19 +37,6 @@ class VersoTextField extends StatelessWidget {
   final TextCapitalization textCapitalization;
   final Widget? suffixIcon;
   final String? Function(String?)? validator;
-
-  const VersoTextField({
-    super.key,
-    required this.controller,
-    required this.label,
-    required this.icon,
-    this.keyboardType,
-    this.autocorrect = true,
-    this.obscureText = false,
-    this.textCapitalization = TextCapitalization.none,
-    this.suffixIcon,
-    this.validator,
-  });
 
   @override
   Widget build(BuildContext context) {

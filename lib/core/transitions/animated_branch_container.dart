@@ -8,9 +8,9 @@ import 'package:flutter/material.dart';
 /// animations in inactive branches so offscreen work stays quiet.
 class AnimatedBranchContainer extends StatelessWidget {
   const AnimatedBranchContainer({
-    super.key,
     required this.currentIndex,
     required this.children,
+    super.key,
   });
 
   final int currentIndex;
@@ -19,8 +19,8 @@ class AnimatedBranchContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Stack(
-      children: List.generate(children.length, (int index) {
-        final bool isActive = index == currentIndex;
+      children: List.generate(children.length, (index) {
+        final isActive = index == currentIndex;
         // AnimatedOpacity MUST sit above TickerMode: its internal ticker drives
         // the fade, so disabling tickers around it would freeze the animation
         // mid-tween and leave an inactive branch painted at full opacity.

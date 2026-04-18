@@ -2,19 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-
-import '../../../core/design/components/verso_card.dart';
-import '../../../core/design/components/verso_circular_progress.dart';
-import '../../../core/design/components/verso_progress_bar.dart';
-import '../../../core/design/components/verso_section_header.dart';
-import '../../../core/design/tokens/spacing.dart';
-import '../../../core/design/tokens/radii.dart';
-import '../../../core/design/tokens/colors.dart';
-import '../../../core/design/tokens/shadows.dart';
-import '../../../core/widgets/error_state_widget.dart';
-import '../../stats/providers/stats_providers.dart';
-import '../../stats/providers/activity_providers.dart';
-import '../providers/home_providers.dart';
+import 'package:verso/core/design/components/verso_card.dart';
+import 'package:verso/core/design/components/verso_circular_progress.dart';
+import 'package:verso/core/design/components/verso_progress_bar.dart';
+import 'package:verso/core/design/components/verso_section_header.dart';
+import 'package:verso/core/design/tokens/colors.dart';
+import 'package:verso/core/design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/shadows.dart';
+import 'package:verso/core/design/tokens/spacing.dart';
+import 'package:verso/core/widgets/error_state_widget.dart';
+import 'package:verso/features/home/providers/home_providers.dart';
+import 'package:verso/features/stats/providers/activity_providers.dart';
+import 'package:verso/features/stats/providers/stats_providers.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -81,7 +80,7 @@ class HomeScreen extends ConsumerWidget {
 
               // CONTINUE READING
               if (continueAsync.hasValue && continueAsync.value != null) ...[
-                VersoSectionHeader(title: 'Continue reading'),
+                const VersoSectionHeader(title: 'Continue reading'),
                 const Gap(Spacing.md),
                 _ContinueReadingCard(info: continueAsync.value!),
                 const Gap(Spacing.xl),
@@ -117,17 +116,16 @@ class HomeScreen extends ConsumerWidget {
 // GREETING SECTION
 
 class _GreetingSection extends StatelessWidget {
-  final String userName;
-  final int streak;
-  final double progress;
-  final int todayCount;
-
   const _GreetingSection({
     required this.userName,
     required this.streak,
     required this.progress,
     required this.todayCount,
   });
+  final String userName;
+  final int streak;
+  final double progress;
+  final int todayCount;
 
   @override
   Widget build(BuildContext context) {
@@ -156,10 +154,9 @@ class _GreetingSection extends StatelessWidget {
 // HERO PROGRESS CARD
 
 class _HeroProgressCard extends StatelessWidget {
+  const _HeroProgressCard({required this.stats, required this.todayCount});
   final UserStats stats;
   final int todayCount;
-
-  const _HeroProgressCard({required this.stats, required this.todayCount});
 
   @override
   Widget build(BuildContext context) {
@@ -192,13 +189,12 @@ class _HeroProgressCard extends StatelessWidget {
           // Progress circle
           TweenAnimationBuilder<double>(
             key: ValueKey(stats),
-            tween: Tween<double>(begin: 0.0, end: stats.totalProgress),
+            tween: Tween<double>(begin: 0, end: stats.totalProgress),
             duration: const Duration(milliseconds: 1500),
             curve: Curves.easeOutCubic,
             builder: (context, animatedProgress, _) {
               return VersoCircularProgress(
                 progress: animatedProgress,
-                maxProgress: 100,
                 size: 130,
                 strokeWidth: 10,
                 color: isLight ? Colors.white : scheme.primary,
@@ -276,17 +272,16 @@ class _HeroProgressCard extends StatelessWidget {
 }
 
 class _HeroStatRow extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final bool isLight;
-  final ColorScheme scheme;
-
   const _HeroStatRow({
     required this.icon,
     required this.text,
     required this.isLight,
     required this.scheme,
   });
+  final IconData icon;
+  final String text;
+  final bool isLight;
+  final ColorScheme scheme;
 
   @override
   Widget build(BuildContext context) {
@@ -313,9 +308,8 @@ class _HeroStatRow extends StatelessWidget {
 // QUICK STATS ROW
 
 class _QuickStatsRow extends StatelessWidget {
-  final UserStats stats;
-
   const _QuickStatsRow({required this.stats});
+  final UserStats stats;
 
   @override
   Widget build(BuildContext context) {
@@ -365,12 +359,6 @@ class _QuickStatsRow extends StatelessWidget {
 }
 
 class _QuickStatCard extends StatelessWidget {
-  final IconData icon;
-  final String value;
-  final String label;
-  final Color iconColor;
-  final Color bgColor;
-
   const _QuickStatCard({
     required this.icon,
     required this.value,
@@ -378,6 +366,11 @@ class _QuickStatCard extends StatelessWidget {
     required this.iconColor,
     required this.bgColor,
   });
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color iconColor;
+  final Color bgColor;
 
   @override
   Widget build(BuildContext context) {
@@ -386,7 +379,9 @@ class _QuickStatCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(
-          vertical: Spacing.md, horizontal: Spacing.sm),
+        vertical: Spacing.md,
+        horizontal: Spacing.sm,
+      ),
       decoration: BoxDecoration(
         color: scheme.surface,
         borderRadius: AppRadii.borderRadiusLG,
@@ -437,10 +432,9 @@ class _QuickStatCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _WeeklyChart extends StatelessWidget {
+  const _WeeklyChart({required this.counts, required this.dates});
   final List<int> counts;
   final List<DateTime> dates;
-
-  const _WeeklyChart({required this.counts, required this.dates});
 
   @override
   Widget build(BuildContext context) {
@@ -541,9 +535,8 @@ class _WeeklyChart extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ContinueReadingCard extends StatelessWidget {
-  final ContinueReadingInfo info;
-
   const _ContinueReadingCard({required this.info});
+  final ContinueReadingInfo info;
 
   @override
   Widget build(BuildContext context) {
@@ -556,24 +549,26 @@ class _ContinueReadingCard extends StatelessWidget {
       child: Row(
         children: [
           // Book icon with testament color
-          Builder(builder: (context) {
-            final isLight = Theme.of(context).brightness == Brightness.light;
-            final testamentColor = isOT
-                ? (isLight ? AppColors.otColorLight : AppColors.otColorDark)
-                : (isLight ? AppColors.ntColorLight : AppColors.ntColorDark);
-            return Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: testamentColor.withValues(alpha: 0.1),
-                borderRadius: AppRadii.borderRadiusMD,
-              ),
-              child: Icon(
-                Icons.menu_book_rounded,
-                color: testamentColor,
-                size: 28,
-              ),
-            );
-          }),
+          Builder(
+            builder: (context) {
+              final isLight = Theme.of(context).brightness == Brightness.light;
+              final testamentColor = isOT
+                  ? (isLight ? AppColors.otColorLight : AppColors.otColorDark)
+                  : (isLight ? AppColors.ntColorLight : AppColors.ntColorDark);
+              return Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: testamentColor.withValues(alpha: 0.1),
+                  borderRadius: AppRadii.borderRadiusMD,
+                ),
+                child: Icon(
+                  Icons.menu_book_rounded,
+                  color: testamentColor,
+                  size: 28,
+                ),
+              );
+            },
+          ),
           const Gap(Spacing.md),
 
           // Book info
@@ -625,9 +620,8 @@ class _ContinueReadingCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _RecentActivityList extends StatelessWidget {
-  final List<ActivityGroup> groups;
-
   const _RecentActivityList({required this.groups});
+  final List<ActivityGroup> groups;
 
   @override
   Widget build(BuildContext context) {
@@ -752,9 +746,8 @@ class _RecentActivityList extends StatelessWidget {
 // DAILY VERSE CARD
 
 class _DailyVerseCard extends StatelessWidget {
-  final AsyncValue<Map<String, dynamic>> verseAsync;
-
   const _DailyVerseCard({required this.verseAsync});
+  final AsyncValue<Map<String, dynamic>> verseAsync;
 
   @override
   Widget build(BuildContext context) {

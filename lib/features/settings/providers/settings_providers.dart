@@ -1,6 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../../data/local/entities/user_settings.dart';
-import '../data/settings_repository.dart';
+import 'package:verso/data/local/entities/user_settings.dart';
+import 'package:verso/features/settings/data/settings_repository.dart';
 
 part 'settings_providers.g.dart';
 

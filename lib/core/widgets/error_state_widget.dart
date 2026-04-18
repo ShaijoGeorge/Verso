@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import '../utils/app_error_handler.dart';
+import 'package:verso/core/utils/app_error_handler.dart';
 
 class ErrorStateWidget extends StatelessWidget {
-  final Object error;
-  final VoidCallback? onRetry;
-
   const ErrorStateWidget({
-    super.key,
     required this.error,
+    super.key,
     this.onRetry,
   });
+  final Object error;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +17,7 @@ class ErrorStateWidget extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -29,7 +28,7 @@ class ErrorStateWidget extends StatelessWidget {
             ),
             const Gap(16),
             Text(
-              "Oops!",
+              'Oops!',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -47,7 +46,7 @@ class ErrorStateWidget extends StatelessWidget {
               FilledButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),
-                label: const Text("Try Again"),
+                label: const Text('Try Again'),
               ),
           ],
         ),

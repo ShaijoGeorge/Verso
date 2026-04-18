@@ -1,22 +1,21 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../reading/providers/reading_providers.dart';
-import '../../../data/bible_data.dart';
-import '../data/verse_repository.dart';
+import 'package:verso/data/bible_data.dart';
+import 'package:verso/features/home/data/verse_repository.dart';
+import 'package:verso/features/reading/providers/reading_providers.dart';
 
 part 'home_providers.g.dart';
 
 /// Info about a book the user was most recently reading (and hasn't finished).
 class ContinueReadingInfo {
-  final BibleBook book;
-  final int chaptersRead;
-  final int lastChapter;
-
   ContinueReadingInfo({
     required this.book,
     required this.chaptersRead,
     required this.lastChapter,
   });
+  final BibleBook book;
+  final int chaptersRead;
+  final int lastChapter;
 
   double get progress => chaptersRead / book.chapters;
 }
@@ -35,7 +34,7 @@ Future<ContinueReadingInfo?> continueReading(Ref ref) async {
   readHistory.sort((a, b) => b.readAt!.compareTo(a.readAt!));
 
   // Build a map of chapters read per book
-  final Map<int, Set<int>> readChaptersByBook = {};
+  final readChaptersByBook = <int, Set<int>>{};
   for (final p in readHistory) {
     readChaptersByBook.putIfAbsent(p.bookId, () => <int>{});
     readChaptersByBook[p.bookId]!.add(p.chapterNumber);

@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../data/bible_data.dart';
-import '../providers/reading_providers.dart';
-import 'book_progress_card.dart';
+import 'package:verso/data/bible_data.dart';
+import 'package:verso/features/reading/providers/reading_providers.dart';
+import 'package:verso/features/reading/widgets/book_progress_card.dart';
 
 class BookGrid extends StatefulWidget {
-  final List<BibleBook> books;
-  final Function(BibleBook) onBookTap;
-
   const BookGrid({
-    super.key,
     required this.books,
     required this.onBookTap,
+    super.key,
   });
+  final List<BibleBook> books;
+  final void Function(BibleBook) onBookTap;
 
   @override
   State<BookGrid> createState() => _BookGridState();
@@ -32,8 +31,8 @@ class _BookGridState extends State<BookGrid> {
 
   // Group books by category
   Map<BookCategory, List<BibleBook>> _groupBooks(List<BibleBook> books) {
-    final Map<BookCategory, List<BibleBook>> groups = {};
-    for (var book in books) {
+    final groups = <BookCategory, List<BibleBook>>{};
+    for (final book in books) {
       if (book.name.toLowerCase().contains(_searchQuery.toLowerCase())) {
         groups.putIfAbsent(book.category, () => []).add(book);
       }
@@ -44,9 +43,8 @@ class _BookGridState extends State<BookGrid> {
   @override
   Widget build(BuildContext context) {
     final groupedBooks = _groupBooks(widget.books);
-    final sortedCategories = BookCategory.values
-        .where((cat) => groupedBooks.containsKey(cat))
-        .toList();
+    final sortedCategories =
+        BookCategory.values.where(groupedBooks.containsKey).toList();
 
     final width = MediaQuery.of(context).size.width;
     final crossAxisCount = width > 600 ? 4 : 2;
@@ -62,11 +60,13 @@ class _BookGridState extends State<BookGrid> {
               onChanged: (val) => setState(() => _searchQuery = val),
               decoration: InputDecoration(
                 hintText: 'Search books...',
-                prefixIcon: Icon(Icons.search_rounded,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .primary
-                        .withValues(alpha: 0.5)),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.5),
+                ),
                 filled: true,
                 fillColor: Theme.of(context)
                     .colorScheme
@@ -91,8 +91,11 @@ class _BookGridState extends State<BookGrid> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.search_off_rounded,
-                      size: 48, color: Theme.of(context).colorScheme.outline),
+                  Icon(
+                    Icons.search_off_rounded,
+                    size: 48,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     "No matches for '$_searchQuery'",
@@ -105,7 +108,7 @@ class _BookGridState extends State<BookGrid> {
           ),
 
         // 3. Category Sections
-        for (var category in sortedCategories) ...[
+        for (final category in sortedCategories) ...[
           // Sticky Header Equivalent (Non-pinned for now)
           SliverToBoxAdapter(
             child: Padding(

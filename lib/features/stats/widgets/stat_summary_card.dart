@@ -2,20 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
 class StatSummaryCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String label;
-  final String value;
-  final String subtitle;
-
   const StatSummaryCard({
-    super.key,
     required this.icon,
     required this.iconColor,
     required this.label,
     required this.value,
     required this.subtitle,
+    super.key,
   });
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final String value;
+  final String subtitle;
 
   @override
   Widget build(BuildContext context) {

@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/stats_providers.dart';
-import '../widgets/shimmer_skeletons.dart';
-import '../tabs/overview_tab.dart';
-import '../tabs/weekly_tab.dart';
-import '../tabs/monthly_tab.dart';
-import '../tabs/yearly_tab.dart';
-import '../../../core/widgets/error_state_widget.dart';
+import 'package:verso/core/widgets/error_state_widget.dart';
+import 'package:verso/features/stats/providers/stats_providers.dart';
+import 'package:verso/features/stats/tabs/monthly_tab.dart';
+import 'package:verso/features/stats/tabs/overview_tab.dart';
+import 'package:verso/features/stats/tabs/weekly_tab.dart';
+import 'package:verso/features/stats/tabs/yearly_tab.dart';
+import 'package:verso/features/stats/widgets/shimmer_skeletons.dart';
 
 class StatsScreen extends ConsumerStatefulWidget {
-  final int initialIndex;
   const StatsScreen({super.key, this.initialIndex = 0});
+  final int initialIndex;
 
   @override
   ConsumerState<StatsScreen> createState() => _StatsScreenState();
@@ -95,9 +95,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
               controller: _tabController,
               children: [
                 OverviewTab(stats: stats),
-                WeeklyTab(),
-                MonthlyTab(),
-                YearlyTab(),
+                const WeeklyTab(),
+                const MonthlyTab(),
+                const YearlyTab(),
               ],
             ),
           ),
@@ -109,9 +109,8 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
 
 /// Shows shimmer skeletons while data is loading — one per tab
 class _ShimmerTabView extends StatelessWidget {
-  final TabController tabController;
-
   const _ShimmerTabView({required this.tabController});
+  final TabController tabController;
 
   @override
   Widget build(BuildContext context) {

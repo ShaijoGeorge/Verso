@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-
-import 'old_testament_screen.dart';
-import 'new_testament_screen.dart';
+import 'package:verso/features/reading/screens/new_testament_screen.dart';
+import 'package:verso/features/reading/screens/old_testament_screen.dart';
 
 class BibleScreen extends StatelessWidget {
   const BibleScreen({super.key});
@@ -25,7 +24,7 @@ class BibleScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
             ),
             child: Padding(
-              padding: const EdgeInsets.all(4.0),
+              padding: const EdgeInsets.all(4),
               child: TabBar(
                 indicatorSize: TabBarIndicatorSize.tab,
                 dividerColor: Colors.transparent, // Removes standard underline
