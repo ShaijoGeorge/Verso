@@ -3,9 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
-import '../../../data/bible_data.dart';
-import '../providers/activity_providers.dart';
-import '../../../core/widgets/error_state_widget.dart';
+import 'package:verso/core/widgets/error_state_widget.dart';
+import 'package:verso/data/bible_data.dart';
+import 'package:verso/features/stats/providers/activity_providers.dart';
 
 class ActivityLogScreen extends ConsumerStatefulWidget {
   const ActivityLogScreen({super.key});
@@ -60,7 +60,6 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
 
               return RefreshIndicator(
                 onRefresh: _onRefresh,
-                displacement: 40,
                 color: colorScheme.primary,
                 child: CustomScrollView(
                   physics: const AlwaysScrollableScrollPhysics(
@@ -119,15 +118,14 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
 // FILTER BAR
 
 class _FilterBar extends StatelessWidget {
-  final WidgetRef ref;
-  final ActivityFilter filter;
-  final ColorScheme colorScheme;
-
   const _FilterBar({
     required this.ref,
     required this.filter,
     required this.colorScheme,
   });
+  final WidgetRef ref;
+  final ActivityFilter filter;
+  final ColorScheme colorScheme;
 
   @override
   Widget build(BuildContext context) {
@@ -168,7 +166,8 @@ class _FilterBar extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                       border: filter.bookId != null
                           ? Border.all(
-                              color: colorScheme.primary.withValues(alpha: 0.3))
+                              color: colorScheme.primary.withValues(alpha: 0.3),
+                            )
                           : null,
                     ),
                     child: Row(
@@ -224,7 +223,8 @@ class _FilterBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 border: filter.startDate != null
                     ? Border.all(
-                        color: colorScheme.primary.withValues(alpha: 0.3))
+                        color: colorScheme.primary.withValues(alpha: 0.3),
+                      )
                     : null,
               ),
               child: Row(
@@ -264,8 +264,11 @@ class _FilterBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: IconButton(
-                icon: Icon(Icons.filter_list_off,
-                    size: 20, color: colorScheme.error),
+                icon: Icon(
+                  Icons.filter_list_off,
+                  size: 20,
+                  color: colorScheme.error,
+                ),
                 tooltip: 'Clear Filters',
                 padding: const EdgeInsets.all(8),
                 constraints: const BoxConstraints(),
@@ -289,7 +292,7 @@ class _FilterBar extends StatelessWidget {
   }
 
   void _showBookPicker(BuildContext context, List<BibleBook> books) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
@@ -297,7 +300,6 @@ class _FilterBar extends StatelessWidget {
       ),
       builder: (ctx) {
         return DraggableScrollableSheet(
-          initialChildSize: 0.5,
           maxChildSize: 0.8,
           minChildSize: 0.3,
           expand: false,
@@ -345,23 +347,25 @@ class _FilterBar extends StatelessWidget {
                         },
                       ),
                       const Divider(),
-                      ...books.map((book) => ListTile(
-                            leading: Icon(
-                              Icons.book_rounded,
-                              color: filter.bookId == book.id
-                                  ? colorScheme.primary
-                                  : null,
-                            ),
-                            title: Text(book.name),
-                            selected: filter.bookId == book.id,
-                            selectedColor: colorScheme.primary,
-                            onTap: () {
-                              ref
-                                  .read(activityFilterStateProvider.notifier)
-                                  .setBookFilter(book.id);
-                              Navigator.pop(ctx);
-                            },
-                          )),
+                      ...books.map(
+                        (book) => ListTile(
+                          leading: Icon(
+                            Icons.book_rounded,
+                            color: filter.bookId == book.id
+                                ? colorScheme.primary
+                                : null,
+                          ),
+                          title: Text(book.name),
+                          selected: filter.bookId == book.id,
+                          selectedColor: colorScheme.primary,
+                          onTap: () {
+                            ref
+                                .read(activityFilterStateProvider.notifier)
+                                .setBookFilter(book.id);
+                            Navigator.pop(ctx);
+                          },
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -373,7 +377,7 @@ class _FilterBar extends StatelessWidget {
     );
   }
 
-  void _showDatePicker(BuildContext context) async {
+  Future<void> _showDatePicker(BuildContext context) async {
     final now = DateTime.now();
     final result = await showDateRangePicker(
       context: context,
@@ -404,19 +408,21 @@ class _FilterBar extends StatelessWidget {
 // STICKY DATE HEADER DELEGATE
 
 class _StickyDateHeaderDelegate extends SliverPersistentHeaderDelegate {
+  _StickyDateHeaderDelegate({required this.date, required this.colorScheme});
   final DateTime date;
   final ColorScheme colorScheme;
 
-  _StickyDateHeaderDelegate({required this.date, required this.colorScheme});
-
   @override
-  double get minExtent => 48.0;
+  double get minExtent => 48;
   @override
-  double get maxExtent => 48.0;
+  double get maxExtent => 48;
 
   @override
   Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
 
     return Container(
@@ -479,10 +485,9 @@ class _StickyDateHeaderDelegate extends SliverPersistentHeaderDelegate {
 // ACTIVITY CARD (TIMELINE ENTRY)
 
 class _ActivityCard extends StatelessWidget {
+  const _ActivityCard({required this.group, required this.isLast});
   final ActivityGroup group;
   final bool isLast;
-
-  const _ActivityCard({required this.group, required this.isLast});
 
   @override
   Widget build(BuildContext context) {
@@ -562,10 +567,9 @@ class _ActivityCard extends StatelessWidget {
 // STANDARD CARD
 
 class _StandardCard extends StatelessWidget {
+  const _StandardCard({required this.group, required this.isBulk});
   final ActivityGroup group;
   final bool isBulk;
-
-  const _StandardCard({required this.group, required this.isBulk});
 
   @override
   Widget build(BuildContext context) {
@@ -638,9 +642,8 @@ class _StandardCard extends StatelessWidget {
 // ENHANCED COMPLETION CARD
 
 class _CompletionCard extends StatelessWidget {
-  final ActivityGroup group;
-
   const _CompletionCard({required this.group});
+  final ActivityGroup group;
 
   @override
   Widget build(BuildContext context) {
@@ -687,20 +690,29 @@ class _CompletionCard extends StatelessWidget {
           Positioned(
             right: 12,
             top: 8,
-            child: Icon(Icons.auto_awesome,
-                size: 16, color: Colors.amber.withValues(alpha: 0.3)),
+            child: Icon(
+              Icons.auto_awesome,
+              size: 16,
+              color: Colors.amber.withValues(alpha: 0.3),
+            ),
           ),
           Positioned(
             right: 40,
             top: 20,
-            child: Icon(Icons.auto_awesome,
-                size: 10, color: Colors.amber.withValues(alpha: 0.2)),
+            child: Icon(
+              Icons.auto_awesome,
+              size: 10,
+              color: Colors.amber.withValues(alpha: 0.2),
+            ),
           ),
           Positioned(
             right: 24,
             bottom: 16,
-            child: Icon(Icons.auto_awesome,
-                size: 12, color: Colors.amber.withValues(alpha: 0.25)),
+            child: Icon(
+              Icons.auto_awesome,
+              size: 12,
+              color: Colors.amber.withValues(alpha: 0.25),
+            ),
           ),
 
           // Content
@@ -787,7 +799,9 @@ class _CompletionCard extends StatelessWidget {
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.amber.shade100,
                         borderRadius: BorderRadius.circular(6),
@@ -795,8 +809,11 @@ class _CompletionCard extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.star_rounded,
-                              size: 12, color: Colors.amber.shade800),
+                          Icon(
+                            Icons.star_rounded,
+                            size: 12,
+                            color: Colors.amber.shade800,
+                          ),
                           const Gap(4),
                           Text(
                             '${group.book.chapters} Chapters',
@@ -832,10 +849,9 @@ class _CompletionCard extends StatelessWidget {
 // EMPTY STATE
 
 class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.isFiltered, required this.onClearFilters});
   final bool isFiltered;
   final VoidCallback onClearFilters;
-
-  const _EmptyState({required this.isFiltered, required this.onClearFilters});
 
   @override
   Widget build(BuildContext context) {
@@ -876,11 +892,10 @@ class _EmptyState extends StatelessWidget {
 // TAG CHIP
 
 class _Tag extends StatelessWidget {
+  const _Tag({required this.text, required this.color, this.textColor});
   final String text;
   final Color color;
   final Color? textColor;
-
-  const _Tag({required this.text, required this.color, this.textColor});
 
   @override
   Widget build(BuildContext context) {

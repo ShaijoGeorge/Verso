@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'tokens/colors.dart';
-import 'tokens/typography.dart';
-import 'tokens/radii.dart';
+import 'package:verso/core/design/tokens/colors.dart';
+import 'package:verso/core/design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/typography.dart';
 
 /// Builds light and dark [ThemeData] from design tokens.
 abstract final class AppTheme {
@@ -73,8 +73,8 @@ abstract final class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: AppRadii.borderRadiusLG,
           side: BorderSide(
-              color:
-                  colorScheme.outline.withValues(alpha: isLight ? 0.5 : 0.15)),
+            color: colorScheme.outline.withValues(alpha: isLight ? 0.5 : 0.15),
+          ),
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(

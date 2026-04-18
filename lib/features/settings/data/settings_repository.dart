@@ -1,5 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../data/local/entities/user_settings.dart';
+import 'package:verso/data/local/entities/user_settings.dart';
 
 class SettingsRepository {
   // Key constants

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../tokens/radii.dart';
+import 'package:verso/core/design/tokens/radii.dart';
 
 /// A themed linear progress bar with animated fill and optional label.
 ///
@@ -7,6 +7,16 @@ import '../tokens/radii.dart';
 /// VersoProgressBar(value: 0.65, label: '65%')
 /// ```
 class VersoProgressBar extends StatelessWidget {
+  const VersoProgressBar({
+    required this.value,
+    super.key,
+    this.label,
+    this.height = 8,
+    this.color,
+    this.trackColor,
+    this.duration = const Duration(milliseconds: 600),
+  });
+
   /// Progress value from 0.0 to 1.0.
   final double value;
 
@@ -24,16 +34,6 @@ class VersoProgressBar extends StatelessWidget {
 
   /// Animation duration. Set to [Duration.zero] to disable.
   final Duration duration;
-
-  const VersoProgressBar({
-    super.key,
-    required this.value,
-    this.label,
-    this.height = 8,
-    this.color,
-    this.trackColor,
-    this.duration = const Duration(milliseconds: 600),
-  });
 
   @override
   Widget build(BuildContext context) {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../tokens/spacing.dart';
+import 'package:verso/core/design/tokens/spacing.dart';
 
 /// Consistent empty state with icon, title, subtitle, and optional CTA.
 ///
@@ -13,20 +13,19 @@ import '../tokens/spacing.dart';
 /// )
 /// ```
 class VersoEmptyState extends StatelessWidget {
+  const VersoEmptyState({
+    required this.icon,
+    required this.title,
+    super.key,
+    this.subtitle,
+    this.actionLabel,
+    this.onAction,
+  });
   final IconData icon;
   final String title;
   final String? subtitle;
   final String? actionLabel;
   final VoidCallback? onAction;
-
-  const VersoEmptyState({
-    super.key,
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    this.actionLabel,
-    this.onAction,
-  });
 
   @override
   Widget build(BuildContext context) {

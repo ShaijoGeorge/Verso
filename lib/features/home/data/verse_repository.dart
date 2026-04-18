@@ -1,13 +1,13 @@
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:developer' as dev;
 
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 class VerseRepository {
+  VerseRepository(this._supabase);
   final SupabaseClient _supabase;
   static const String _cacheKey = 'cached_daily_verses_v1';
-
-  VerseRepository(this._supabase);
 
   /// Called by the UI to get today's verse instantly.
   Future<Map<String, dynamic>> getTodayVerse() async {
@@ -19,17 +19,21 @@ class VerseRepository {
     // 2. Find today's verse
     Map<String, dynamic>? todayVerse;
     try {
-      todayVerse = localVerses.firstWhere((verse) =>
-              (verse as Map<String, dynamic>)['day_of_year'] == todayDayOfYear)
-          as Map<String, dynamic>;
+      todayVerse = localVerses.firstWhere(
+        (verse) =>
+            (verse as Map<String, dynamic>)['day_of_year'] == todayDayOfYear,
+      ) as Map<String, dynamic>;
     } catch (_) {
       // It's okay if it fails, todayVerse stays null
     }
 
     // 3. BACKGROUND CHECK: Are we running low on verses?
     final futureVersesCount = localVerses
-        .where((v) =>
-            (v as Map<String, dynamic>)['day_of_year'] as int >= todayDayOfYear)
+        .where(
+          (v) =>
+              (v as Map<String, dynamic>)['day_of_year'] as int >=
+              todayDayOfYear,
+        )
         .length;
 
     if (futureVersesCount < 3) {
@@ -46,7 +50,7 @@ class VerseRepository {
     } else {
       return {
         'text': 'Your word is a lamp to my feet and a light to my path.',
-        'ref': 'Psalm 119:105'
+        'ref': 'Psalm 119:105',
       };
     }
   }
@@ -62,8 +66,10 @@ class VerseRepository {
 
   Future<void> _fetchAndCacheNextBatch(int startDay) async {
     try {
-      dev.log('Silently fetching next batch of verses from Supabase...',
-          name: 'VerseRepo');
+      dev.log(
+        'Silently fetching next batch of verses from Supabase...',
+        name: 'VerseRepo',
+      );
 
       final response = await _supabase
           .from('daily_verses')
@@ -76,13 +82,16 @@ class VerseRepository {
       await prefs.setString(_cacheKey, jsonEncode(response));
     } catch (e) {
       // Silent failure. If they are offline, we just try again next time!
-      dev.log('Background verse fetch failed (likely offline). Safe to ignore.',
-          error: e, name: 'VerseRepo');
+      dev.log(
+        'Background verse fetch failed (likely offline). Safe to ignore.',
+        error: e,
+        name: 'VerseRepo',
+      );
     }
   }
 
   /// Calculates the current day of the year (1 - 366)
   int _getDayOfYear(DateTime date) {
-    return date.difference(DateTime(date.year, 1, 1)).inDays + 1;
+    return date.difference(DateTime(date.year)).inDays + 1;
   }
 }

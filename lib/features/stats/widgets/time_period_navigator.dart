@@ -2,18 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class TimePeriodNavigator extends StatelessWidget {
-  final String label;
-  final VoidCallback onPrevious;
-  final VoidCallback? onNext; // null = at present, disable forward
-  final VoidCallback? onReset; // tap label to jump back to "now"
+  // tap label to jump back to "now"
 
   const TimePeriodNavigator({
-    super.key,
     required this.label,
     required this.onPrevious,
+    super.key,
     this.onNext,
     this.onReset,
   });
+  final String label;
+  final VoidCallback onPrevious;
+  final VoidCallback? onNext; // null = at present, disable forward
+  final VoidCallback? onReset;
 
   bool get _isAtPresent => onNext == null;
 
@@ -98,17 +99,16 @@ class TimePeriodNavigator extends StatelessWidget {
 }
 
 class _NavButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback? onTap;
-  final ColorScheme scheme;
-  final bool isLight;
-
   const _NavButton({
     required this.icon,
     required this.onTap,
     required this.scheme,
     required this.isLight,
   });
+  final IconData icon;
+  final VoidCallback? onTap;
+  final ColorScheme scheme;
+  final bool isLight;
 
   @override
   Widget build(BuildContext context) {

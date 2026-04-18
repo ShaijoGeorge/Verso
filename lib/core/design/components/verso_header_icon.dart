@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../tokens/radii.dart';
+import 'package:verso/core/design/tokens/radii.dart';
 
 /// A gradient rounded-square icon used as the header on auth screens.
 ///
@@ -7,16 +7,15 @@ import '../tokens/radii.dart';
 /// VersoHeaderIcon(icon: Icons.lock_reset_rounded)
 /// ```
 class VersoHeaderIcon extends StatelessWidget {
-  final IconData icon;
-  final double size;
-  final double iconSize;
-
   const VersoHeaderIcon({
-    super.key,
     required this.icon,
+    super.key,
     this.size = 72,
     this.iconSize = 32,
   });
+  final IconData icon;
+  final double size;
+  final double iconSize;
 
   @override
   Widget build(BuildContext context) {

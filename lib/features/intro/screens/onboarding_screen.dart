@@ -1,12 +1,13 @@
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../core/design/tokens/colors.dart';
-import '../../../core/design/tokens/spacing.dart';
-import '../../../core/design/tokens/radii.dart';
-import '../../settings/data/settings_repository.dart';
+import 'package:verso/core/design/tokens/colors.dart';
+import 'package:verso/core/design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/spacing.dart';
+import 'package:verso/features/settings/data/settings_repository.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -33,29 +34,33 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       gradientColors: [Color(0xFF0F2640), Color(0xFF1B3A5C)],
       illustrationElements: [
         _FloatingElement(
-            icon: Icons.menu_book_rounded,
-            x: 0.15,
-            y: 0.2,
-            size: 28,
-            delay: 0.0),
+          icon: Icons.menu_book_rounded,
+          x: 0.15,
+          y: 0.2,
+          size: 28,
+          delay: 0,
+        ),
         _FloatingElement(
-            icon: Icons.check_circle_rounded,
-            x: 0.75,
-            y: 0.15,
-            size: 22,
-            delay: 0.3),
+          icon: Icons.check_circle_rounded,
+          x: 0.75,
+          y: 0.15,
+          size: 22,
+          delay: 0.3,
+        ),
         _FloatingElement(
-            icon: Icons.bookmark_rounded,
-            x: 0.82,
-            y: 0.65,
-            size: 24,
-            delay: 0.6),
+          icon: Icons.bookmark_rounded,
+          x: 0.82,
+          y: 0.65,
+          size: 24,
+          delay: 0.6,
+        ),
         _FloatingElement(
-            icon: Icons.auto_stories_rounded,
-            x: 0.12,
-            y: 0.7,
-            size: 26,
-            delay: 0.2),
+          icon: Icons.auto_stories_rounded,
+          x: 0.12,
+          y: 0.7,
+          size: 26,
+          delay: 0.2,
+        ),
       ],
     ),
     _OnboardingPage(
@@ -67,21 +72,33 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       gradientColors: [Color(0xFF3D2E14), Color(0xFF5C4520)],
       illustrationElements: [
         _FloatingElement(
-            icon: Icons.bolt_rounded, x: 0.18, y: 0.18, size: 24, delay: 0.1),
+          icon: Icons.bolt_rounded,
+          x: 0.18,
+          y: 0.18,
+          size: 24,
+          delay: 0.1,
+        ),
         _FloatingElement(
-            icon: Icons.star_rounded, x: 0.78, y: 0.22, size: 20, delay: 0.4),
+          icon: Icons.star_rounded,
+          x: 0.78,
+          y: 0.22,
+          size: 20,
+          delay: 0.4,
+        ),
         _FloatingElement(
-            icon: Icons.emoji_events_rounded,
-            x: 0.80,
-            y: 0.68,
-            size: 26,
-            delay: 0.5),
+          icon: Icons.emoji_events_rounded,
+          x: 0.80,
+          y: 0.68,
+          size: 26,
+          delay: 0.5,
+        ),
         _FloatingElement(
-            icon: Icons.calendar_today_rounded,
-            x: 0.10,
-            y: 0.65,
-            size: 22,
-            delay: 0.3),
+          icon: Icons.calendar_today_rounded,
+          x: 0.10,
+          y: 0.65,
+          size: 22,
+          delay: 0.3,
+        ),
       ],
     ),
     _OnboardingPage(
@@ -93,29 +110,33 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       gradientColors: [Color(0xFF2D1B69), Color(0xFF4C2E91)],
       illustrationElements: [
         _FloatingElement(
-            icon: Icons.pie_chart_rounded,
-            x: 0.15,
-            y: 0.22,
-            size: 24,
-            delay: 0.2),
+          icon: Icons.pie_chart_rounded,
+          x: 0.15,
+          y: 0.22,
+          size: 24,
+          delay: 0.2,
+        ),
         _FloatingElement(
-            icon: Icons.trending_up_rounded,
-            x: 0.80,
-            y: 0.18,
-            size: 22,
-            delay: 0.0),
+          icon: Icons.trending_up_rounded,
+          x: 0.80,
+          y: 0.18,
+          size: 22,
+          delay: 0,
+        ),
         _FloatingElement(
-            icon: Icons.bar_chart_rounded,
-            x: 0.78,
-            y: 0.70,
-            size: 26,
-            delay: 0.4),
+          icon: Icons.bar_chart_rounded,
+          x: 0.78,
+          y: 0.70,
+          size: 26,
+          delay: 0.4,
+        ),
         _FloatingElement(
-            icon: Icons.timeline_rounded,
-            x: 0.12,
-            y: 0.68,
-            size: 22,
-            delay: 0.6),
+          icon: Icons.timeline_rounded,
+          x: 0.12,
+          y: 0.68,
+          size: 22,
+          delay: 0.6,
+        ),
       ],
     ),
   ];
@@ -131,7 +152,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
-      value: 1.0,
+      value: 1,
     );
   }
 
@@ -272,13 +293,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 // Page Data Model
 
 class _OnboardingPage {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color accentColor;
-  final List<Color> gradientColors;
-  final List<_FloatingElement> illustrationElements;
-
   const _OnboardingPage({
     required this.title,
     required this.subtitle,
@@ -287,15 +301,15 @@ class _OnboardingPage {
     required this.gradientColors,
     required this.illustrationElements,
   });
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color accentColor;
+  final List<Color> gradientColors;
+  final List<_FloatingElement> illustrationElements;
 }
 
 class _FloatingElement {
-  final IconData icon;
-  final double x;
-  final double y;
-  final double size;
-  final double delay;
-
   const _FloatingElement({
     required this.icon,
     required this.x,
@@ -303,20 +317,24 @@ class _FloatingElement {
     required this.size,
     required this.delay,
   });
+  final IconData icon;
+  final double x;
+  final double y;
+  final double size;
+  final double delay;
 }
 
 // Page View Widget
 
 class _OnboardingPageView extends StatelessWidget {
-  final _OnboardingPage page;
-  final AnimationController animationController;
-  final double screenHeight;
-
   const _OnboardingPageView({
     required this.page,
     required this.animationController,
     required this.screenHeight,
   });
+  final _OnboardingPage page;
+  final AnimationController animationController;
+  final double screenHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -394,13 +412,12 @@ class _OnboardingPageView extends StatelessWidget {
 // Illustration Area
 
 class _IllustrationArea extends StatelessWidget {
-  final _OnboardingPage page;
-  final AnimationController animationController;
-
   const _IllustrationArea({
     required this.page,
     required this.animationController,
   });
+  final _OnboardingPage page;
+  final AnimationController animationController;
 
   @override
   Widget build(BuildContext context) {
@@ -446,7 +463,6 @@ class _IllustrationArea extends StatelessWidget {
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: page.accentColor.withValues(alpha: 0.07),
-                        width: 1,
                       ),
                     ),
                   ),
@@ -500,15 +516,14 @@ class _IllustrationArea extends StatelessWidget {
 // Floating Icon Widget
 
 class _FloatingIcon extends StatelessWidget {
-  final _FloatingElement element;
-  final Color accentColor;
-  final AnimationController animationController;
-
   const _FloatingIcon({
     required this.element,
     required this.accentColor,
     required this.animationController,
   });
+  final _FloatingElement element;
+  final Color accentColor;
+  final AnimationController animationController;
 
   @override
   Widget build(BuildContext context) {
@@ -532,7 +547,6 @@ class _FloatingIcon extends StatelessWidget {
               borderRadius: AppRadii.borderRadiusMD,
               border: Border.all(
                 color: accentColor.withValues(alpha: 0.2),
-                width: 1,
               ),
             ),
             child: Icon(
@@ -550,15 +564,14 @@ class _FloatingIcon extends StatelessWidget {
 // CTA Button
 
 class _AnimatedCTAButton extends StatelessWidget {
-  final bool isLastPage;
-  final Color accentColor;
-  final VoidCallback onPressed;
-
   const _AnimatedCTAButton({
     required this.isLastPage,
     required this.accentColor,
     required this.onPressed,
   });
+  final bool isLastPage;
+  final Color accentColor;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {

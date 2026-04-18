@@ -3,24 +3,22 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
-
-import '../../../data/bible_data.dart';
-import '../../../core/design/tokens/spacing.dart';
-import '../../../core/design/tokens/radii.dart';
-import '../../../core/design/tokens/shadows.dart';
-import '../../../core/design/components/verso_circular_progress.dart';
-import '../../../core/design/components/verso_progress_bar.dart';
-import '../../../core/design/components/verso_snackbar.dart';
-import '../../../core/widgets/error_state_widget.dart';
-import '../../../core/utils/app_error_handler.dart';
-import '../../../data/local/entities/reading_progress.dart';
-import '../providers/reading_providers.dart';
-import '../services/reading_service.dart';
+import 'package:verso/core/design/components/verso_circular_progress.dart';
+import 'package:verso/core/design/components/verso_progress_bar.dart';
+import 'package:verso/core/design/components/verso_snackbar.dart';
+import 'package:verso/core/design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/shadows.dart';
+import 'package:verso/core/design/tokens/spacing.dart';
+import 'package:verso/core/utils/app_error_handler.dart';
+import 'package:verso/core/widgets/error_state_widget.dart';
+import 'package:verso/data/bible_data.dart';
+import 'package:verso/data/local/entities/reading_progress.dart';
+import 'package:verso/features/reading/providers/reading_providers.dart';
+import 'package:verso/features/reading/services/reading_service.dart';
 
 class ChaptersScreen extends ConsumerStatefulWidget {
+  const ChaptersScreen({required this.book, super.key});
   final BibleBook book;
-
-  const ChaptersScreen({super.key, required this.book});
 
   @override
   ConsumerState<ChaptersScreen> createState() => _ChaptersScreenState();
@@ -70,7 +68,7 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
 
     final progressList = progressAsync.value ?? [];
     final readDataMap = <int, DateTime?>{};
-    int readCount = 0;
+    var readCount = 0;
 
     for (final p in progressList) {
       if (p.isRead) {
@@ -98,7 +96,6 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
           sliver: SliverGrid(
             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
               maxCrossAxisExtent: 72,
-              childAspectRatio: 1.0,
               crossAxisSpacing: 10,
               mainAxisSpacing: 10,
             ),
@@ -152,7 +149,7 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
       ),
     );
 
-    if (confirm == true) {
+    if (confirm ?? false) {
       setState(() => _isMarkingRead = true);
       try {
         await ref
@@ -180,17 +177,16 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
 // HERO HEADER
 
 class _HeroHeader extends StatelessWidget {
-  final BibleBook book;
-  final int readCount;
-  final double progress;
-  final bool isComplete;
-
   const _HeroHeader({
     required this.book,
     required this.readCount,
     required this.progress,
     required this.isComplete,
   });
+  final BibleBook book;
+  final int readCount;
+  final double progress;
+  final bool isComplete;
 
   @override
   Widget build(BuildContext context) {
@@ -279,13 +275,12 @@ class _HeroHeader extends StatelessWidget {
 
           // Right: Circular progress
           TweenAnimationBuilder<double>(
-            tween: Tween<double>(begin: 0.0, end: progress * 100),
+            tween: Tween<double>(begin: 0, end: progress * 100),
             duration: const Duration(milliseconds: 1200),
             curve: Curves.easeOutCubic,
             builder: (context, val, _) {
               return VersoCircularProgress(
                 progress: val,
-                maxProgress: 100,
                 size: 80,
                 strokeWidth: 7,
                 child: Text(
@@ -322,8 +317,6 @@ class _CompletedBadge extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: gradientColors,
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
         ),
         borderRadius: AppRadii.borderRadiusFull,
         boxShadow: [
@@ -362,19 +355,18 @@ class _CompletedBadge extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ChapterTile extends StatefulWidget {
-  final String bookName;
-  final int chapterNum;
-  final bool isRead;
-  final DateTime? readAt;
-  final Function(bool newStatus) onTap;
-
   const _ChapterTile({
     required this.bookName,
     required this.chapterNum,
     required this.isRead,
-    this.readAt,
     required this.onTap,
+    this.readAt,
   });
+  final String bookName;
+  final int chapterNum;
+  final bool isRead;
+  final DateTime? readAt;
+  final void Function(bool newStatus) onTap;
 
   @override
   State<_ChapterTile> createState() => _ChapterTileState();
@@ -398,7 +390,7 @@ class _ChapterTileState extends State<_ChapterTile>
       vsync: this,
       duration: const Duration(milliseconds: 150),
     );
-    _scaleAnim = Tween<double>(begin: 1.0, end: 0.9).animate(
+    _scaleAnim = Tween<double>(begin: 1, end: 0.9).animate(
       CurvedAnimation(parent: _scaleCtrl, curve: Curves.easeInOut),
     );
   }
@@ -433,6 +425,7 @@ class _ChapterTileState extends State<_ChapterTile>
 
   // Cache decoration objects to prevent AnimatedContainer from
   // re-animating on every rebuild when the value hasn't changed.
+  // ignore: use_late_for_private_fields_and_variables
   BoxDecoration? _cachedDecoration;
   bool? _cachedIsRead;
   Brightness? _cachedBrightness;
@@ -481,7 +474,7 @@ class _ChapterTileState extends State<_ChapterTile>
     final isRead = widget.isRead;
     final readAt = widget.readAt;
 
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) {
@@ -525,23 +518,23 @@ class _ChapterTileState extends State<_ChapterTile>
                         ? (isLight
                             ? [
                                 scheme.primary,
-                                scheme.primary.withValues(alpha: 0.8)
+                                scheme.primary.withValues(alpha: 0.8),
                               ]
                             : [
                                 scheme.primaryContainer,
-                                scheme.primaryContainer.withValues(alpha: 0.7)
+                                scheme.primaryContainer.withValues(alpha: 0.7),
                               ])
                         : (isLight
                             ? [
                                 scheme.surfaceContainerHighest,
                                 scheme.surfaceContainerHighest
-                                    .withValues(alpha: 0.6)
+                                    .withValues(alpha: 0.6),
                               ]
                             : [
                                 scheme.surfaceContainerHighest
                                     .withValues(alpha: 0.5),
                                 scheme.surfaceContainerHighest
-                                    .withValues(alpha: 0.3)
+                                    .withValues(alpha: 0.3),
                               ]),
                   ),
                   borderRadius: AppRadii.borderRadiusLG,
@@ -579,7 +572,9 @@ class _ChapterTileState extends State<_ChapterTile>
                     // Status pill
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 6),
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: isRead
                             ? (isLight

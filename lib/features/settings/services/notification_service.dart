@@ -1,12 +1,12 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
-import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
 class NotificationService {
-  static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
+  static final NotificationService _instance = NotificationService._internal();
 
   final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
@@ -21,11 +21,7 @@ class NotificationService {
 
     const settings = InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-      iOS: DarwinInitializationSettings(
-        requestAlertPermission: true,
-        requestBadgePermission: true,
-        requestSoundPermission: true,
-      ),
+      iOS: DarwinInitializationSettings(),
     );
 
     _isInitialized =
@@ -84,9 +80,9 @@ class NotificationService {
 
     // Friendly notification messages (rotates based on day)
     final messages = [
-      '✨ Ready for today\'s spiritual journey?',
+      "✨ Ready for today's spiritual journey?",
       '🌟 Your daily dose of wisdom awaits!',
-      '📖 Let\'s dive into God\'s Word together!',
+      "📖 Let's dive into God's Word together!",
       '💫 Time to nourish your soul!',
       '🙏 A few moments with Scripture today?',
       '⭐ Your reading streak is waiting!',
@@ -108,8 +104,6 @@ class NotificationService {
           channelDescription: 'Daily Bible reading reminder',
           importance: Importance.max,
           priority: Priority.high,
-          playSound: true,
-          enableVibration: true,
           styleInformation: BigTextStyleInformation(''),
         ),
         iOS: DarwinNotificationDetails(

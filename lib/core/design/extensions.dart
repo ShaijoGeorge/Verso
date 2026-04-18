@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'tokens/colors.dart';
+import 'package:verso/core/design/tokens/colors.dart';
 
 /// Convenience extensions on [BuildContext] for quick access to theme tokens.
 ///
@@ -24,8 +24,8 @@ extension AppColorsX on BuildContext {
 }
 
 class AppSemanticColors {
-  final bool _isDark;
   const AppSemanticColors(this._isDark);
+  final bool _isDark;
 
   Color get success => _isDark ? AppColors.successDark : AppColors.successLight;
   Color get streak => _isDark ? AppColors.streakDark : AppColors.streakLight;

@@ -1,10 +1,11 @@
 import 'dart:math';
+
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:gap/gap.dart';
-import '../providers/stats_providers.dart';
-import '../widgets/time_period_navigator.dart';
+import 'package:verso/features/stats/providers/stats_providers.dart';
+import 'package:verso/features/stats/widgets/time_period_navigator.dart';
 
 class YearlyTab extends ConsumerWidget {
   const YearlyTab({super.key});
@@ -30,8 +31,8 @@ class YearlyTab extends ConsumerWidget {
             : chartData.monthlyCounts.values.reduce(max);
         final maxY = maxMonthly > 50 ? maxMonthly.toDouble() + 20 : 60.0;
 
-        String bestMonthLabel = '-';
-        int bestMonthCount = 0;
+        var bestMonthLabel = '-';
+        var bestMonthCount = 0;
         if (chartData.monthlyCounts.isNotEmpty) {
           final best = chartData.monthlyCounts.entries.reduce(
             (a, b) => a.value > b.value ? a : b,
@@ -54,7 +55,7 @@ class YearlyTab extends ConsumerWidget {
                     ? () => ref.read(yearlyOffsetProvider.notifier).goForward()
                     : null,
                 onReset: offset > 0
-                    ? () => ref.read(yearlyOffsetProvider.notifier).state = 0
+                    ? () => ref.read(yearlyOffsetProvider.notifier).reset()
                     : null,
               ),
               const Gap(16),
@@ -98,7 +99,6 @@ class YearlyTab extends ConsumerWidget {
                         minX: 1,
                         maxX: 12,
                         gridData: FlGridData(
-                          show: true,
                           drawVerticalLine: false,
                           horizontalInterval: (maxY / 4)
                               .ceilToDouble()
@@ -109,10 +109,8 @@ class YearlyTab extends ConsumerWidget {
                           ),
                         ),
                         titlesData: FlTitlesData(
-                          topTitles: const AxisTitles(
-                              sideTitles: SideTitles(showTitles: false)),
-                          rightTitles: const AxisTitles(
-                              sideTitles: SideTitles(showTitles: false)),
+                          topTitles: const AxisTitles(),
+                          rightTitles: const AxisTitles(),
                           bottomTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
@@ -151,8 +149,9 @@ class YearlyTab extends ConsumerWidget {
                               getTitlesWidget: (value, meta) => Text(
                                 value.toInt().toString(),
                                 style: TextStyle(
-                                    fontSize: 10,
-                                    color: scheme.onSurfaceVariant),
+                                  fontSize: 10,
+                                  color: scheme.onSurfaceVariant,
+                                ),
                               ),
                             ),
                           ),
@@ -161,14 +160,16 @@ class YearlyTab extends ConsumerWidget {
                         lineBarsData: [
                           LineChartBarData(
                             spots: _generateSpots(
-                                isAnimated, maxMonthToShow, chartData),
+                              isAnimated,
+                              maxMonthToShow,
+                              chartData,
+                            ),
                             isCurved: true,
                             curveSmoothness: 0.3,
                             color: scheme.primary,
                             barWidth: 3,
                             isStrokeCapRound: true,
                             dotData: FlDotData(
-                              show: true,
                               getDotPainter: (spot, percent, bar, index) {
                                 return FlDotCirclePainter(
                                   radius: 4,
@@ -277,9 +278,12 @@ class YearlyTab extends ConsumerWidget {
   }
 
   List<FlSpot> _generateSpots(
-      bool animate, int maxMonthToShow, YearlyChartData data) {
+    bool animate,
+    int maxMonthToShow,
+    YearlyChartData data,
+  ) {
     final spots = <FlSpot>[];
-    for (int m = 1; m <= maxMonthToShow; m++) {
+    for (var m = 1; m <= maxMonthToShow; m++) {
       final value = animate ? (data.monthlyCounts[m] ?? 0).toDouble() : 0.0;
       spots.add(FlSpot(m.toDouble(), value));
     }
@@ -299,7 +303,7 @@ class YearlyTab extends ConsumerWidget {
       'Sep',
       'Oct',
       'Nov',
-      'Dec'
+      'Dec',
     ];
     if (m < 1 || m > 12) return '';
     return months[m - 1];
@@ -307,12 +311,6 @@ class YearlyTab extends ConsumerWidget {
 }
 
 class _YearCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final String subtitle;
-  final IconData icon;
-  final Color iconColor;
-
   const _YearCard({
     required this.label,
     required this.value,
@@ -320,6 +318,11 @@ class _YearCard extends StatelessWidget {
     required this.icon,
     required this.iconColor,
   });
+  final String label;
+  final String value;
+  final String subtitle;
+  final IconData icon;
+  final Color iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -344,13 +347,18 @@ class _YearCard extends StatelessWidget {
             child: Icon(icon, size: 20, color: iconColor),
           ),
           const Gap(10),
-          Text(label,
-              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
-          Text(value,
-              style:
-                  const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          Text(subtitle,
-              style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
+          Text(
+            label,
+            style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+          ),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          Text(
+            subtitle,
+            style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+          ),
         ],
       ),
     );
@@ -358,8 +366,8 @@ class _YearCard extends StatelessWidget {
 }
 
 class _AnimatedChartWrapper extends StatefulWidget {
+  const _AnimatedChartWrapper({required this.builder, super.key});
   final Widget Function(bool isAnimated) builder;
-  const _AnimatedChartWrapper({super.key, required this.builder});
 
   @override
   State<_AnimatedChartWrapper> createState() => _AnimatedChartWrapperState();

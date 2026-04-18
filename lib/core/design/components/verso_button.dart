@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../tokens/radii.dart';
+import 'package:verso/core/design/tokens/radii.dart';
 
 /// Button variants for Verso.
 enum VersoButtonVariant { primary, secondary, ghost, destructive }
@@ -15,17 +15,10 @@ enum VersoButtonVariant { primary, secondary, ghost, destructive }
 /// VersoButton.destructive(label: 'Delete', onPressed: () {})
 /// ```
 class VersoButton extends StatelessWidget {
-  final String label;
-  final VoidCallback? onPressed;
-  final VersoButtonVariant variant;
-  final IconData? icon;
-  final bool isLoading;
-  final bool expand;
-
   const VersoButton({
-    super.key,
     required this.label,
     required this.onPressed,
+    super.key,
     this.variant = VersoButtonVariant.primary,
     this.icon,
     this.isLoading = false,
@@ -33,31 +26,37 @@ class VersoButton extends StatelessWidget {
   });
 
   const VersoButton.secondary({
-    super.key,
     required this.label,
     required this.onPressed,
+    super.key,
     this.icon,
     this.isLoading = false,
     this.expand = false,
   }) : variant = VersoButtonVariant.secondary;
 
   const VersoButton.ghost({
-    super.key,
     required this.label,
     required this.onPressed,
+    super.key,
     this.icon,
     this.isLoading = false,
     this.expand = false,
   }) : variant = VersoButtonVariant.ghost;
 
   const VersoButton.destructive({
-    super.key,
     required this.label,
     required this.onPressed,
+    super.key,
     this.icon,
     this.isLoading = false,
     this.expand = false,
   }) : variant = VersoButtonVariant.destructive;
+  final String label;
+  final VoidCallback? onPressed;
+  final VersoButtonVariant variant;
+  final IconData? icon;
+  final bool isLoading;
+  final bool expand;
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +64,7 @@ class VersoButton extends StatelessWidget {
 
     final effectiveOnPressed = isLoading ? null : onPressed;
 
-    final Widget child = isLoading
+    final child = isLoading
         ? SizedBox(
             width: 20,
             height: 20,

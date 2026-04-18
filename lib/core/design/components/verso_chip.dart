@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../tokens/radii.dart';
+import 'package:verso/core/design/tokens/radii.dart';
 
 /// A themed chip / tag for Activity Log and similar contexts.
 ///
@@ -8,6 +8,21 @@ import '../tokens/radii.dart';
 /// VersoChip.icon(text: 'Completed', icon: Icons.star, color: Colors.amber)
 /// ```
 class VersoChip extends StatelessWidget {
+  const VersoChip({
+    required this.text,
+    required this.color,
+    super.key,
+    this.textColor,
+    this.icon,
+  });
+
+  const VersoChip.icon({
+    required this.text,
+    required this.color,
+    required IconData this.icon,
+    super.key,
+    this.textColor,
+  });
   final String text;
 
   /// Background color (will be applied at 15% opacity).
@@ -18,22 +33,6 @@ class VersoChip extends StatelessWidget {
 
   /// Optional leading icon.
   final IconData? icon;
-
-  const VersoChip({
-    super.key,
-    required this.text,
-    required this.color,
-    this.textColor,
-    this.icon,
-  });
-
-  const VersoChip.icon({
-    super.key,
-    required this.text,
-    required this.color,
-    required IconData this.icon,
-    this.textColor,
-  });
 
   @override
   Widget build(BuildContext context) {

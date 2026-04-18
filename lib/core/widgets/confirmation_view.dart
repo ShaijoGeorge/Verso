@@ -1,24 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../design/tokens/spacing.dart';
-import '../design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/spacing.dart';
 
 class ConfirmationView extends StatefulWidget {
+  const ConfirmationView({
+    required this.title,
+    required this.subtitle,
+    required this.buttonText,
+    required this.onPressed,
+    super.key,
+    this.icon = Icons.check_circle_outline_rounded,
+  });
   final String title;
   final String subtitle;
   final String buttonText;
   final VoidCallback onPressed;
   final IconData icon;
-
-  const ConfirmationView({
-    super.key,
-    required this.title,
-    required this.subtitle,
-    required this.buttonText,
-    required this.onPressed,
-    this.icon = Icons.check_circle_outline_rounded,
-  });
 
   @override
   State<ConfirmationView> createState() => _ConfirmationViewState();
@@ -37,7 +36,7 @@ class _ConfirmationViewState extends State<ConfirmationView>
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-    _scaleIn = Tween<double>(begin: 0.8, end: 1.0).animate(
+    _scaleIn = Tween<double>(begin: 0.8, end: 1).animate(
       CurvedAnimation(parent: _animController, curve: Curves.easeOutBack),
     );
     _fadeIn = CurvedAnimation(parent: _animController, curve: Curves.easeOut);

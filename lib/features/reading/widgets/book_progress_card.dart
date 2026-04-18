@@ -1,29 +1,28 @@
 import 'package:flutter/material.dart';
-import '../../../data/bible_data.dart';
-import '../../../core/design/tokens/spacing.dart';
+import 'package:verso/core/design/tokens/spacing.dart';
+import 'package:verso/data/bible_data.dart';
 
 class BookProgressCard extends StatefulWidget {
+  const BookProgressCard({
+    required this.book,
+    required this.chaptersRead,
+    required this.onTap,
+    super.key,
+    this.shouldAnimateEntry = true,
+    this.onAnimationStarted,
+  });
   final BibleBook book;
   final int chaptersRead;
   final VoidCallback onTap;
   final bool shouldAnimateEntry;
   final VoidCallback? onAnimationStarted;
 
-  const BookProgressCard({
-    super.key,
-    required this.book,
-    required this.chaptersRead,
-    required this.onTap,
-    this.shouldAnimateEntry = true,
-    this.onAnimationStarted,
-  });
-
   @override
   State<BookProgressCard> createState() => _BookProgressCardState();
 }
 
 class _BookProgressCardState extends State<BookProgressCard> {
-  double _displayProgress = 0.0;
+  double _displayProgress = 0;
 
   @override
   void initState() {
@@ -61,15 +60,24 @@ class _BookProgressCardState extends State<BookProgressCard> {
 
   // --- Helper method to determine the status icon ---
   Widget _buildStatusIndicator(
-      bool isCompleted, bool isInProgress, ColorScheme scheme) {
+    bool isCompleted,
+    bool isInProgress,
+    ColorScheme scheme,
+  ) {
     if (isCompleted) {
-      return Icon(Icons.check_circle_rounded,
-          size: 18, color: Colors.amber.shade600); // ✓
+      return Icon(
+        Icons.check_circle_rounded,
+        size: 18,
+        color: Colors.amber.shade600,
+      ); // ✓
     } else if (isInProgress) {
       return Icon(Icons.tonality_rounded, size: 18, color: scheme.primary); // ◐
     } else {
-      return Icon(Icons.radio_button_unchecked_rounded,
-          size: 18, color: scheme.outline); // ○
+      return Icon(
+        Icons.radio_button_unchecked_rounded,
+        size: 18,
+        color: scheme.outline,
+      ); // ○
     }
   }
 
@@ -80,8 +88,8 @@ class _BookProgressCardState extends State<BookProgressCard> {
         ? widget.chaptersRead / widget.book.chapters
         : 0.0;
 
-    final bool isCompleted = realProgress >= 1.0;
-    final bool isInProgress = realProgress > 0 && !isCompleted;
+    final isCompleted = realProgress >= 1.0;
+    final isInProgress = realProgress > 0 && !isCompleted;
 
     // Define the card styling based on completion
     final borderColor = isCompleted
@@ -107,7 +115,7 @@ class _BookProgressCardState extends State<BookProgressCard> {
                       color: Colors.amber.withValues(alpha: 0.1),
                       blurRadius: 8,
                       spreadRadius: 2,
-                    )
+                    ),
                   ]
                 : null,
           ),
@@ -138,7 +146,10 @@ class _BookProgressCardState extends State<BookProgressCard> {
                       child: Row(
                         children: [
                           _buildStatusIndicator(
-                              isCompleted, isInProgress, scheme),
+                            isCompleted,
+                            isInProgress,
+                            scheme,
+                          ),
                           const SizedBox(width: Spacing.sm),
                           Expanded(
                             child: Text(
@@ -160,7 +171,9 @@ class _BookProgressCardState extends State<BookProgressCard> {
                     // Chapter Fraction Badge
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: isCompleted
                             ? Colors.amber.shade100
@@ -168,7 +181,7 @@ class _BookProgressCardState extends State<BookProgressCard> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        "${widget.chaptersRead}/${widget.book.chapters}",
+                        '${widget.chaptersRead}/${widget.book.chapters}',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,

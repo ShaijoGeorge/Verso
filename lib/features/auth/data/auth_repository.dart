@@ -1,9 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthRepository {
-  final SupabaseClient _supabase;
-
   AuthRepository(this._supabase);
+  final SupabaseClient _supabase;
 
   // Get the current user (if logged in)
   User? get currentUser => _supabase.auth.currentUser;
