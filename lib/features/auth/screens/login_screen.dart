@@ -3,16 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../providers/auth_providers.dart';
-import '../../../core/utils/app_error_handler.dart';
-import '../../../core/design/components/verso_snackbar.dart';
-import '../../../core/design/components/verso_text_field.dart';
-import '../../../core/design/components/verso_gradient_button.dart';
-import '../../../core/design/components/verso_header_icon.dart';
-import '../../../core/design/components/verso_auth_gradient.dart';
-import '../../../core/design/tokens/spacing.dart';
-import '../../../core/design/tokens/radii.dart';
-import '../../../core/design/tokens/colors.dart';
+import 'package:verso/core/design/components/verso_auth_gradient.dart';
+import 'package:verso/core/design/components/verso_gradient_button.dart';
+import 'package:verso/core/design/components/verso_header_icon.dart';
+import 'package:verso/core/design/components/verso_snackbar.dart';
+import 'package:verso/core/design/components/verso_text_field.dart';
+import 'package:verso/core/design/tokens/colors.dart';
+import 'package:verso/core/design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/spacing.dart';
+import 'package:verso/core/utils/app_error_handler.dart';
+import 'package:verso/features/auth/providers/auth_providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -53,10 +53,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     _slideUp = Tween<Offset>(
       begin: const Offset(0, 0.08),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeOutCubic,
-    ));
+    ).animate(
+      CurvedAnimation(
+        parent: _animController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
 
     _animController.forward();
   }
@@ -85,8 +87,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           _nameController.text.trim(),
         );
         if (mounted) {
-          VersoSnackbar.success(context,
-              message: 'Account created! Please Log In.');
+          VersoSnackbar.success(
+            context,
+            message: 'Account created! Please Log In.',
+          );
           setState(() => _isSignUp = false);
         }
       } else {
@@ -257,8 +261,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                     color: colorScheme.onSurfaceVariant,
                                   ),
                                   onPressed: () {
-                                    setState(() => _isPasswordVisible =
-                                        !_isPasswordVisible);
+                                    setState(
+                                      () => _isPasswordVisible =
+                                          !_isPasswordVisible,
+                                    );
                                   },
                                 ),
                                 validator: (value) => value!.length < 6
@@ -326,7 +332,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             onPressed: _toggleMode,
                             style: TextButton.styleFrom(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: Spacing.sm),
+                                horizontal: Spacing.sm,
+                              ),
                               minimumSize: Size.zero,
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),

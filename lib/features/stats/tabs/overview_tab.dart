@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import '../providers/stats_providers.dart';
-import '../widgets/book_completion_grid.dart';
-import '../widgets/stat_summary_card.dart';
+import 'package:verso/features/stats/providers/stats_providers.dart';
+import 'package:verso/features/stats/widgets/book_completion_grid.dart';
+import 'package:verso/features/stats/widgets/stat_summary_card.dart';
 
 class OverviewTab extends StatelessWidget {
+  const OverviewTab({required this.stats, super.key});
   final DetailedStats stats;
-
-  const OverviewTab({super.key, required this.stats});
 
   @override
   Widget build(BuildContext context) {
@@ -49,9 +48,8 @@ class OverviewTab extends StatelessWidget {
 
 // OT/NT Rings - side by side with animated fill
 class _TestamentRings extends StatelessWidget {
-  final DetailedStats stats;
-
   const _TestamentRings({required this.stats});
+  final DetailedStats stats;
 
   @override
   Widget build(BuildContext context) {
@@ -106,14 +104,6 @@ class _TestamentRings extends StatelessWidget {
 }
 
 class _RingWidget extends StatelessWidget {
-  final String label;
-  final double progress; // 0.0 to 1.0
-  final int chaptersRead;
-  final int totalChapters;
-  final int booksCompleted;
-  final int totalBooks;
-  final Color color;
-
   const _RingWidget({
     required this.label,
     required this.progress,
@@ -123,6 +113,13 @@ class _RingWidget extends StatelessWidget {
     required this.totalBooks,
     required this.color,
   });
+  final String label;
+  final double progress; // 0.0 to 1.0
+  final int chaptersRead;
+  final int totalChapters;
+  final int booksCompleted;
+  final int totalBooks;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -189,9 +186,8 @@ class _RingWidget extends StatelessWidget {
 
 // 4 Summary Cards - 2x2 grid with count-up
 class _SummaryCards extends StatelessWidget {
-  final DetailedStats stats;
-
   const _SummaryCards({required this.stats});
+  final DetailedStats stats;
 
   @override
   Widget build(BuildContext context) {

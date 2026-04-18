@@ -10,16 +10,15 @@ import 'package:flutter/material.dart';
 /// )
 /// ```
 class VersoSectionHeader extends StatelessWidget {
-  final String title;
-  final String? action;
-  final VoidCallback? onAction;
-
   const VersoSectionHeader({
-    super.key,
     required this.title,
+    super.key,
     this.action,
     this.onAction,
   });
+  final String title;
+  final String? action;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {

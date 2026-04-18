@@ -1,11 +1,12 @@
 import 'dart:math';
+
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:go_router/go_router.dart';
-import '../providers/stats_providers.dart';
-import '../../../core/widgets/error_state_widget.dart';
+import 'package:verso/core/widgets/error_state_widget.dart';
+import 'package:verso/features/stats/providers/stats_providers.dart';
 
 class DetailedStatsScreen extends ConsumerStatefulWidget {
   const DetailedStatsScreen({super.key});
@@ -39,32 +40,32 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
           onRetry: () => ref.invalidate(detailedStatsProvider),
         ),
         data: (stats) {
-          final int maxRead = stats.last7DaysCounts.isNotEmpty
+          final maxRead = stats.last7DaysCounts.isNotEmpty
               ? stats.last7DaysCounts.reduce(max)
               : 0;
-          final double maxY = maxRead > 30 ? maxRead.toDouble() + 5 : 30.0;
+          final maxY = maxRead > 30 ? maxRead.toDouble() + 5 : 30.0;
 
           return Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _SectionHeader(title: "Testament Progress"),
+                const _SectionHeader(title: 'Testament Progress'),
                 Expanded(
                   flex: 2,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       _AnimatedTestamentCircle(
-                        key: ValueKey("ot_circle_$_entryKey"),
-                        title: "Old Testament",
+                        key: ValueKey('ot_circle_$_entryKey'),
+                        title: 'Old Testament',
                         targetProgress: stats.otProgress,
                         color: Colors.orange,
                         scale: 1.3,
                       ),
                       _AnimatedTestamentCircle(
-                        key: ValueKey("nt_circle_$_entryKey"),
-                        title: "New Testament",
+                        key: ValueKey('nt_circle_$_entryKey'),
+                        title: 'New Testament',
                         targetProgress: stats.ntProgress,
                         color: Colors.blue,
                         scale: 1.3,
@@ -73,46 +74,45 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
                   ),
                 ),
                 const Gap(16),
-                _SectionHeader(title: "Overview of Chapters"),
+                const _SectionHeader(title: 'Overview of Chapters'),
                 const Gap(16),
                 Expanded(
-                  flex: 1,
                   child: Row(
                     children: [
                       Expanded(
                           child: _SummaryCard(
-                        key: ValueKey("ot_card_$_entryKey"),
-                        label: "Old Testament",
+                        key: ValueKey('ot_card_$_entryKey'),
+                        label: 'Old Testament',
                         currentValue: stats.otRead,
                         maxValue: 1074,
                         color: Colors.orange.shade100,
                         textColor: Colors.orange.shade900,
-                      )),
+                      ),),
                       const Gap(8),
                       Expanded(
                           child: _SummaryCard(
-                        key: ValueKey("nt_card_$_entryKey"),
-                        label: "New Testament",
+                        key: ValueKey('nt_card_$_entryKey'),
+                        label: 'New Testament',
                         currentValue: stats.ntRead,
                         maxValue: 260,
                         color: Colors.blue.shade100,
                         textColor: Colors.blue.shade900,
-                      )),
+                      ),),
                       const Gap(8),
                       Expanded(
                           child: _SummaryCard(
-                        key: ValueKey("total_card_$_entryKey"),
-                        label: "Total Bible",
+                        key: ValueKey('total_card_$_entryKey'),
+                        label: 'Total Bible',
                         currentValue: stats.totalRead,
                         maxValue: 1334,
                         color: Colors.green.shade100,
                         textColor: Colors.green.shade900,
-                      )),
+                      ),),
                     ],
                   ),
                 ),
                 const Gap(24),
-                _SectionHeader(title: "Recent Activity (Last 7 Days)"),
+                const _SectionHeader(title: 'Recent Activity (Last 7 Days)'),
                 const Gap(8),
                 SizedBox(
                   height: 240,
@@ -124,7 +124,6 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
                           minY: 0,
                           maxY: maxY,
                           gridData: FlGridData(
-                            show: true,
                             drawVerticalLine: false,
                             horizontalInterval: maxY / 5,
                             getDrawingHorizontalLine: (value) => FlLine(
@@ -133,13 +132,11 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
                             ),
                           ),
                           titlesData: FlTitlesData(
-                            topTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false)),
-                            rightTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false)),
+                            topTitles: const AxisTitles(),
+                            rightTitles: const AxisTitles(),
                             bottomTitles: AxisTitles(
-                              axisNameWidget: const Text("Date",
-                                  style: TextStyle(fontSize: 10)),
+                              axisNameWidget: const Text('Date',
+                                  style: TextStyle(fontSize: 10),),
                               axisNameSize: 20,
                               sideTitles: SideTitles(
                                 showTitles: true,
@@ -164,25 +161,25 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
                                     'Sep',
                                     'Oct',
                                     'Nov',
-                                    'Dec'
+                                    'Dec',
                                   ];
                                   final label =
-                                      "${months[date.month - 1]} ${date.day}";
+                                      '${months[date.month - 1]} ${date.day}';
 
                                   return Padding(
-                                    padding: const EdgeInsets.only(top: 8.0),
+                                    padding: const EdgeInsets.only(top: 8),
                                     child: Text(
                                       label,
                                       style: TextStyle(
-                                          fontSize: 9, color: Colors.grey[600]),
+                                          fontSize: 9, color: Colors.grey[600],),
                                     ),
                                   );
                                 },
                               ),
                             ),
                             leftTitles: AxisTitles(
-                              axisNameWidget: const Text("Chapters",
-                                  style: TextStyle(fontSize: 10)),
+                              axisNameWidget: const Text('Chapters',
+                                  style: TextStyle(fontSize: 10),),
                               axisNameSize: 20,
                               sideTitles: SideTitles(
                                 showTitles: true,
@@ -191,7 +188,7 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
                                 getTitlesWidget: (value, meta) => Text(
                                   value.toInt().toString(),
                                   style: const TextStyle(
-                                      fontSize: 10, color: Colors.grey),
+                                      fontSize: 10, color: Colors.grey,),
                                 ),
                               ),
                             ),
@@ -208,13 +205,11 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
                                 // If true (after 50ms), show real count.
                                 // FlChart animates the transition automatically.
                                 return FlSpot(
-                                    index.toDouble(), isAnimated ? count : 0);
+                                    index.toDouble(), isAnimated ? count : 0,);
                               }),
                               isCurved: true,
                               color: Theme.of(context).colorScheme.primary,
-                              barWidth: 2,
                               isStrokeCapRound: true,
-                              dotData: const FlDotData(show: true),
                               belowBarData: BarAreaData(
                                 show: true,
                                 color: Theme.of(context)
@@ -228,14 +223,14 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
                         duration: const Duration(milliseconds: 1000),
                         curve: Curves.easeOutCubic,
                       );
-                    }),
+                    },),
                   ),
                 ),
                 const Gap(16),
                 FilledButton.icon(
                   onPressed: () => context.go('/detailed-activity'),
                   icon: const Icon(Icons.auto_stories_rounded),
-                  label: const Text(" View Full Analytics"),
+                  label: const Text(' View Full Analytics'),
                 ),
                 const Gap(24),
               ],
@@ -251,8 +246,8 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
 // This widget waits until it is mounted (data loaded) before triggering
 // the animation flag. This solves the race condition.
 class _AnimatedChartWrapper extends StatefulWidget {
-  final Widget Function(bool isAnimated) builder;
   const _AnimatedChartWrapper({required this.builder});
+  final Widget Function(bool isAnimated) builder;
 
   @override
   State<_AnimatedChartWrapper> createState() => _AnimatedChartWrapperState();
@@ -276,8 +271,8 @@ class _AnimatedChartWrapperState extends State<_AnimatedChartWrapper> {
 
 // ... _SectionHeader, _AnimatedTestamentCircle, _SummaryCard (Keep unchanged from previous code)
 class _SectionHeader extends StatelessWidget {
-  final String title;
   const _SectionHeader({required this.title});
+  final String title;
 
   @override
   Widget build(BuildContext context) {
@@ -294,18 +289,15 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _AnimatedTestamentCircle extends StatelessWidget {
+
+  const _AnimatedTestamentCircle({
+    required this.title, required this.targetProgress, required this.color, super.key,
+    this.scale = 1.0,
+  });
   final String title;
   final double targetProgress;
   final Color color;
   final double scale;
-
-  const _AnimatedTestamentCircle({
-    super.key,
-    required this.title,
-    required this.targetProgress,
-    required this.color,
-    this.scale = 1.0,
-  });
 
   @override
   Widget build(BuildContext context) {
@@ -336,7 +328,7 @@ class _AnimatedTestamentCircle extends StatelessWidget {
                       child: Text(
                         '${(value * 100).toInt()}%',
                         style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16),
+                            fontWeight: FontWeight.bold, fontSize: 16,),
                       ),
                     ),
                   ],
@@ -347,7 +339,7 @@ class _AnimatedTestamentCircle extends StatelessWidget {
           const Gap(8),
           Text(title,
               style:
-                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),),
         ],
       ),
     );
@@ -355,20 +347,15 @@ class _AnimatedTestamentCircle extends StatelessWidget {
 }
 
 class _SummaryCard extends StatelessWidget {
+
+  const _SummaryCard({
+    required this.label, required this.currentValue, required this.maxValue, required this.color, required this.textColor, super.key,
+  });
   final String label;
   final int currentValue;
   final int maxValue;
   final Color color;
   final Color textColor;
-
-  const _SummaryCard({
-    super.key,
-    required this.label,
-    required this.currentValue,
-    required this.maxValue,
-    required this.color,
-    required this.textColor,
-  });
 
   @override
   Widget build(BuildContext context) {
@@ -387,7 +374,7 @@ class _SummaryCard extends StatelessWidget {
             curve: Curves.easeOutCubic,
             builder: (context, animatedValue, _) {
               return Text(
-                "$animatedValue/$maxValue",
+                '$animatedValue/$maxValue',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -401,7 +388,7 @@ class _SummaryCard extends StatelessWidget {
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-                fontSize: 12, color: textColor.withValues(alpha: 0.8)),
+                fontSize: 12, color: textColor.withValues(alpha: 0.8),),
           ),
         ],
       ),

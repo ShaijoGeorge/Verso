@@ -1,10 +1,11 @@
 import 'dart:math';
+
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:fl_chart/fl_chart.dart';
-import '../providers/stats_providers.dart';
-import '../../../core/widgets/error_state_widget.dart';
+import 'package:verso/core/widgets/error_state_widget.dart';
+import 'package:verso/features/stats/providers/stats_providers.dart';
 
 class ActivityAnalyticsScreen extends ConsumerWidget {
   const ActivityAnalyticsScreen({super.key});
@@ -23,16 +24,16 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
         ),
         data: (stats) {
           // Calculate Dynamic Y-Axis Max
-          final int maxMonthly = stats.currentMonthDailyCounts.values.isEmpty
+          final maxMonthly = stats.currentMonthDailyCounts.values.isEmpty
               ? 0
               : stats.currentMonthDailyCounts.values.reduce(max);
-          final double maxYMonth =
+          final maxYMonth =
               maxMonthly > 50 ? maxMonthly.toDouble() + 5 : 50.0;
 
-          final int maxYearly = stats.currentYearMonthlyCounts.values.isEmpty
+          final maxYearly = stats.currentYearMonthlyCounts.values.isEmpty
               ? 0
               : stats.currentYearMonthlyCounts.values.reduce(max);
-          final double maxYYEAR =
+          final maxYYEAR =
               maxYearly > 500 ? maxYearly.toDouble() + 50 : 500.0;
 
           final today = DateTime.now();
@@ -43,7 +44,7 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
             children: [
               // ---  MONTHLY CHART ---
               _buildSectionTitle(
-                  'This Month Progress (${_monthName(today.month)} ${today.year})'),
+                  'This Month Progress (${_monthName(today.month)} ${today.year})',),
               const Gap(24),
               Center(
                 // Horizontal Center
@@ -60,22 +61,19 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
                           minX: 1,
                           maxX: daysInMonth.toDouble(),
                           gridData: const FlGridData(
-                              show: true,
                               horizontalInterval: 10,
-                              drawVerticalLine: false),
+                              drawVerticalLine: false,),
                           titlesData: FlTitlesData(
-                            topTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false)),
-                            rightTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false)),
+                            topTitles: const AxisTitles(),
+                            rightTitles: const AxisTitles(),
                             bottomTitles: AxisTitles(
                               axisNameWidget: const Padding(
-                                  padding: EdgeInsets.only(top: 4.0),
-                                  child: Text("Day of Month",
+                                  padding: EdgeInsets.only(top: 4),
+                                  child: Text('Day of Month',
                                       style: TextStyle(
                                           fontSize: 10,
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.grey))),
+                                          color: Colors.grey,),),),
                               axisNameSize: 20,
                               sideTitles: SideTitles(
                                   showTitles: true,
@@ -83,23 +81,24 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
                                   reservedSize: 30,
                                   getTitlesWidget: (value, meta) {
                                     final day = value.toInt();
-                                    if (day > daysInMonth)
+                                    if (day > daysInMonth) {
                                       return const SizedBox.shrink();
+                                    }
                                     return Padding(
                                         padding:
-                                            const EdgeInsets.only(top: 4.0),
+                                            const EdgeInsets.only(top: 4),
                                         child: Text(day.toString(),
                                             style: const TextStyle(
                                                 fontSize: 10,
-                                                color: Colors.grey)));
-                                  }),
+                                                color: Colors.grey,),),);
+                                  },),
                             ),
                             leftTitles: AxisTitles(
-                              axisNameWidget: const Text("Chapters",
+                              axisNameWidget: const Text('Chapters',
                                   style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.grey)),
+                                      color: Colors.grey,),),
                               axisNameSize: 20,
                               sideTitles: SideTitles(
                                   showTitles: true,
@@ -108,7 +107,7 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
                                   getTitlesWidget: (value, meta) => Text(
                                       value.toInt().toString(),
                                       style: const TextStyle(
-                                          fontSize: 10, color: Colors.grey))),
+                                          fontSize: 10, color: Colors.grey,),),),
                             ),
                           ),
                           borderData: FlBorderData(
@@ -117,14 +116,13 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
                                   bottom:
                                       BorderSide(color: Colors.grey.shade300),
                                   left:
-                                      BorderSide(color: Colors.grey.shade300))),
+                                      BorderSide(color: Colors.grey.shade300),),),
                           lineBarsData: [
                             LineChartBarData(
                               // Pass the animation flag to the helper
                               spots: _generateDailySpots(
-                                  stats.currentMonthDailyCounts, isAnimated),
+                                  stats.currentMonthDailyCounts, isAnimated,),
                               isCurved: true,
-                              curveSmoothness: 0.35,
                               color: Colors.purpleAccent,
                               barWidth: 3,
                               isStrokeCapRound: true,
@@ -132,14 +130,14 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
                               belowBarData: BarAreaData(
                                   show: true,
                                   color: Colors.purpleAccent
-                                      .withValues(alpha: 0.1)),
+                                      .withValues(alpha: 0.1),),
                             ),
                           ],
                         ),
                         duration: const Duration(milliseconds: 1000),
                         curve: Curves.easeOutCubic,
                       );
-                    }),
+                    },),
                   ),
                 ),
               ),
@@ -166,22 +164,19 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
                           minX: 1,
                           maxX: 12,
                           gridData: const FlGridData(
-                              show: true,
                               horizontalInterval: 100,
-                              drawVerticalLine: false),
+                              drawVerticalLine: false,),
                           titlesData: FlTitlesData(
-                            topTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false)),
-                            rightTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false)),
+                            topTitles: const AxisTitles(),
+                            rightTitles: const AxisTitles(),
                             bottomTitles: AxisTitles(
                               axisNameWidget: const Padding(
-                                  padding: EdgeInsets.only(top: 4.0),
-                                  child: Text("Month",
+                                  padding: EdgeInsets.only(top: 4),
+                                  child: Text('Month',
                                       style: TextStyle(
                                           fontSize: 10,
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.grey))),
+                                          color: Colors.grey,),),),
                               axisNameSize: 20,
                               sideTitles: SideTitles(
                                   showTitles: true,
@@ -190,20 +185,20 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
                                   getTitlesWidget: (value, meta) {
                                     return Padding(
                                         padding:
-                                            const EdgeInsets.only(top: 4.0),
+                                            const EdgeInsets.only(top: 4),
                                         child: Text(
                                             _monthNameCaps(value.toInt()),
                                             style: const TextStyle(
                                                 fontSize: 9,
-                                                color: Colors.grey)));
-                                  }),
+                                                color: Colors.grey,),),);
+                                  },),
                             ),
                             leftTitles: AxisTitles(
-                              axisNameWidget: const Text("Chapters",
+                              axisNameWidget: const Text('Chapters',
                                   style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.grey)),
+                                      color: Colors.grey,),),
                               axisNameSize: 20,
                               sideTitles: SideTitles(
                                   showTitles: true,
@@ -212,7 +207,7 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
                                   getTitlesWidget: (value, meta) => Text(
                                       value.toInt().toString(),
                                       style: const TextStyle(
-                                          fontSize: 10, color: Colors.grey))),
+                                          fontSize: 10, color: Colors.grey,),),),
                             ),
                           ),
                           borderData: FlBorderData(
@@ -221,27 +216,25 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
                                   bottom:
                                       BorderSide(color: Colors.grey.shade300),
                                   left:
-                                      BorderSide(color: Colors.grey.shade300))),
+                                      BorderSide(color: Colors.grey.shade300),),),
                           lineBarsData: [
                             LineChartBarData(
                               spots: _generateMonthlySpots(
-                                  stats.currentYearMonthlyCounts, isAnimated),
+                                  stats.currentYearMonthlyCounts, isAnimated,),
                               isCurved: true,
-                              curveSmoothness: 0.35,
                               color: Colors.teal,
                               barWidth: 3,
                               isStrokeCapRound: true,
-                              dotData: const FlDotData(show: true),
                               belowBarData: BarAreaData(
                                   show: true,
-                                  color: Colors.teal.withValues(alpha: 0.1)),
+                                  color: Colors.teal.withValues(alpha: 0.1),),
                             ),
                           ],
                         ),
                         duration: const Duration(milliseconds: 1000),
                         curve: Curves.easeOutCubic,
                       );
-                    }),
+                    },),
                   ),
                 ),
               ),
@@ -260,7 +253,7 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
     final spots = <FlSpot>[];
 
     // Loop ONLY up to today's day (e.g., if today is 5th, loop 1..5)
-    for (int day = 1; day <= today.day; day++) {
+    for (var day = 1; day <= today.day; day++) {
       // If animating, show actual value; otherwise start at 0 for effect
       final value = animate ? (data[day] ?? 0).toDouble() : 0.0;
       spots.add(FlSpot(day.toDouble(), value));
@@ -273,7 +266,7 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
     final spots = <FlSpot>[];
 
     // Loop ONLY up to current month (e.g., if Nov, loop 1..11)
-    for (int month = 1; month <= today.month; month++) {
+    for (var month = 1; month <= today.month; month++) {
       final value = animate ? (data[month] ?? 0).toDouble() : 0.0;
       spots.add(FlSpot(month.toDouble(), value));
     }
@@ -302,7 +295,7 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
       'SEP',
       'OCT',
       'NOV',
-      'DEC'
+      'DEC',
     ];
     if (index < 1 || index > 12) return '';
     return months[index - 1];
@@ -321,7 +314,7 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
       'September',
       'October',
       'November',
-      'December'
+      'December',
     ];
     if (index < 1 || index > 12) return '';
     return months[index - 1];
@@ -330,8 +323,8 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
 
 // Reusing the wrapper here as well
 class _AnimatedChartWrapper extends StatefulWidget {
-  final Widget Function(bool isAnimated) builder;
   const _AnimatedChartWrapper({required this.builder});
+  final Widget Function(bool isAnimated) builder;
 
   @override
   State<_AnimatedChartWrapper> createState() => _AnimatedChartWrapperState();

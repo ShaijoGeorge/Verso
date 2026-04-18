@@ -2,20 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../features/auth/widgets/profile_drawer.dart';
-import '../../features/stats/providers/stats_providers.dart';
-import '../../features/stats/providers/activity_providers.dart';
-import '../../features/reading/providers/reading_providers.dart';
-import '../providers/connectivity_provider.dart';
-import '../design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/radii.dart';
+import 'package:verso/core/providers/connectivity_provider.dart';
+import 'package:verso/features/auth/widgets/profile_drawer.dart';
+import 'package:verso/features/reading/providers/reading_providers.dart';
+import 'package:verso/features/stats/providers/activity_providers.dart';
+import 'package:verso/features/stats/providers/stats_providers.dart';
 
 class MainWrapper extends ConsumerStatefulWidget {
-  final StatefulNavigationShell navigationShell;
-
   const MainWrapper({
-    super.key,
     required this.navigationShell,
+    super.key,
   });
+  final StatefulNavigationShell navigationShell;
 
   @override
   ConsumerState<MainWrapper> createState() => _MainWrapperState();
@@ -61,16 +60,12 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
     switch (widget.navigationShell.currentIndex) {
       case 0:
         title = 'Verso';
-        break;
       case 1:
         title = 'The Bible';
-        break;
       case 2:
         title = 'Stats';
-        break;
       case 3:
         title = 'Reading Journal';
-        break;
       default:
         title = 'Verso';
     }
@@ -94,15 +89,19 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
                     color: Theme.of(context).colorScheme.secondaryContainer,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.cloud_off,
-                              size: 14,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSecondaryContainer),
+                          Icon(
+                            Icons.cloud_off,
+                            size: 14,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSecondaryContainer,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             'Reading in offline mode. Changes will sync when connected.',
@@ -134,31 +133,34 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
 // CUSTOM BOTTOM NAVIGATION BAR
 
 class _VersoBottomNav extends StatelessWidget {
-  final int currentIndex;
-  final ValueChanged<int> onTap;
-
   const _VersoBottomNav({
     required this.currentIndex,
     required this.onTap,
   });
+  final int currentIndex;
+  final ValueChanged<int> onTap;
 
   static const _items = [
     _NavItem(
-        icon: Icons.home_outlined,
-        activeIcon: Icons.home_rounded,
-        label: 'Home'),
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home_rounded,
+      label: 'Home',
+    ),
     _NavItem(
-        icon: Icons.menu_book_outlined,
-        activeIcon: Icons.menu_book_rounded,
-        label: 'Bible'),
+      icon: Icons.menu_book_outlined,
+      activeIcon: Icons.menu_book_rounded,
+      label: 'Bible',
+    ),
     _NavItem(
-        icon: Icons.bar_chart_outlined,
-        activeIcon: Icons.bar_chart_rounded,
-        label: 'Stats'),
+      icon: Icons.bar_chart_outlined,
+      activeIcon: Icons.bar_chart_rounded,
+      label: 'Stats',
+    ),
     _NavItem(
-        icon: Icons.history_edu_outlined,
-        activeIcon: Icons.history_edu_rounded,
-        label: 'Journal'),
+      icon: Icons.history_edu_outlined,
+      activeIcon: Icons.history_edu_rounded,
+      label: 'Journal',
+    ),
   ];
 
   @override
@@ -191,7 +193,6 @@ class _VersoBottomNav extends StatelessWidget {
             color: Colors.black.withValues(alpha: isLight ? 0.08 : 0.25),
             blurRadius: 24,
             offset: const Offset(0, 4),
-            spreadRadius: 0,
           ),
           if (isLight)
             BoxShadow(
@@ -217,7 +218,7 @@ class _VersoBottomNav extends StatelessWidget {
                   curve: Curves.easeOutCubic,
                   child: FractionallySizedBox(
                     widthFactor: 1 / itemCount,
-                    heightFactor: 1.0,
+                    heightFactor: 1,
                     child: DecoratedBox(
                       decoration: BoxDecoration(
                         color: scheme.primary
@@ -253,27 +254,25 @@ class _VersoBottomNav extends StatelessWidget {
 }
 
 class _NavItem {
-  final IconData icon;
-  final IconData activeIcon;
-  final String label;
-
   const _NavItem({
     required this.icon,
     required this.activeIcon,
     required this.label,
   });
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
 }
 
 class _NavItemWidget extends StatelessWidget {
-  final _NavItem item;
-  final bool isSelected;
-  final VoidCallback onTap;
-
   const _NavItemWidget({
     required this.item,
     required this.isSelected,
     required this.onTap,
   });
+  final _NavItem item;
+  final bool isSelected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {

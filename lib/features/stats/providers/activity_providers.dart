@@ -1,22 +1,20 @@
 import 'package:collection/collection.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-import '../../reading/providers/reading_providers.dart';
-import '../../../data/bible_data.dart';
-import '../../../data/local/entities/reading_progress.dart';
-import '../../../core/providers/connectivity_provider.dart';
+import 'package:verso/core/providers/connectivity_provider.dart';
+import 'package:verso/data/bible_data.dart';
+import 'package:verso/data/local/entities/reading_progress.dart';
+import 'package:verso/features/reading/providers/reading_providers.dart';
 
 part 'activity_providers.g.dart';
 
 // Filter State
 
 class ActivityFilter {
+  const ActivityFilter({this.bookId, this.startDate, this.endDate});
   final int? bookId; // Null means 'All Books'
   final DateTime? startDate;
   final DateTime? endDate;
-
-  const ActivityFilter({this.bookId, this.startDate, this.endDate});
 
   bool get isActive => bookId != null || startDate != null || endDate != null;
 
@@ -65,11 +63,7 @@ class ActivityFilterState extends _$ActivityFilterState {
 // Activity Group Model
 
 class ActivityGroup {
-  final DateTime timestamp;
-  final BibleBook book;
-  final List<int> chapters;
-  final bool isBulkAction; // Was this likely a "Mark All Read"?
-  final bool isFinish; // Did this complete the book?
+  // Did this complete the book?
 
   ActivityGroup({
     required this.timestamp,
@@ -78,6 +72,11 @@ class ActivityGroup {
     this.isBulkAction = false,
     this.isFinish = false,
   });
+  final DateTime timestamp;
+  final BibleBook book;
+  final List<int> chapters;
+  final bool isBulkAction; // Was this likely a "Mark All Read"?
+  final bool isFinish;
 
   String get timeOfDay {
     final hour = timestamp.hour;
@@ -94,8 +93,8 @@ class ActivityGroup {
     // Sort chapters to handle "1, 2, 3" properly
     chapters.sort();
     // Check if consecutive (simple check)
-    bool isConsecutive = true;
-    for (int i = 0; i < chapters.length - 1; i++) {
+    var isConsecutive = true;
+    for (var i = 0; i < chapters.length - 1; i++) {
       if (chapters[i + 1] != chapters[i] + 1) isConsecutive = false;
     }
 
@@ -117,7 +116,7 @@ Future<List<ReadingProgress>> _fetchOfflineFirstHistory(Ref ref) async {
   // We need the user ID to apply pending writes locally
   final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
 
-  List<ReadingProgress> history = [];
+  var history = <ReadingProgress>[];
 
   if (isConnected) {
     try {
@@ -156,7 +155,7 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
   final allHistory = List<ReadingProgress>.from(rawHistory);
 
   // Detect Completed Books
-  final Map<int, DateTime> bookCompletionTimes = {};
+  final bookCompletionTimes = <int, DateTime>{};
 
   // Group history by book to check completion status
   final historyByBook = groupBy(allHistory, (p) => p.bookId);
@@ -166,8 +165,10 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
     final progressList = entry.value;
 
     // Find the book definition to get total chapters
-    final book = kBibleBooks.firstWhere((b) => b.id == bookId,
-        orElse: () => kBibleBooks.first);
+    final book = kBibleBooks.firstWhere(
+      (b) => b.id == bookId,
+      orElse: () => kBibleBooks.first,
+    );
 
     // Get unique read chapters
     final readChapterSet = progressList.map((p) => p.chapterNumber).toSet();
@@ -190,9 +191,10 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
 
   // Sort by Time DESC (Newest first)
   allHistory.sort(
-      (a, b) => (b.readAt ?? DateTime(0)).compareTo(a.readAt ?? DateTime(0)));
+    (a, b) => (b.readAt ?? DateTime(0)).compareTo(a.readAt ?? DateTime(0)),
+  );
 
-  final List<ActivityGroup> groups = [];
+  final groups = <ActivityGroup>[];
 
   for (final entry in allHistory) {
     if (entry.readAt == null) continue;
@@ -212,7 +214,7 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
     final book = kBibleBooks.firstWhere((b) => b.id == entry.bookId);
 
     // Check finishing
-    bool isFinisher = false;
+    var isFinisher = false;
     if (bookCompletionTimes.containsKey(book.id)) {
       final finishTime = bookCompletionTimes[book.id];
       if (entry.readAt!.isAtSameMomentAs(finishTime!)) {
@@ -231,16 +233,18 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
       }
     }
 
-    groups.add(ActivityGroup(
-      timestamp: entry.readAt!,
-      book: book,
-      chapters: [entry.chapterNumber],
-      isFinish: isFinisher,
-    ));
+    groups.add(
+      ActivityGroup(
+        timestamp: entry.readAt!,
+        book: book,
+        chapters: [entry.chapterNumber],
+        isFinish: isFinisher,
+      ),
+    );
   }
 
   // Group by Date for Sticky Headers
-  final Map<DateTime, List<ActivityGroup>> grouped = {};
+  final grouped = <DateTime, List<ActivityGroup>>{};
   for (final g in groups) {
     final dateKey =
         DateTime(g.timestamp.year, g.timestamp.month, g.timestamp.day);

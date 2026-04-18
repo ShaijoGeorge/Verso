@@ -2,9 +2,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import '../../../core/design/tokens/colors.dart';
-import '../providers/stats_providers.dart';
-import '../widgets/time_period_navigator.dart';
+import 'package:verso/core/design/tokens/colors.dart';
+import 'package:verso/features/stats/providers/stats_providers.dart';
+import 'package:verso/features/stats/widgets/time_period_navigator.dart';
 
 class MonthlyTab extends ConsumerWidget {
   const MonthlyTab({super.key});
@@ -38,7 +38,7 @@ class MonthlyTab extends ConsumerWidget {
                     ? () => ref.read(monthlyOffsetProvider.notifier).goForward()
                     : null,
                 onReset: offset > 0
-                    ? () => ref.read(monthlyOffsetProvider.notifier).state = 0
+                    ? () => ref.read(monthlyOffsetProvider.notifier).reset()
                     : null,
               ),
               const Gap(16),
@@ -88,8 +88,12 @@ class MonthlyTab extends ConsumerWidget {
                       ),
                 ),
                 const Gap(12),
-                ..._topDays(context, chartData.dailyCounts, chartData.month,
-                    chartData.year),
+                ..._topDays(
+                  context,
+                  chartData.dailyCounts,
+                  chartData.month,
+                  chartData.year,
+                ),
               ] else ...[
                 // Empty state for months with no data
                 Center(
@@ -123,7 +127,11 @@ class MonthlyTab extends ConsumerWidget {
   }
 
   List<Widget> _topDays(
-      BuildContext context, Map<int, int> dailyCounts, int month, int year) {
+    BuildContext context,
+    Map<int, int> dailyCounts,
+    int month,
+    int year,
+  ) {
     final scheme = Theme.of(context).colorScheme;
     final sorted = dailyCounts.entries.where((e) => e.value > 0).toList()
       ..sort((a, b) => b.value.compareTo(a.value));
@@ -140,7 +148,7 @@ class MonthlyTab extends ConsumerWidget {
       'Sep',
       'Oct',
       'Nov',
-      'Dec'
+      'Dec',
     ];
 
     final now = DateTime.now();
@@ -232,7 +240,7 @@ class MonthlyTab extends ConsumerWidget {
       'September',
       'October',
       'November',
-      'December'
+      'December',
     ];
     return months[m - 1];
   }
@@ -242,15 +250,14 @@ class MonthlyTab extends ConsumerWidget {
 // Heatmap Calendar (Sunday-first)
 // ─────────────────────────────────────────────
 class _HeatmapCalendar extends StatelessWidget {
-  final int year;
-  final int month;
-  final Map<int, int> dailyCounts;
-
   const _HeatmapCalendar({
     required this.year,
     required this.month,
     required this.dailyCounts,
   });
+  final int year;
+  final int month;
+  final Map<int, int> dailyCounts;
 
   @override
   Widget build(BuildContext context) {
@@ -259,7 +266,7 @@ class _HeatmapCalendar extends StatelessWidget {
 
     final daysInMonth = DateUtils.getDaysInMonth(year, month);
     // Convert Dart weekday (1=Mon..7=Sun) to Sunday-first (0=Sun..6=Sat)
-    final dartWeekday = DateTime(year, month, 1).weekday;
+    final dartWeekday = DateTime(year, month).weekday;
     final firstWeekday = dartWeekday % 7;
     final maxCount =
         dailyCounts.values.isEmpty ? 1 : dailyCounts.values.reduce(max);
@@ -274,18 +281,20 @@ class _HeatmapCalendar extends StatelessWidget {
         // Day-of-week header
         Row(
           children: dayLabels
-              .map((d) => Expanded(
-                    child: Center(
-                      child: Text(
-                        d,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
-                        ),
+              .map(
+                (d) => Expanded(
+                  child: Center(
+                    child: Text(
+                      d,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
                       ),
                     ),
-                  ))
+                  ),
+                ),
+              )
               .toList(),
         ),
         const Gap(8),
@@ -300,7 +309,8 @@ class _HeatmapCalendar extends StatelessWidget {
 
                 if (dayNum < 1 || dayNum > daysInMonth) {
                   return Expanded(
-                      child: AspectRatio(aspectRatio: 1, child: Container()));
+                    child: AspectRatio(aspectRatio: 1, child: Container()),
+                  );
                 }
 
                 final count = dailyCounts[dayNum] ?? 0;
@@ -391,34 +401,40 @@ class _IntensityLegend extends StatelessWidget {
             AppColors.primaryContainerLight,
             const Color(0xFF7EB8E0),
             const Color(0xFF3B82C4),
-            AppColors.primaryLight
+            AppColors.primaryLight,
           ]
         : [
             AppColors.backgroundDark,
             AppColors.primaryContainerDark,
             const Color(0xFF1B3A5C),
             const Color(0xFF4A90D9),
-            AppColors.primaryDark
+            AppColors.primaryDark,
           ];
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text('Less',
-            style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
+        Text(
+          'Less',
+          style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+        ),
         const Gap(6),
-        ...colors.map((c) => Container(
-              width: 16,
-              height: 16,
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                color: c,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            )),
+        ...colors.map(
+          (c) => Container(
+            width: 16,
+            height: 16,
+            margin: const EdgeInsets.symmetric(horizontal: 2),
+            decoration: BoxDecoration(
+              color: c,
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+        ),
         const Gap(6),
-        Text('More',
-            style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
+        Text(
+          'More',
+          style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+        ),
       ],
     );
   }

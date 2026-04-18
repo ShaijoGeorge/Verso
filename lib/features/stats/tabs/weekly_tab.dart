@@ -1,10 +1,11 @@
 import 'dart:math';
+
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:gap/gap.dart';
-import '../providers/stats_providers.dart';
-import '../widgets/time_period_navigator.dart';
+import 'package:verso/features/stats/providers/stats_providers.dart';
+import 'package:verso/features/stats/widgets/time_period_navigator.dart';
 
 class WeeklyTab extends ConsumerWidget {
   const WeeklyTab({super.key});
@@ -40,7 +41,7 @@ class WeeklyTab extends ConsumerWidget {
           'Sep',
           'Oct',
           'Nov',
-          'Dec'
+          'Dec',
         ];
         final rangeLabel = offset == 0
             ? 'This Week'
@@ -63,7 +64,7 @@ class WeeklyTab extends ConsumerWidget {
                     ? () => ref.read(weeklyOffsetProvider.notifier).goForward()
                     : null,
                 onReset: offset > 0
-                    ? () => ref.read(weeklyOffsetProvider.notifier).state = 0
+                    ? () => ref.read(weeklyOffsetProvider.notifier).reset()
                     : null,
               ),
               const Gap(16),
@@ -103,10 +104,8 @@ class WeeklyTab extends ConsumerWidget {
                           ),
                         ),
                         titlesData: FlTitlesData(
-                          topTitles: const AxisTitles(
-                              sideTitles: SideTitles(showTitles: false)),
-                          rightTitles: const AxisTitles(
-                              sideTitles: SideTitles(showTitles: false)),
+                          topTitles: const AxisTitles(),
+                          rightTitles: const AxisTitles(),
                           bottomTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
@@ -126,7 +125,7 @@ class WeeklyTab extends ConsumerWidget {
                                   'Thu',
                                   'Fri',
                                   'Sat',
-                                  'Sun'
+                                  'Sun',
                                 ];
                                 final dayDate =
                                     DateTime(date.year, date.month, date.day);
@@ -178,14 +177,13 @@ class WeeklyTab extends ConsumerWidget {
                                   value.toInt().toString(),
                                   style: TextStyle(
                                       fontSize: 10,
-                                      color: scheme.onSurfaceVariant),
+                                      color: scheme.onSurfaceVariant,),
                                 );
                               },
                             ),
                           ),
                         ),
                         gridData: FlGridData(
-                          show: true,
                           drawVerticalLine: false,
                           horizontalInterval: (maxY / 4)
                               .ceilToDouble()
@@ -220,23 +218,23 @@ class WeeklyTab extends ConsumerWidget {
                                   colors: isToday
                                       ? [
                                           scheme.primary,
-                                          scheme.primary.withValues(alpha: 0.7)
+                                          scheme.primary.withValues(alpha: 0.7),
                                         ]
                                       : count > 0
                                           ? isLight
                                               ? [
                                                   const Color(0xFF7EB8E0),
-                                                  const Color(0xFFBBDEFB)
+                                                  const Color(0xFFBBDEFB),
                                                 ]
                                               : [
                                                   const Color(0xFF1B3A5C),
-                                                  const Color(0xFF7EB8E0)
+                                                  const Color(0xFF7EB8E0),
                                                 ]
                                           : [
                                               scheme.outline
                                                   .withValues(alpha: 0.15),
                                               scheme.outline
-                                                  .withValues(alpha: 0.08)
+                                                  .withValues(alpha: 0.08),
                                             ],
                                 ),
                               ),
@@ -330,15 +328,15 @@ class WeeklyTab extends ConsumerWidget {
 }
 
 class _SummaryLine extends StatelessWidget {
-  final String highlight;
-  final String suffix;
-  final ColorScheme scheme;
 
   const _SummaryLine({
     required this.highlight,
     required this.suffix,
     required this.scheme,
   });
+  final String highlight;
+  final String suffix;
+  final ColorScheme scheme;
 
   @override
   Widget build(BuildContext context) {
@@ -362,8 +360,8 @@ class _SummaryLine extends StatelessWidget {
 }
 
 class _AnimatedChartWrapper extends StatefulWidget {
+  const _AnimatedChartWrapper({required this.builder, super.key});
   final Widget Function(bool isAnimated) builder;
-  const _AnimatedChartWrapper({super.key, required this.builder});
 
   @override
   State<_AnimatedChartWrapper> createState() => _AnimatedChartWrapperState();

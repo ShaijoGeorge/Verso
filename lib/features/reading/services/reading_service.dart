@@ -2,15 +2,16 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../data/bible_repository.dart';
-import '../providers/reading_providers.dart';
-import '../../stats/providers/stats_providers.dart';
-import '../../../core/providers/connectivity_provider.dart';
-import '../../../core/services/offline_cache_service.dart';
+import 'package:verso/core/providers/connectivity_provider.dart';
+import 'package:verso/core/services/offline_cache_service.dart';
+import 'package:verso/features/reading/data/bible_repository.dart';
+import 'package:verso/features/reading/providers/reading_providers.dart';
+import 'package:verso/features/stats/providers/stats_providers.dart';
 
 part 'reading_service.g.dart';
 
 class ReadingService {
+  ReadingService(this._ref, this._repo, this._cache);
   final Ref _ref;
   final BibleRepository _repo;
   final OfflineCacheService _cache;
@@ -20,8 +21,6 @@ class ReadingService {
 
   // Debounce timer so rapid taps coalesce into one provider refresh
   Timer? _refreshTimer;
-
-  ReadingService(this._ref, this._repo, this._cache);
 
   bool get _isOnline => _ref.read(connectivityProvider);
   String get _currentUserId =>
@@ -72,9 +71,8 @@ class ReadingService {
 
   void _scheduleRefresh() {
     _refreshTimer?.cancel();
-    _refreshTimer = Timer(const Duration(milliseconds: 350), () {
-      _invalidateProviders();
-    });
+    _refreshTimer =
+        Timer(const Duration(milliseconds: 350), _invalidateProviders);
   }
 
   void _invalidateProviders() {
@@ -111,13 +109,11 @@ class ReadingService {
                 op['chapter_number'] as int,
                 op['is_read'] as bool,
               );
-              break;
             case 'mark_book':
               await _repo.markBookAsRead(
                 op['book_id'] as int,
                 op['total_chapters'] as int,
               );
-              break;
           }
           await _cache.removeQueueAction(0);
         } on TypeError catch (_) {
@@ -145,7 +141,7 @@ ReadingService readingService(Ref ref) {
 
   // Watch connectivity — flush queue when coming back online
   ref.listen(connectivityProvider, (previous, next) {
-    if (previous == false && next == true) {
+    if (previous == false && next) {
       service.flushWriteQueue();
     }
   });
@@ -154,7 +150,7 @@ ReadingService readingService(Ref ref) {
   // This covers the case where the app was closed offline and reopened online
   // (the listener above won't fire because there's no false → true transition).
   if (ref.read(connectivityProvider)) {
-    Future.microtask(() => service.flushWriteQueue());
+    Future.microtask(service.flushWriteQueue);
   }
 
   return service;

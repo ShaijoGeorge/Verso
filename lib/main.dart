@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'core/design/theme.dart';
-import 'core/router.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'core/constants.dart';
-import 'features/settings/services/notification_service.dart';
-import 'features/settings/providers/settings_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'core/providers/package_info_provider.dart';
-import 'core/utils/verso_error_observer.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:verso/core/constants.dart';
+import 'package:verso/core/design/theme.dart';
+import 'package:verso/core/providers/package_info_provider.dart';
+import 'package:verso/core/router.dart';
+import 'package:verso/core/utils/verso_error_observer.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
+import 'package:verso/features/settings/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // 1. Load the .env file
-  await dotenv.load(fileName: ".env");
+  await dotenv.load();
 
   // 2. Initialize Supabase
   await Supabase.initialize(
@@ -70,7 +70,7 @@ class _BibliaAppState extends ConsumerState<BibliaApp> {
 
   Future<void> _initializeReminders() async {
     // Wait for settings to load
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future<void>.delayed(const Duration(milliseconds: 500));
 
     final settingsAsync = ref.read(currentSettingsProvider);
     settingsAsync.whenData((settings) async {

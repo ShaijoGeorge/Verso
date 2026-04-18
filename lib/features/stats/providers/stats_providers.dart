@@ -1,22 +1,21 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../reading/providers/reading_providers.dart';
-import '../../../data/local/entities/reading_progress.dart';
-import '../../../data/bible_data.dart';
+import 'package:verso/data/bible_data.dart';
+import 'package:verso/data/local/entities/reading_progress.dart';
+import 'package:verso/features/reading/providers/reading_providers.dart';
 
 part 'stats_providers.g.dart';
 
 class UserStats {
-  final int streak;
-  final int totalChaptersRead;
-  final int booksCompleted;
-  final double totalProgress;
-
   UserStats({
     required this.streak,
     required this.totalChaptersRead,
     required this.booksCompleted,
     required this.totalProgress,
   });
+  final int streak;
+  final int totalChaptersRead;
+  final int booksCompleted;
+  final double totalProgress;
 }
 
 int _calculateStreak(List<ReadingProgress> history) {
@@ -41,8 +40,8 @@ int _calculateStreak(List<ReadingProgress> history) {
     return 0;
   }
 
-  int streak = 0;
-  DateTime targetDate = readDates.first;
+  var streak = 0;
+  var targetDate = readDates.first;
 
   for (final day in readDates) {
     if (day == targetDate) {
@@ -65,8 +64,8 @@ Future<UserStats> userStats(Ref ref) async {
   final streak = _calculateStreak(history);
 
   // Calculate Books Completed
-  int completedBooksCount = 0;
-  final Map<int, Set<int>> readChaptersByBook = {};
+  var completedBooksCount = 0;
+  final readChaptersByBook = <int, Set<int>>{};
   for (final progress in readHistory) {
     readChaptersByBook.putIfAbsent(progress.bookId, () => <int>{});
     readChaptersByBook[progress.bookId]!.add(progress.chapterNumber);
@@ -92,6 +91,23 @@ Future<UserStats> userStats(Ref ref) async {
 }
 
 class DetailedStats {
+  DetailedStats({
+    required this.otRead,
+    required this.ntRead,
+    required this.totalRead,
+    required this.otBooksCompleted,
+    required this.ntBooksCompleted,
+    required this.otProgress,
+    required this.ntProgress,
+    required this.totalProgress,
+    required this.last7DaysDates,
+    required this.last7DaysCounts,
+    required this.currentMonthDailyCounts,
+    required this.currentYearMonthlyCounts,
+    required this.averageChaptersPerDay,
+    required this.streak,
+    required this.bookCompletionMap,
+  });
   final int otRead;
   final int ntRead;
   final int totalRead;
@@ -110,33 +126,15 @@ class DetailedStats {
 
   /// Per-book completion: bookId → fraction (0.0 to 1.0)
   final Map<int, double> bookCompletionMap;
-
-  DetailedStats({
-    required this.otRead,
-    required this.ntRead,
-    required this.totalRead,
-    required this.otBooksCompleted,
-    required this.ntBooksCompleted,
-    required this.otProgress,
-    required this.ntProgress,
-    required this.totalProgress,
-    required this.last7DaysDates,
-    required this.last7DaysCounts,
-    required this.currentMonthDailyCounts,
-    required this.currentYearMonthlyCounts,
-    required this.averageChaptersPerDay,
-    required this.streak,
-    required this.bookCompletionMap,
-  });
 }
 
 @riverpod
 Future<DetailedStats> detailedStats(Ref ref) async {
   final history = await ref.watch(globalProgressProvider.future);
 
-  const int totalOT = 1074;
-  const int totalNT = 260;
-  const int totalBible = 1334;
+  const totalOT = 1074;
+  const totalNT = 260;
+  const totalBible = 1334;
 
   final readHistory = history.where((p) => p.isRead).toList();
 
@@ -145,9 +143,9 @@ Future<DetailedStats> detailedStats(Ref ref) async {
   final totalRead = readHistory.length;
 
   // Calculate Books Completed for OT/NT
-  int otBooksCompleted = 0;
-  int ntBooksCompleted = 0;
-  final Map<int, Set<int>> readChaptersByBook = {};
+  var otBooksCompleted = 0;
+  var ntBooksCompleted = 0;
+  final readChaptersByBook = <int, Set<int>>{};
   for (final progress in readHistory) {
     readChaptersByBook.putIfAbsent(progress.bookId, () => <int>{});
     readChaptersByBook[progress.bookId]!.add(progress.chapterNumber);
@@ -165,7 +163,7 @@ Future<DetailedStats> detailedStats(Ref ref) async {
   }
 
   // Per-book completion fractions for the 73-book grid
-  final Map<int, double> bookCompletionMap = {};
+  final bookCompletionMap = <int, double>{};
   for (final book in kBibleBooks) {
     final readCount = readChaptersByBook[book.id]?.length ?? 0;
     bookCompletionMap[book.id] =
@@ -178,7 +176,7 @@ Future<DetailedStats> detailedStats(Ref ref) async {
   // 1. Weekly Data
   final last7DaysDates = <DateTime>[];
   final last7DaysCounts = <int>[];
-  for (int i = 6; i >= 0; i--) {
+  for (var i = 6; i >= 0; i--) {
     final date = today.subtract(Duration(days: i));
     last7DaysDates.add(date);
     final count = readHistory.where((p) {
@@ -193,10 +191,12 @@ Future<DetailedStats> detailedStats(Ref ref) async {
 
   // 2. Monthly Data
   final currentMonthDailyCounts = <int, int>{};
-  final monthHistory = readHistory.where((p) =>
-      p.readAt != null &&
-      p.readAt!.year == now.year &&
-      p.readAt!.month == now.month);
+  final monthHistory = readHistory.where(
+    (p) =>
+        p.readAt != null &&
+        p.readAt!.year == now.year &&
+        p.readAt!.month == now.month,
+  );
   for (final entry in monthHistory) {
     currentMonthDailyCounts[entry.readAt!.day] =
         (currentMonthDailyCounts[entry.readAt!.day] ?? 0) + 1;
@@ -237,11 +237,10 @@ Future<DetailedStats> detailedStats(Ref ref) async {
 // --- WEEKLY PROVIDERS ---
 
 class WeeklyChartData {
+  WeeklyChartData(this.dates, this.counts, this.totalRead);
   final List<DateTime> dates;
   final List<int> counts;
   final int totalRead;
-
-  WeeklyChartData(this.dates, this.counts, this.totalRead);
 }
 
 @riverpod
@@ -253,6 +252,8 @@ class WeeklyOffset extends _$WeeklyOffset {
   void goForward() {
     if (state > 0) state--;
   }
+
+  void reset() => state = 0;
 }
 
 @riverpod
@@ -262,13 +263,13 @@ Future<WeeklyChartData> weeklyChartStats(Ref ref, int weeksAgo) async {
 
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
-  final startOfWeek = today.subtract(Duration(days: (weeksAgo * 7)));
+  final startOfWeek = today.subtract(Duration(days: weeksAgo * 7));
 
   final dates = <DateTime>[];
   final counts = <int>[];
-  int totalRead = 0;
+  var totalRead = 0;
 
-  for (int i = 6; i >= 0; i--) {
+  for (var i = 6; i >= 0; i--) {
     final date = startOfWeek.subtract(Duration(days: i));
     dates.add(date);
 
@@ -290,12 +291,11 @@ Future<WeeklyChartData> weeklyChartStats(Ref ref, int weeksAgo) async {
 // --- MONTHLY PROVIDERS ---
 
 class MonthlyChartData {
+  MonthlyChartData(this.year, this.month, this.dailyCounts, this.totalRead);
   final int year;
   final int month;
   final Map<int, int> dailyCounts;
   final int totalRead;
-
-  MonthlyChartData(this.year, this.month, this.dailyCounts, this.totalRead);
 }
 
 @riverpod
@@ -307,6 +307,8 @@ class MonthlyOffset extends _$MonthlyOffset {
   void goForward() {
     if (state > 0) state--;
   }
+
+  void reset() => state = 0;
 }
 
 @riverpod
@@ -317,8 +319,8 @@ Future<MonthlyChartData> monthlyChartStats(Ref ref, int monthsAgo) async {
   final now = DateTime.now();
 
   // Calculate target month and year safely
-  int targetYear = now.year;
-  int targetMonth = now.month - monthsAgo;
+  var targetYear = now.year;
+  var targetMonth = now.month - monthsAgo;
 
   // If we go back past January, shift the year back
   while (targetMonth <= 0) {
@@ -327,12 +329,14 @@ Future<MonthlyChartData> monthlyChartStats(Ref ref, int monthsAgo) async {
   }
 
   final dailyCounts = <int, int>{};
-  int totalRead = 0;
+  var totalRead = 0;
 
-  final monthHistory = readHistory.where((p) =>
-      p.readAt != null &&
-      p.readAt!.year == targetYear &&
-      p.readAt!.month == targetMonth);
+  final monthHistory = readHistory.where(
+    (p) =>
+        p.readAt != null &&
+        p.readAt!.year == targetYear &&
+        p.readAt!.month == targetMonth,
+  );
 
   for (final entry in monthHistory) {
     dailyCounts[entry.readAt!.day] = (dailyCounts[entry.readAt!.day] ?? 0) + 1;
@@ -345,11 +349,10 @@ Future<MonthlyChartData> monthlyChartStats(Ref ref, int monthsAgo) async {
 // --- YEARLY PROVIDERS ---
 
 class YearlyChartData {
+  YearlyChartData(this.year, this.monthlyCounts, this.totalRead);
   final int year;
   final Map<int, int> monthlyCounts;
   final int totalRead;
-
-  YearlyChartData(this.year, this.monthlyCounts, this.totalRead);
 }
 
 @riverpod
@@ -361,6 +364,8 @@ class YearlyOffset extends _$YearlyOffset {
   void goForward() {
     if (state > 0) state--;
   }
+
+  void reset() => state = 0;
 }
 
 @riverpod
@@ -372,7 +377,7 @@ Future<YearlyChartData> yearlyChartStats(Ref ref, int yearsAgo) async {
   final targetYear = now.year - yearsAgo;
 
   final monthlyCounts = <int, int>{};
-  int totalRead = 0;
+  var totalRead = 0;
 
   final yearHistory = readHistory
       .where((p) => p.readAt != null && p.readAt!.year == targetYear);

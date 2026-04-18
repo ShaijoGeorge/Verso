@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import '../../../core/providers/package_info_provider.dart';
-import '../providers/settings_providers.dart';
-import '../services/notification_service.dart';
-import '../../../core/widgets/error_state_widget.dart';
-import '../../../core/utils/app_error_handler.dart';
-import '../../../core/design/design.dart';
-import 'debug_cache_screen.dart';
+import 'package:verso/core/design/design.dart';
+import 'package:verso/core/providers/package_info_provider.dart';
+import 'package:verso/core/utils/app_error_handler.dart';
+import 'package:verso/core/widgets/error_state_widget.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
+import 'package:verso/features/settings/screens/debug_cache_screen.dart';
+import 'package:verso/features/settings/services/notification_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -18,9 +18,9 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _formatTime(int hour, int minute) {
-    final int h = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
-    final String m = minute.toString().padLeft(2, '0');
-    final String period = hour >= 12 ? 'PM' : 'AM';
+    final h = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    final m = minute.toString().padLeft(2, '0');
+    final period = hour >= 12 ? 'PM' : 'AM';
     return '$h:$m $period';
   }
 
@@ -28,13 +28,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     // Presents Flutter's TimePickerDialog through showGeneralDialog so we can
     // drive the entry with the app's branded fade + scale curve instead of the
     // framework's default ~150ms dialog transition.
-    final TimeOfDay? picked = await showGeneralDialog<TimeOfDay>(
+    final picked = await showGeneralDialog<TimeOfDay>(
       context: context,
       barrierDismissible: true,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
       barrierColor: Colors.black54,
       transitionDuration: const Duration(milliseconds: 280),
-      pageBuilder: (BuildContext context, _, __) {
+      pageBuilder: (context, _, __) {
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
           child: TimePickerDialog(
@@ -51,7 +51,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         return FadeTransition(
           opacity: curved,
           child: ScaleTransition(
-            scale: Tween<double>(begin: 0.92, end: 1.0).animate(curved),
+            scale: Tween<double>(begin: 0.92, end: 1).animate(curved),
             child: child,
           ),
         );
@@ -119,8 +119,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: const Text('Dark Mode'),
                 secondary: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 500),
-                  transitionBuilder:
-                      (Widget child, Animation<double> animation) {
+                  transitionBuilder: (child, animation) {
                     return RotationTransition(
                       turns: child.key == const ValueKey('dark_icon')
                           ? Tween<double>(begin: 0.75, end: 1)
@@ -132,11 +131,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   },
                   child: settings.isDarkMode
                       ? const Icon(Icons.dark_mode, key: ValueKey('dark_icon'))
-                      : const Icon(Icons.light_mode,
-                          key: ValueKey('light_icon')),
+                      : const Icon(
+                          Icons.light_mode,
+                          key: ValueKey('light_icon'),
+                        ),
                 ),
                 value: settings.isDarkMode,
-                onChanged: (bool value) {
+                onChanged: (value) {
                   ref.read(currentSettingsProvider.notifier).toggleTheme(value);
                 },
               ),
@@ -159,12 +160,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
               SwitchListTile(
                 title: const Text('Daily Reminder'),
-                subtitle: Text(settings.isReminderEnabled
-                    ? 'Scheduled for ${_formatTime(settings.reminderHour, settings.reminderMinute)}'
-                    : 'Get a daily nudge to read'),
+                subtitle: Text(
+                  settings.isReminderEnabled
+                      ? 'Scheduled for ${_formatTime(settings.reminderHour, settings.reminderMinute)}'
+                      : 'Get a daily nudge to read',
+                ),
                 secondary: const Icon(Icons.notifications_active_outlined),
                 value: settings.isReminderEnabled,
-                onChanged: (bool value) async {
+                onChanged: (value) async {
                   try {
                     await ref
                         .read(currentSettingsProvider.notifier)
@@ -181,16 +184,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       );
 
                       if (mounted) {
-                        VersoSnackbar.success(context,
-                            message: 'Daily reminder enabled');
+                        VersoSnackbar.success(
+                          context,
+                          message: 'Daily reminder enabled',
+                        );
                       }
                     } else {
                       await NotificationService().cancelReminders();
                     }
                   } catch (e) {
                     if (mounted) {
-                      VersoSnackbar.error(context,
-                          message: AppErrorHandler.getMessage(e));
+                      VersoSnackbar.error(
+                        context,
+                        message: AppErrorHandler.getMessage(e),
+                      );
                     }
                   }
                 },
@@ -210,7 +217,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     child: Text(
                       _formatTime(
-                          settings.reminderHour, settings.reminderMinute),
+                        settings.reminderHour,
+                        settings.reminderMinute,
+                      ),
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -226,8 +235,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 child: GestureDetector(
                   onLongPress: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(
-                          builder: (_) => const DebugCacheScreen()),
+                      MaterialPageRoute<void>(
+                        builder: (_) => const DebugCacheScreen(),
+                      ),
                     );
                   },
                   child: Padding(

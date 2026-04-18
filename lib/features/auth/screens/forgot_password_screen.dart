@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../providers/auth_providers.dart';
-import '../../../core/widgets/confirmation_view.dart';
-import '../../../core/utils/app_error_handler.dart';
-import '../../../core/design/components/verso_snackbar.dart';
-import '../../../core/design/components/verso_text_field.dart';
-import '../../../core/design/components/verso_gradient_button.dart';
-import '../../../core/design/components/verso_header_icon.dart';
-import '../../../core/design/components/verso_auth_gradient.dart';
-import '../../../core/design/tokens/colors.dart';
-import '../../../core/design/tokens/spacing.dart';
-import '../../../core/design/tokens/radii.dart';
+import 'package:verso/core/design/components/verso_auth_gradient.dart';
+import 'package:verso/core/design/components/verso_gradient_button.dart';
+import 'package:verso/core/design/components/verso_header_icon.dart';
+import 'package:verso/core/design/components/verso_snackbar.dart';
+import 'package:verso/core/design/components/verso_text_field.dart';
+import 'package:verso/core/design/tokens/colors.dart';
+import 'package:verso/core/design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/spacing.dart';
+import 'package:verso/core/utils/app_error_handler.dart';
+import 'package:verso/core/widgets/confirmation_view.dart';
+import 'package:verso/features/auth/providers/auth_providers.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -44,7 +44,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
       begin: const Offset(0, 0.06),
       end: Offset.zero,
     ).animate(
-        CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic));
+      CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
+    );
     _animController.forward();
   }
 
@@ -126,7 +127,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                               child: Column(
                                 children: [
                                   const VersoHeaderIcon(
-                                      icon: Icons.lock_reset_rounded),
+                                    icon: Icons.lock_reset_rounded,
+                                  ),
                                   const Gap(Spacing.lg),
                                   Text(
                                     'Reset Password',
@@ -137,7 +139,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                                   ),
                                   const Gap(Spacing.sm),
                                   Text(
-                                    'Enter your email and we\'ll send you\na link to reset your password.',
+                                    "Enter your email and we'll send you\na link to reset your password.",
                                     textAlign: TextAlign.center,
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 14,
@@ -154,7 +156,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                                       borderRadius: AppRadii.borderRadiusXL,
                                       border: Border.all(
                                         color: colorScheme.outline.withValues(
-                                            alpha: isDark ? 0.15 : 0.4),
+                                          alpha: isDark ? 0.15 : 0.4,
+                                        ),
                                       ),
                                       boxShadow: isDark
                                           ? []

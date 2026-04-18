@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../../data/bible_data.dart';
+import 'package:verso/data/bible_data.dart';
 
 /// A compact mosaic grid showing all 73 Bible books.
 /// Each cell's color intensity represents the completion fraction.
 /// Tapping a cell shows a tooltip with the book name and progress.
 class BookCompletionGrid extends StatelessWidget {
+  const BookCompletionGrid({required this.bookCompletionMap, super.key});
   final Map<int, double> bookCompletionMap;
-
-  const BookCompletionGrid({super.key, required this.bookCompletionMap});
 
   @override
   Widget build(BuildContext context) {
@@ -49,17 +48,16 @@ class BookCompletionGrid extends StatelessWidget {
 }
 
 class _BookCell extends StatelessWidget {
-  final BibleBook book;
-  final double fraction;
-  final double size;
-  final bool isLight;
-
   const _BookCell({
     required this.book,
     required this.fraction,
     required this.size,
     required this.isLight,
   });
+  final BibleBook book;
+  final double fraction;
+  final double size;
+  final bool isLight;
 
   Color _cellColor() {
     if (fraction <= 0.0) {
@@ -114,9 +112,8 @@ class _BookCell extends StatelessWidget {
 }
 
 class _Legend extends StatelessWidget {
-  final bool isLight;
-
   const _Legend({required this.isLight});
+  final bool isLight;
 
   @override
   Widget build(BuildContext context) {
@@ -145,10 +142,9 @@ class _Legend extends StatelessWidget {
 }
 
 class _LegendDot extends StatelessWidget {
+  const _LegendDot({required this.color, required this.label});
   final Color color;
   final String label;
-
-  const _LegendDot({required this.color, required this.label});
 
   @override
   Widget build(BuildContext context) {

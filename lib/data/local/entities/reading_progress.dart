@@ -1,10 +1,4 @@
 class ReadingProgress {
-  final String userId;
-  final int bookId;
-  final int chapterNumber;
-  final bool isRead;
-  final DateTime? readAt;
-
   ReadingProgress({
     required this.userId,
     required this.bookId,
@@ -25,6 +19,11 @@ class ReadingProgress {
           : null,
     );
   }
+  final String userId;
+  final int bookId;
+  final int chapterNumber;
+  final bool isRead;
+  final DateTime? readAt;
 
   Map<String, dynamic> toJson() {
     return {

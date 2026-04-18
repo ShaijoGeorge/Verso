@@ -4,14 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../core/design/components/verso_snackbar.dart';
-import '../../../core/design/tokens/colors.dart';
-import '../../../core/design/tokens/radii.dart';
-import '../../../core/design/tokens/spacing.dart';
-import '../../../core/providers/package_info_provider.dart';
-import '../../../core/router.dart';
-import '../../reading/providers/reading_providers.dart';
-import '../providers/auth_providers.dart';
+import 'package:verso/core/design/components/verso_snackbar.dart';
+import 'package:verso/core/design/tokens/colors.dart';
+import 'package:verso/core/design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/spacing.dart';
+import 'package:verso/core/providers/package_info_provider.dart';
+import 'package:verso/core/router.dart';
+import 'package:verso/features/auth/providers/auth_providers.dart';
+import 'package:verso/features/reading/providers/reading_providers.dart';
 
 class ProfileDrawer extends ConsumerWidget {
   const ProfileDrawer({super.key});
@@ -198,7 +198,8 @@ class ProfileDrawer extends ConsumerWidget {
                                         ),
                                         decoration: BoxDecoration(
                                           color: errorColor.withValues(
-                                              alpha: 0.08),
+                                            alpha: 0.08,
+                                          ),
                                           borderRadius: AppRadii.borderRadiusMD,
                                           border: Border.all(
                                             color: errorColor.withValues(
@@ -316,8 +317,10 @@ class ProfileDrawer extends ConsumerWidget {
                           final rootContext =
                               router.routerDelegate.navigatorKey.currentContext;
                           if (rootContext != null && rootContext.mounted) {
-                            VersoSnackbar.success(rootContext,
-                                message: 'Signed out successfully');
+                            VersoSnackbar.success(
+                              rootContext,
+                              message: 'Signed out successfully',
+                            );
                           }
                         });
                       },
@@ -338,13 +341,6 @@ class ProfileDrawer extends ConsumerWidget {
 // Header
 
 class _DrawerHeader extends StatelessWidget {
-  final String name;
-  final String email;
-  final String initial;
-  final double topPadding;
-  final ColorScheme scheme;
-  final bool isLight;
-
   const _DrawerHeader({
     required this.name,
     required this.email,
@@ -353,13 +349,23 @@ class _DrawerHeader extends StatelessWidget {
     required this.scheme,
     required this.isLight,
   });
+  final String name;
+  final String email;
+  final String initial;
+  final double topPadding;
+  final ColorScheme scheme;
+  final bool isLight;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(
-          Spacing.lg, topPadding + Spacing.lg, Spacing.lg, Spacing.lg),
+        Spacing.lg,
+        topPadding + Spacing.lg,
+        Spacing.lg,
+        Spacing.lg,
+      ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -441,17 +447,16 @@ class _DrawerHeader extends StatelessWidget {
 // Menu Item
 
 class _DrawerMenuItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String subtitle;
-  final VoidCallback onTap;
-
   const _DrawerMenuItem({
     required this.icon,
     required this.label,
     required this.subtitle,
     required this.onTap,
   });
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -527,13 +532,12 @@ class _DrawerMenuItem extends StatelessWidget {
 // Logout Button
 
 class _LogoutButton extends StatelessWidget {
-  final bool isLight;
-  final VoidCallback onTap;
-
   const _LogoutButton({
     required this.isLight,
     required this.onTap,
   });
+  final bool isLight;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {

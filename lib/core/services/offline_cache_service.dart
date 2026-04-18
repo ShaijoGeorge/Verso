@@ -1,11 +1,10 @@
 import 'package:drift/drift.dart';
-import '../../data/local/app_database.dart';
-import '../../data/local/entities/reading_progress.dart';
+import 'package:verso/data/local/app_database.dart';
+import 'package:verso/data/local/entities/reading_progress.dart';
 
 class OfflineCacheService {
-  final AppDatabase _db;
-
   OfflineCacheService(this._db);
+  final AppDatabase _db;
 
   // --- Read Cache ---
 
@@ -22,13 +21,15 @@ class OfflineCacheService {
       await _db.batch((batch) {
         batch.insertAll(
           _db.cachedProgress,
-          progress.map((p) => CachedProgressCompanion.insert(
-                userId: p.userId,
-                bookId: p.bookId,
-                chapterNumber: p.chapterNumber,
-                isRead: Value(p.isRead),
-                readAt: Value(p.readAt),
-              )),
+          progress.map(
+            (p) => CachedProgressCompanion.insert(
+              userId: p.userId,
+              bookId: p.bookId,
+              chapterNumber: p.chapterNumber,
+              isRead: Value(p.isRead),
+              readAt: Value(p.readAt),
+            ),
+          ),
         );
       });
     });
@@ -64,10 +65,12 @@ class OfflineCacheService {
       // Deduplicate: if toggling the same chapter, remove the old entry
       if (operation['type'] == 'toggle') {
         await (_db.delete(_db.offlineWriteQueue)
-              ..where((t) =>
-                  t.type.equals('toggle') &
-                  t.bookId.equals(operation['book_id'] as int) &
-                  t.chapterNumber.equals(operation['chapter_number'] as int)))
+              ..where(
+                (t) =>
+                    t.type.equals('toggle') &
+                    t.bookId.equals(operation['book_id'] as int) &
+                    t.chapterNumber.equals(operation['chapter_number'] as int),
+              ))
             .go();
       }
 
@@ -138,9 +141,11 @@ class OfflineCacheService {
     } else {
       // Remove the chapter entry (marking as unread)
       await (_db.delete(_db.cachedProgress)
-            ..where((t) =>
-                t.bookId.equals(bookId) &
-                t.chapterNumber.equals(chapterNumber)))
+            ..where(
+              (t) =>
+                  t.bookId.equals(bookId) &
+                  t.chapterNumber.equals(chapterNumber),
+            ))
           .go();
     }
   }
@@ -153,7 +158,7 @@ class OfflineCacheService {
   ) async {
     final now = DateTime.now();
     await _db.batch((batch) {
-      for (int i = 1; i <= totalChapters; i++) {
+      for (var i = 1; i <= totalChapters; i++) {
         batch.insert(
           _db.cachedProgress,
           CachedProgressCompanion.insert(
@@ -202,12 +207,11 @@ class OfflineCacheService {
           } else {
             merged.remove((bookId, chapter));
           }
-          break;
         case 'mark_book':
           final bookId = op['book_id'] as int;
           final totalChapters = op['total_chapters'] as int;
           final now = DateTime.now();
-          for (int i = 1; i <= totalChapters; i++) {
+          for (var i = 1; i <= totalChapters; i++) {
             merged[(bookId, i)] = ReadingProgress(
               userId: userId,
               bookId: bookId,
@@ -216,7 +220,6 @@ class OfflineCacheService {
               readAt: now,
             );
           }
-          break;
       }
     }
 

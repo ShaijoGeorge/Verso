@@ -10,7 +10,6 @@ import 'package:go_router/go_router.dart';
 class AppPageTransitions {
   AppPageTransitions._();
 
-  static const Duration _standard = Duration(milliseconds: 300);
   static const Duration _slide = Duration(milliseconds: 350);
   static const Duration _ceremonial = Duration(milliseconds: 500);
   static const Duration _fastReverse = Duration(milliseconds: 250);
@@ -25,7 +24,6 @@ class AppPageTransitions {
       key: key,
       child: child,
       transitionDuration: _ceremonial,
-      reverseTransitionDuration: _standard,
       transitionsBuilder: (_, animation, __, child) {
         return FadeTransition(
           opacity: CurvedAnimation(
@@ -48,7 +46,6 @@ class AppPageTransitions {
     return CustomTransitionPage<T>(
       key: key,
       child: child,
-      transitionDuration: _standard,
       reverseTransitionDuration: _fastReverse,
       transitionsBuilder: (_, animation, secondaryAnimation, child) {
         final enter = CurvedAnimation(
@@ -62,12 +59,12 @@ class AppPageTransitions {
         );
         return FadeTransition(
           // Outer fade drives "this page exiting because a new one pushed on top"
-          opacity: Tween<double>(begin: 1.0, end: 0.0).animate(exit),
+          opacity: Tween<double>(begin: 1, end: 0).animate(exit),
           child: FadeTransition(
             // Inner fade drives "this page entering"
             opacity: enter,
             child: ScaleTransition(
-              scale: Tween<double>(begin: 0.94, end: 1.0).animate(enter),
+              scale: Tween<double>(begin: 0.94, end: 1).animate(enter),
               child: child,
             ),
           ),
@@ -105,10 +102,10 @@ class AppPageTransitions {
             end: const Offset(-0.25, 0),
           ).animate(exit),
           child: FadeTransition(
-            opacity: Tween<double>(begin: 1.0, end: 0.7).animate(exit),
+            opacity: Tween<double>(begin: 1, end: 0.7).animate(exit),
             child: SlideTransition(
               position: Tween<Offset>(
-                begin: const Offset(1.0, 0),
+                begin: const Offset(1, 0),
                 end: Offset.zero,
               ).animate(enter),
               child: child,
@@ -139,11 +136,11 @@ class AppPageTransitions {
         );
         return SlideTransition(
           position: Tween<Offset>(
-            begin: const Offset(0, 1.0),
+            begin: const Offset(0, 1),
             end: Offset.zero,
           ).animate(enter),
           child: FadeTransition(
-            opacity: Tween<double>(begin: 0.0, end: 1.0).animate(enter),
+            opacity: Tween<double>(begin: 0, end: 1).animate(enter),
             child: child,
           ),
         );

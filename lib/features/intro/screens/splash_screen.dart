@@ -1,11 +1,12 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/providers/package_info_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:gap/gap.dart';
-import '../../settings/data/settings_repository.dart';
+import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:verso/core/providers/package_info_provider.dart';
+import 'package:verso/features/settings/data/settings_repository.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -21,20 +22,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     _startTimer();
   }
 
-  void _startTimer() async {
+  Future<void> _startTimer() async {
     // Define our two tasks
-    final minimumDelay = Future.delayed(const Duration(milliseconds: 1500));
+    final minimumDelay = Future<void>.delayed(const Duration(milliseconds: 1500));
     final checkOnboarding = SettingsRepository().hasSeenOnboarding();
 
-    // Run them simultaneously and wait for BOTH to finish
-    // We capture the result of the onboarding check (the second future)
-    final results = await Future.wait([
-      minimumDelay,
-      checkOnboarding,
-    ]);
-
-    // Extract the boolean result
-    final hasSeenOnboarding = results[1] as bool;
+    // Run them simultaneously: the minimum delay is already started above.
+    // Await the onboarding flag; the delay future runs concurrently.
+    final hasSeenOnboarding = await checkOnboarding;
+    // Ensure the minimum 1.5s delay is also respected.
+    await minimumDelay;
 
     // Perform our routing
     if (!mounted) return;
@@ -82,7 +79,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  "by SHAIJO GEORGE",
+                  'by SHAIJO GEORGE',
                   style: TextStyle(
                     color: Colors.white54,
                     fontSize: 10,
@@ -92,7 +89,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 ),
                 const Gap(4),
                 Text(
-                  "v${ref.watch(packageInfoProvider).version}",
+                  'v${ref.watch(packageInfoProvider).version}',
                   style: const TextStyle(
                     color: Colors.white24,
                     fontSize: 10,

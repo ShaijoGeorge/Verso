@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../providers/auth_providers.dart';
-import '../../../core/widgets/error_state_widget.dart';
-import '../../../core/utils/app_error_handler.dart';
-import '../../../core/design/components/verso_snackbar.dart';
+import 'package:verso/core/design/components/verso_snackbar.dart';
+import 'package:verso/core/utils/app_error_handler.dart';
+import 'package:verso/core/widgets/error_state_widget.dart';
+import 'package:verso/features/auth/providers/auth_providers.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -26,8 +26,9 @@ class ProfileScreen extends ConsumerWidget {
         ),
       ),
       data: (user) {
-        if (user == null)
+        if (user == null) {
           return const Scaffold(body: Center(child: Text('Not Logged In')));
+        }
 
         final name = (user.userMetadata?['full_name'] as String?) ?? 'Reader';
         final email = user.email ?? 'No Email';
@@ -87,7 +88,7 @@ class ProfileScreen extends ConsumerWidget {
                   leading: const Icon(Icons.email_outlined),
                   title: const Text('Change Email'),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () => showModalBottomSheet(
+                  onTap: () => showModalBottomSheet<void>(
                     context: context,
                     isScrollControlled:
                         true, // Allows sheet to expand with keyboard
@@ -101,7 +102,7 @@ class ProfileScreen extends ConsumerWidget {
                   leading: const Icon(Icons.lock_outline),
                   title: const Text('Change Password'),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () => showModalBottomSheet(
+                  onTap: () => showModalBottomSheet<void>(
                     context: context,
                     isScrollControlled: true,
                     useSafeArea: true,
@@ -137,7 +138,7 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
     final pass = _passwordController.text.trim();
 
     if (email.isEmpty || !email.contains('@') || pass.isEmpty) {
-      VersoSnackbar.error(context, message: "Invalid input");
+      VersoSnackbar.error(context, message: 'Invalid input');
       return;
     }
 
@@ -151,8 +152,10 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
 
       if (mounted) {
         Navigator.pop(context);
-        VersoSnackbar.success(context,
-            message: "Check your email (both old and new) to confirm.");
+        VersoSnackbar.success(
+          context,
+          message: 'Check your email (both old and new) to confirm.',
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -190,7 +193,7 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
             const Gap(24),
 
             Text(
-              "Change Email",
+              'Change Email',
               style: Theme.of(context)
                   .textTheme
                   .headlineSmall
@@ -202,7 +205,7 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
             TextField(
               controller: _emailController,
               decoration: const InputDecoration(
-                labelText: "New Email Address",
+                labelText: 'New Email Address',
                 prefixIcon: Icon(Icons.email_outlined),
                 border: OutlineInputBorder(),
               ),
@@ -212,12 +215,13 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
               controller: _passwordController,
               obscureText: _isObscure,
               decoration: InputDecoration(
-                labelText: "Current Password",
+                labelText: 'Current Password',
                 prefixIcon: const Icon(Icons.lock_outline),
                 border: const OutlineInputBorder(),
                 suffixIcon: IconButton(
                   icon: Icon(
-                      _isObscure ? Icons.visibility : Icons.visibility_off),
+                    _isObscure ? Icons.visibility : Icons.visibility_off,
+                  ),
                   onPressed: () => setState(() => _isObscure = !_isObscure),
                 ),
               ),
@@ -226,13 +230,15 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
             FilledButton(
               onPressed: _isLoading ? null : _update,
               style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(50)),
+                minimumSize: const Size.fromHeight(50),
+              ),
               child: _isLoading
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text("Update Email"),
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Update Email'),
             ),
             const Gap(16),
           ],
@@ -267,11 +273,11 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
     final confirmPass = _confirmPassController.text.trim();
 
     if (newPass.length < 6) {
-      VersoSnackbar.error(context, message: "New password is too short");
+      VersoSnackbar.error(context, message: 'New password is too short');
       return;
     }
     if (newPass != confirmPass) {
-      VersoSnackbar.error(context, message: "Passwords do not match");
+      VersoSnackbar.error(context, message: 'Passwords do not match');
       return;
     }
 
@@ -285,8 +291,10 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
 
       if (mounted) {
         Navigator.pop(context);
-        VersoSnackbar.success(context,
-            message: "Password updated successfully!");
+        VersoSnackbar.success(
+          context,
+          message: 'Password updated successfully!',
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -323,7 +331,7 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
             const Gap(24),
 
             Text(
-              "Change Password",
+              'Change Password',
               style: Theme.of(context)
                   .textTheme
                   .headlineSmall
@@ -336,7 +344,7 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
               controller: _oldPassController,
               obscureText: _obsOld,
               decoration: InputDecoration(
-                labelText: "Current Password",
+                labelText: 'Current Password',
                 prefixIcon: const Icon(Icons.lock_outline),
                 border: const OutlineInputBorder(),
                 suffixIcon: IconButton(
@@ -364,7 +372,7 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
               controller: _newPassController,
               obscureText: _obsNew,
               decoration: InputDecoration(
-                labelText: "New Password",
+                labelText: 'New Password',
                 prefixIcon: const Icon(Icons.key),
                 border: const OutlineInputBorder(),
                 suffixIcon: IconButton(
@@ -378,12 +386,13 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
               controller: _confirmPassController,
               obscureText: _obsConfirm,
               decoration: InputDecoration(
-                labelText: "Confirm New Password",
+                labelText: 'Confirm New Password',
                 prefixIcon: const Icon(Icons.check_circle_outline),
                 border: const OutlineInputBorder(),
                 suffixIcon: IconButton(
                   icon: Icon(
-                      _obsConfirm ? Icons.visibility : Icons.visibility_off),
+                    _obsConfirm ? Icons.visibility : Icons.visibility_off,
+                  ),
                   onPressed: () => setState(() => _obsConfirm = !_obsConfirm),
                 ),
               ),
@@ -392,13 +401,15 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
             FilledButton(
               onPressed: _isLoading ? null : _update,
               style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(50)),
+                minimumSize: const Size.fromHeight(50),
+              ),
               child: _isLoading
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text("Update Password"),
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Update Password'),
             ),
             const Gap(16),
           ],

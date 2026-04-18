@@ -1,9 +1,9 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../data/bible_repository.dart';
-import '../../../data/local/entities/reading_progress.dart';
-import '../../../data/local/app_database.dart';
-import '../../../core/services/offline_cache_service.dart';
+import 'package:verso/core/services/offline_cache_service.dart';
+import 'package:verso/data/local/app_database.dart';
+import 'package:verso/data/local/entities/reading_progress.dart';
+import 'package:verso/features/reading/data/bible_repository.dart';
 
 part 'reading_providers.g.dart';
 
@@ -25,7 +25,7 @@ BibleRepository bibleRepository(Ref ref) {
 @Riverpod(keepAlive: true)
 AppDatabase appDatabase(Ref ref) {
   final db = AppDatabase();
-  ref.onDispose(() => db.close());
+  ref.onDispose(db.close);
   return db;
 }
 

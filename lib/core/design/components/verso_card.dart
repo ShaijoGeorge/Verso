@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../tokens/radii.dart';
-import '../tokens/spacing.dart';
-import '../tokens/shadows.dart';
+import 'package:verso/core/design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/shadows.dart';
+import 'package:verso/core/design/tokens/spacing.dart';
 
 /// A themed card that replaces raw Container decorations.
 ///
@@ -11,17 +11,9 @@ import '../tokens/shadows.dart';
 /// )
 /// ```
 class VersoCard extends StatelessWidget {
-  final Widget child;
-  final EdgeInsetsGeometry? padding;
-  final Color? color;
-  final List<BoxShadow>? shadow;
-  final BorderRadiusGeometry? borderRadius;
-  final Border? border;
-  final VoidCallback? onTap;
-
   const VersoCard({
-    super.key,
     required this.child,
+    super.key,
     this.padding,
     this.color,
     this.shadow,
@@ -29,6 +21,13 @@ class VersoCard extends StatelessWidget {
     this.border,
     this.onTap,
   });
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+  final Color? color;
+  final List<BoxShadow>? shadow;
+  final BorderRadiusGeometry? borderRadius;
+  final Border? border;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

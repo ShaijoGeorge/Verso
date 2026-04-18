@@ -1,25 +1,26 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'transitions/animated_branch_container.dart';
-import 'transitions/app_page_transitions.dart';
-import 'widgets/main_wrapper.dart';
-import 'widgets/not_found_screen.dart';
-import '../data/bible_data.dart';
-import '../features/home/screens/home_screen.dart';
-import '../features/reading/screens/bible_screen.dart';
-import '../features/stats/screens/stats_screen.dart';
-import '../features/reading/screens/chapters_screen.dart';
-import '../features/auth/screens/login_screen.dart';
-import '../features/auth/screens/forgot_password_screen.dart';
-import '../features/auth/screens/update_password_screen.dart';
-import '../features/auth/screens/profile_screen.dart';
-import '../features/settings/screens/settings_screen.dart';
-import '../features/intro/screens/splash_screen.dart';
-import '../features/stats/screens/activity_log_screen.dart';
-import '../features/intro/screens/onboarding_screen.dart';
+import 'package:verso/core/transitions/animated_branch_container.dart';
+import 'package:verso/core/transitions/app_page_transitions.dart';
+import 'package:verso/core/widgets/main_wrapper.dart';
+import 'package:verso/core/widgets/not_found_screen.dart';
+import 'package:verso/data/bible_data.dart';
+import 'package:verso/features/auth/screens/forgot_password_screen.dart';
+import 'package:verso/features/auth/screens/login_screen.dart';
+import 'package:verso/features/auth/screens/profile_screen.dart';
+import 'package:verso/features/auth/screens/update_password_screen.dart';
+import 'package:verso/features/home/screens/home_screen.dart';
+import 'package:verso/features/intro/screens/onboarding_screen.dart';
+import 'package:verso/features/intro/screens/splash_screen.dart';
+import 'package:verso/features/reading/screens/bible_screen.dart';
+import 'package:verso/features/reading/screens/chapters_screen.dart';
+import 'package:verso/features/settings/screens/settings_screen.dart';
+import 'package:verso/features/stats/screens/activity_log_screen.dart';
+import 'package:verso/features/stats/screens/stats_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   // Listen to the Supabase Auth Stream directly
@@ -145,8 +146,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           // This handles cases where the auth state changed faster than the router could react.
           final session = Supabase.instance.client.auth.currentSession;
           if (session != null) {
-            // We use Future.microtask to navigate after the build frame finishes
-            Future.microtask(() => context.go('/home'));
+            // Capture the navigator before the async gap to avoid BuildContext misuse.
+            final go = context.go;
+            Future.microtask(() => go('/home'));
           }
 
           return AppPageTransitions.fade(
@@ -202,12 +204,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/stats',
                 pageBuilder: (context, state) {
                   final tab = state.uri.queryParameters['tab'];
-                  int initialIndex = 0;
-                  if (tab == 'weekly')
+                  var initialIndex = 0;
+                  if (tab == 'weekly') {
                     initialIndex = 1;
-                  else if (tab == 'monthly')
+                  } else if (tab == 'monthly') {
                     initialIndex = 2;
-                  else if (tab == 'yearly') initialIndex = 3;
+                  } else if (tab == 'yearly') {
+                    initialIndex = 3;
+                  }
                   return AppPageTransitions.fadeThrough(
                     key: state.pageKey,
                     child: StatsScreen(initialIndex: initialIndex),
