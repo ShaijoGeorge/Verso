@@ -191,6 +191,60 @@ class YearlyShimmer extends StatelessWidget {
   }
 }
 
+/// Shimmer skeleton for the Activity Log (Journal) tab
+class ActivityLogShimmer extends StatelessWidget {
+  const ActivityLogShimmer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(top: 16, bottom: 100),
+      child: _ShimmerWrap(
+        child: Column(
+          children: [
+            // Pill for Date Header
+            const Center(
+              child: _ShimmerBox(width: 120, height: 28, borderRadius: 14),
+            ),
+            const Gap(24),
+            // Timeline Cards
+            ...List.generate(
+              4,
+              (index) => Padding(
+                padding: const EdgeInsets.only(bottom: 24, left: 20, right: 20),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Timeline axis
+                    Column(
+                      children: [
+                        const _ShimmerBox(width: 2, height: 16),
+                        const Gap(2),
+                        const _ShimmerBox(
+                          width: 28,
+                          height: 28,
+                          borderRadius: 14,
+                        ),
+                        const Gap(2),
+                        _ShimmerBox(width: 2, height: index == 3 ? 0 : 60),
+                      ],
+                    ),
+                    const Gap(16),
+                    // Card
+                    const Expanded(
+                      child: _ShimmerBox(height: 100, borderRadius: 16),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ─────────────────────────────────────────────
 // Internal helpers
 // ─────────────────────────────────────────────

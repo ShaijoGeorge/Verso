@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/features/stats/providers/activity_providers.dart';
+import 'package:verso/features/stats/widgets/shimmer_skeletons.dart';
 
 class ActivityLogScreen extends ConsumerStatefulWidget {
   const ActivityLogScreen({super.key});
@@ -37,7 +38,7 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
         // Content
         Expanded(
           child: activityAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const ActivityLogShimmer(),
             error: (e, _) => ErrorStateWidget(
               error: e,
               onRetry: () => ref.invalidate(activityLogProvider),
@@ -146,8 +147,8 @@ class _FilterBar extends StatelessWidget {
           // Book Filter Chip
           Expanded(
             child: booksAsync.when(
-              loading: () => const SizedBox.shrink(),
-              error: (_, __) => const SizedBox.shrink(),
+              loading: () => _buildPlaceholder(colorScheme),
+              error: (_, __) => _buildPlaceholder(colorScheme),
               data: (books) {
                 final selectedBook = filter.bookId != null
                     ? kBibleBooks.firstWhere((b) => b.id == filter.bookId)
@@ -258,24 +259,37 @@ class _FilterBar extends StatelessWidget {
           // Clear Filters button
           if (filter.isActive) ...[
             const Gap(8),
-            Container(
-              decoration: BoxDecoration(
-                color: colorScheme.errorContainer.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: IconButton(
-                icon: Icon(
-                  Icons.filter_list_off,
-                  size: 20,
-                  color: colorScheme.error,
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                ref.read(activityFilterStateProvider.notifier).clearFilters();
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: colorScheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                tooltip: 'Clear Filters',
-                padding: const EdgeInsets.all(8),
-                constraints: const BoxConstraints(),
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  ref.read(activityFilterStateProvider.notifier).clearFilters();
-                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.clear_rounded,
+                      size: 16,
+                      color: colorScheme.onSecondaryContainer,
+                    ),
+                    const Gap(6),
+                    Text(
+                      'Clear',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSecondaryContainer,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -284,11 +298,67 @@ class _FilterBar extends StatelessWidget {
     );
   }
 
+  Widget _buildPlaceholder(ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.menu_book_rounded,
+            size: 16,
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+          ),
+          const Gap(6),
+          Flexible(
+            child: Text(
+              'All Books',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const Gap(4),
+          Icon(
+            Icons.keyboard_arrow_down_rounded,
+            size: 18,
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _dateLabel() {
     if (filter.startDate == null) return 'All Time';
-    final fmt = DateFormat('MMM d');
-    if (filter.endDate == null) return 'From ${fmt.format(filter.startDate!)}';
-    return '${fmt.format(filter.startDate!)} – ${fmt.format(filter.endDate!)}';
+
+    final now = DateTime.now();
+    final start = filter.startDate!;
+    final end = filter.endDate;
+
+    final startFmt = DateFormat(start.year == now.year ? 'MMM d' : 'MMM d, y');
+
+    if (end == null) {
+      return 'From ${startFmt.format(start)}';
+    }
+
+    // If both dates are in the same year, but NOT the current year,
+    // only append the year to the end date (e.g. "Dec 1 - Dec 31, 2025").
+    if (start.year == end.year && start.year != now.year) {
+      final startFmtNoYear = DateFormat('MMM d');
+      final endFmtYear = DateFormat('MMM d, y');
+      return '${startFmtNoYear.format(start)} – ${endFmtYear.format(end)}';
+    }
+
+    final endFmt = DateFormat(end.year == now.year ? 'MMM d' : 'MMM d, y');
+    return '${startFmt.format(start)} – ${endFmt.format(end)}';
   }
 
   void _showBookPicker(BuildContext context, List<BibleBook> books) {
@@ -468,7 +538,10 @@ class _StickyDateHeaderDelegate extends SliverPersistentHeaderDelegate {
   String _formatDateLabel(DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
+
+    // Using calendar math instead of subtract(Duration())
+    // prevents Daylight Saving Time 23/25 hour bugs!
+    final yesterday = DateTime(now.year, now.month, now.day - 1);
     final checkDate = DateTime(date.year, date.month, date.day);
 
     if (checkDate == today) return 'Today';
