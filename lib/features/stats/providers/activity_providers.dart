@@ -231,7 +231,9 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
       final lastGroup = groups.last;
       final timeDiff =
           lastGroup.timestamp.difference(entry.readAt!).inMinutes.abs();
-      if (lastGroup.book.id == book.id && timeDiff < 2) {
+      if (lastGroup.book.id == book.id &&
+          lastGroup.timestamp.day == entry.readAt!.day &&
+          timeDiff < 2) {
         lastGroup.chapters.add(entry.chapterNumber);
         if (isFinisher) lastGroup.isFinish = true;
         if (lastGroup.chapters.length > 5) {
