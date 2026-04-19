@@ -2,15 +2,13 @@ name: Verso PR Checks
 
 on:
   pull_request:
-    # Trigger the pipeline on PRs targeting ANY of these three integration branches
+    # Trigger the pipeline on PRs targeting ANY of these integration branches
     branches: 
-      - test
       - dev
       - master
   push:
-    # Trigger the pipeline on direct pushes to these three integration branches
+    # Trigger the pipeline on direct pushes to these integration branches
     branches:
-      - test
       - dev
       - master
 
@@ -55,8 +53,6 @@ jobs:
   build_android:
     name: Build Android APK
     needs: analyze_and_test
-    # Optimization: Only run APK builds when merging/pushing to dev or master.
-    if: github.base_ref == 'dev' || github.base_ref == 'master' || github.ref_name == 'dev' || github.ref_name == 'master'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -89,9 +85,6 @@ jobs:
   build_ios:
     name: Build iOS App
     needs: analyze_and_test
-    # Optimization: Only run expensive Mac builds when merging/pushing to dev or master.
-    # Feature PRs to 'test' will skip this to save GitHub Action minutes.
-    if: github.base_ref == 'dev' || github.base_ref == 'master' || github.ref_name == 'dev' || github.ref_name == 'master'
     runs-on: macos-latest
     steps:
       - name: Checkout code
