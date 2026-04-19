@@ -75,7 +75,7 @@ class ActivityGroup {
   final DateTime timestamp;
   final BibleBook book;
   final List<int> chapters;
-  final bool isBulkAction; // Was this likely a "Mark All Read"?
+  bool isBulkAction; // Was this likely a "Mark All Read"?
   bool isFinish;
 
   String get timeOfDay {
@@ -234,6 +234,9 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
       if (lastGroup.book.id == book.id && timeDiff < 2) {
         lastGroup.chapters.add(entry.chapterNumber);
         if (isFinisher) lastGroup.isFinish = true;
+        if (lastGroup.chapters.length > 5) {
+          lastGroup.isBulkAction = true;
+        }
         continue;
       }
     }
