@@ -211,7 +211,11 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
       continue;
     }
 
-    final book = kBibleBooks.firstWhere((b) => b.id == entry.bookId);
+    final book = kBibleBooks.firstWhereOrNull((b) => b.id == entry.bookId);
+    if (book == null) {
+      // Skip this orphan entry gracefully to prevent crashing
+      continue;
+    }
 
     // Check finishing
     var isFinisher = false;
