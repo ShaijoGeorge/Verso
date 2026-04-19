@@ -538,7 +538,10 @@ class _StickyDateHeaderDelegate extends SliverPersistentHeaderDelegate {
   String _formatDateLabel(DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
+    
+    // Using calendar math instead of subtract(Duration())
+    // prevents Daylight Saving Time 23/25 hour bugs!
+    final yesterday = DateTime(now.year, now.month, now.day - 1);
     final checkDate = DateTime(date.year, date.month, date.day);
 
     if (checkDate == today) return 'Today';
