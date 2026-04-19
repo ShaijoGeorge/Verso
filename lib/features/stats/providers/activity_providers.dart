@@ -83,7 +83,7 @@ class ActivityGroup {
     if (hour < 5) return 'Late Night 🌙';
     if (hour < 12) return 'Morning 🌅';
     if (hour < 17) return 'Afternoon ☀️';
-    return 'Evening 🛋️';
+    return 'Evening 🌇';
   }
 
   String get description {
