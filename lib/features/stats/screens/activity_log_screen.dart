@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/features/stats/providers/activity_providers.dart';
+import 'package:verso/features/stats/widgets/shimmer_skeletons.dart';
 
 class ActivityLogScreen extends ConsumerStatefulWidget {
   const ActivityLogScreen({super.key});
@@ -37,7 +38,7 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
         // Content
         Expanded(
           child: activityAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const ActivityLogShimmer(),
             error: (e, _) => ErrorStateWidget(
               error: e,
               onRetry: () => ref.invalidate(activityLogProvider),
