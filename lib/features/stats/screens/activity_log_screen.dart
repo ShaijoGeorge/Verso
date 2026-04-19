@@ -147,8 +147,8 @@ class _FilterBar extends StatelessWidget {
           // Book Filter Chip
           Expanded(
             child: booksAsync.when(
-              loading: () => const SizedBox.shrink(),
-              error: (_, __) => const SizedBox.shrink(),
+              loading: () => _buildPlaceholder(colorScheme),
+              error: (_, __) => _buildPlaceholder(colorScheme),
               data: (books) {
                 final selectedBook = filter.bookId != null
                     ? kBibleBooks.firstWhere((b) => b.id == filter.bookId)
@@ -280,6 +280,44 @@ class _FilterBar extends StatelessWidget {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder(ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.menu_book_rounded,
+            size: 16,
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+          ),
+          const Gap(6),
+          Flexible(
+            child: Text(
+              'All Books',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const Gap(4),
+          Icon(
+            Icons.keyboard_arrow_down_rounded,
+            size: 18,
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+          ),
         ],
       ),
     );
