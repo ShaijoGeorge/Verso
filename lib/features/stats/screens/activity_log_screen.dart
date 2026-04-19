@@ -325,9 +325,27 @@ class _FilterBar extends StatelessWidget {
 
   String _dateLabel() {
     if (filter.startDate == null) return 'All Time';
-    final fmt = DateFormat('MMM d');
-    if (filter.endDate == null) return 'From ${fmt.format(filter.startDate!)}';
-    return '${fmt.format(filter.startDate!)} – ${fmt.format(filter.endDate!)}';
+    
+    final now = DateTime.now();
+    final start = filter.startDate!;
+    final end = filter.endDate;
+
+    final startFmt = DateFormat(start.year == now.year ? 'MMM d' : 'MMM d, y');
+    
+    if (end == null) {
+      return 'From ${startFmt.format(start)}';
+    }
+
+    // If both dates are in the same year, but NOT the current year,
+    // only append the year to the end date (e.g. "Dec 1 - Dec 31, 2025").
+    if (start.year == end.year && start.year != now.year) {
+      final startFmtNoYear = DateFormat('MMM d');
+      final endFmtYear = DateFormat('MMM d, y');
+      return '${startFmtNoYear.format(start)} – ${endFmtYear.format(end)}';
+    }
+
+    final endFmt = DateFormat(end.year == now.year ? 'MMM d' : 'MMM d, y');
+    return '${startFmt.format(start)} – ${endFmt.format(end)}';
   }
 
   void _showBookPicker(BuildContext context, List<BibleBook> books) {
