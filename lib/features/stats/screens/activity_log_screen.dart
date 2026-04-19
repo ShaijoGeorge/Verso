@@ -338,13 +338,13 @@ class _FilterBar extends StatelessWidget {
 
   String _dateLabel() {
     if (filter.startDate == null) return 'All Time';
-    
+
     final now = DateTime.now();
     final start = filter.startDate!;
     final end = filter.endDate;
 
     final startFmt = DateFormat(start.year == now.year ? 'MMM d' : 'MMM d, y');
-    
+
     if (end == null) {
       return 'From ${startFmt.format(start)}';
     }
@@ -538,7 +538,7 @@ class _StickyDateHeaderDelegate extends SliverPersistentHeaderDelegate {
   String _formatDateLabel(DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    
+
     // Using calendar math instead of subtract(Duration())
     // prevents Daylight Saving Time 23/25 hour bugs!
     final yesterday = DateTime(now.year, now.month, now.day - 1);
