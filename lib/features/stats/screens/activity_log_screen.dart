@@ -259,24 +259,37 @@ class _FilterBar extends StatelessWidget {
           // Clear Filters button
           if (filter.isActive) ...[
             const Gap(8),
-            Container(
-              decoration: BoxDecoration(
-                color: colorScheme.errorContainer.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: IconButton(
-                icon: Icon(
-                  Icons.filter_list_off,
-                  size: 20,
-                  color: colorScheme.error,
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                ref.read(activityFilterStateProvider.notifier).clearFilters();
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: colorScheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                tooltip: 'Clear Filters',
-                padding: const EdgeInsets.all(8),
-                constraints: const BoxConstraints(),
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  ref.read(activityFilterStateProvider.notifier).clearFilters();
-                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.clear_rounded,
+                      size: 16,
+                      color: colorScheme.onSecondaryContainer,
+                    ),
+                    const Gap(6),
+                    Text(
+                      'Clear',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSecondaryContainer,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
