@@ -493,7 +493,7 @@ class _ActivityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isBulk = group.chapters.length > 5;
+    final isBulk = group.isBulkAction;
 
     return IntrinsicHeight(
       child: Row(
