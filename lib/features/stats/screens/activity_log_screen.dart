@@ -478,7 +478,7 @@ class _StickyDateHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(covariant _StickyDateHeaderDelegate oldDelegate) {
-    return date != oldDelegate.date;
+    return date != oldDelegate.date || colorScheme != oldDelegate.colorScheme;
   }
 }
 
