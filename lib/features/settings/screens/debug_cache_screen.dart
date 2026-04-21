@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:verso/core/design/design.dart';
+import 'package:verso/features/reading/providers/reading_providers.dart';
 
-class DebugCacheScreen extends StatefulWidget {
+class DebugCacheScreen extends ConsumerStatefulWidget {
   const DebugCacheScreen({super.key});
 
   @override
-  State<DebugCacheScreen> createState() => _DebugCacheScreenState();
+  ConsumerState<DebugCacheScreen> createState() => _DebugCacheScreenState();
 }
 
-class _DebugCacheScreenState extends State<DebugCacheScreen>
+class _DebugCacheScreenState extends ConsumerState<DebugCacheScreen>
     with SingleTickerProviderStateMixin {
   Map<String, dynamic> _allPrefs = {};
   bool _isLoading = true;
@@ -145,8 +147,13 @@ class _DebugCacheScreenState extends State<DebugCacheScreen>
     );
 
     if ((confirm ?? false) && mounted) {
+      // Clear SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
+      
+      // Clear Database Cache
+      await ref.read(offlineCacheServiceProvider).clearAll();
+      
       _loadCache();
       if (mounted) {
         VersoSnackbar.success(
