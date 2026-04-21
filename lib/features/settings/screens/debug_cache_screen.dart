@@ -150,10 +150,10 @@ class _DebugCacheScreenState extends ConsumerState<DebugCacheScreen>
       // Clear SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
-      
+
       // Clear Database Cache
       await ref.read(offlineCacheServiceProvider).clearAll();
-      
+
       _loadCache();
       if (mounted) {
         VersoSnackbar.success(

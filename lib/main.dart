@@ -95,11 +95,6 @@ class _BibliaAppState extends ConsumerState<BibliaApp> {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
 
-      // A duration of 500ms - 800ms is usually good for a "luxurious" feel.
-      themeAnimationDuration: const Duration(milliseconds: 600),
-      themeAnimationCurve:
-          Curves.easeInOutCubic, // Starts slow, speeds up, ends slow
-
       // Determine the ThemeMode based on the loaded settings
       themeMode: settingsAsync.when(
         data: (settings) =>
