@@ -3,12 +3,13 @@ import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/typography.dart';
 
-/// Builds light and dark [ThemeData] from design tokens.
+/// Builds light, dark, and AMOLED [ThemeData] from design tokens.
 abstract final class AppTheme {
   static final ThemeData lightTheme = _build(Brightness.light);
   static final ThemeData darkTheme = _build(Brightness.dark);
+  static final ThemeData amoledTheme = _build(Brightness.dark, amoled: true);
 
-  static ThemeData _build(Brightness brightness) {
+  static ThemeData _build(Brightness brightness, {bool amoled = false}) {
     final isLight = brightness == Brightness.light;
 
     final colorScheme = ColorScheme(
@@ -30,17 +31,23 @@ abstract final class AppTheme {
       onSecondaryContainer: isLight
           ? AppColors.onPrimaryContainerLight
           : AppColors.onPrimaryContainerDark,
-      surface: isLight ? AppColors.surfaceLight : AppColors.surfaceDark,
+      surface: isLight
+          ? AppColors.surfaceLight
+          : (amoled ? AppColors.surfaceAmoled : AppColors.surfaceDark),
       onSurface: isLight ? AppColors.onSurfaceLight : AppColors.onSurfaceDark,
       onSurfaceVariant: isLight
           ? AppColors.onSurfaceVariantLight
           : AppColors.onSurfaceVariantDark,
       error: isLight ? AppColors.errorLight : AppColors.errorDark,
       onError: Colors.white,
-      outline: isLight ? AppColors.outlineLight : AppColors.outlineDark,
+      outline: isLight
+          ? AppColors.outlineLight
+          : (amoled ? AppColors.outlineAmoled : AppColors.outlineDark),
       outlineVariant: isLight
           ? AppColors.outlineVariantLight
-          : AppColors.outlineVariantDark,
+          : (amoled
+              ? AppColors.outlineVariantAmoled
+              : AppColors.outlineVariantDark),
       surfaceContainerHighest:
           isLight ? AppColors.primaryContainerLight : AppColors.surfaceDark,
     );
@@ -50,16 +57,18 @@ abstract final class AppTheme {
       displayColor: colorScheme.primary,
     );
 
+    final bgColor = isLight
+        ? AppColors.backgroundLight
+        : (amoled ? AppColors.backgroundAmoled : AppColors.backgroundDark);
+
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
       colorScheme: colorScheme,
       textTheme: textTheme,
-      scaffoldBackgroundColor:
-          isLight ? AppColors.backgroundLight : AppColors.backgroundDark,
+      scaffoldBackgroundColor: bgColor,
       appBarTheme: AppBarTheme(
-        backgroundColor:
-            isLight ? AppColors.backgroundLight : AppColors.backgroundDark,
+        backgroundColor: bgColor,
         foregroundColor: colorScheme.onSurface,
         centerTitle: true,
         elevation: 0,
@@ -78,8 +87,9 @@ abstract final class AppTheme {
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor:
-            isLight ? AppColors.surfaceLight : AppColors.surfaceDark,
+        backgroundColor: isLight
+            ? AppColors.surfaceLight
+            : (amoled ? AppColors.surfaceAmoled : AppColors.surfaceDark),
         indicatorColor:
             colorScheme.primary.withValues(alpha: isLight ? 0.15 : 0.2),
         labelTextStyle: WidgetStateProperty.all(
