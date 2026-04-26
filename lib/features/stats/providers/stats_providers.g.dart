@@ -40,7 +40,7 @@ final class UserStatsProvider extends $FunctionalProvider<AsyncValue<UserStats>,
   }
 }
 
-String _$userStatsHash() => r'0064337a131769b25b6a991921ce49bc73243b83';
+String _$userStatsHash() => r'405e9e01ae6ce71adbd8684c029978c135268147';
 
 @ProviderFor(detailedStats)
 final detailedStatsProvider = DetailedStatsProvider._();
@@ -74,7 +74,7 @@ final class DetailedStatsProvider extends $FunctionalProvider<
   }
 }
 
-String _$detailedStatsHash() => r'af245c22be89a0b75e73432d5e64c666d95ef2b0';
+String _$detailedStatsHash() => r'db87fb2aae3da1fbfce7162e3ed85cb21682dd3e';
 
 @ProviderFor(WeeklyOffset)
 final weeklyOffsetProvider = WeeklyOffsetProvider._();
@@ -107,7 +107,7 @@ final class WeeklyOffsetProvider extends $NotifierProvider<WeeklyOffset, int> {
   }
 }
 
-String _$weeklyOffsetHash() => r'7586d881225eb03c95ec1e6cc7b46d4dd10f5e27';
+String _$weeklyOffsetHash() => r'e34de43d093f6c3637fbe1ff7bfb52457e20e787';
 
 abstract class _$WeeklyOffset extends $Notifier<int> {
   int build();
@@ -173,7 +173,7 @@ final class WeeklyChartStatsProvider extends $FunctionalProvider<
   }
 }
 
-String _$weeklyChartStatsHash() => r'e3d8aa0ba7e381009534abb4a2f0be5847033439';
+String _$weeklyChartStatsHash() => r'bae78161f456c3679be79f916b8964ef9e5226ef';
 
 final class WeeklyChartStatsFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<WeeklyChartData>, int> {
@@ -227,7 +227,7 @@ final class MonthlyOffsetProvider
   }
 }
 
-String _$monthlyOffsetHash() => r'c295255736b2923d758de20955c270ed0e3e4401';
+String _$monthlyOffsetHash() => r'28fb0e31b4841905d141b28aafaf41a00a98e38c';
 
 abstract class _$MonthlyOffset extends $Notifier<int> {
   int build();
@@ -296,7 +296,7 @@ final class MonthlyChartStatsProvider extends $FunctionalProvider<
   }
 }
 
-String _$monthlyChartStatsHash() => r'5682cc01b45f9519dff2558396c03e0e502e71cf';
+String _$monthlyChartStatsHash() => r'faf27608a1ef0540b3cef6e1b745ca5893f752f4';
 
 final class MonthlyChartStatsFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<MonthlyChartData>, int> {
@@ -349,7 +349,7 @@ final class YearlyOffsetProvider extends $NotifierProvider<YearlyOffset, int> {
   }
 }
 
-String _$yearlyOffsetHash() => r'02b760454fde36018e7e69b8bd0cacc8b2bd249c';
+String _$yearlyOffsetHash() => r'43685034da1fac30b779158ac181d08b0c8df21e';
 
 abstract class _$YearlyOffset extends $Notifier<int> {
   int build();
@@ -415,7 +415,7 @@ final class YearlyChartStatsProvider extends $FunctionalProvider<
   }
 }
 
-String _$yearlyChartStatsHash() => r'836a2266486c6283b1a0e536c4e3269469ea44aa';
+String _$yearlyChartStatsHash() => r'6454eca743a53e053cfc2214851b79868b913bcb';
 
 final class YearlyChartStatsFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<YearlyChartData>, int> {
