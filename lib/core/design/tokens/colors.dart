@@ -72,4 +72,10 @@ abstract final class AppColors {
 
   static const Color outlineVariantLight = Color(0xFFE8E8E8);
   static const Color outlineVariantDark = Color(0xFF1F1F23);
+
+  // ──────────────── AMOLED overrides (true black) ────────────────
+  static const Color backgroundAmoled = Color(0xFF000000);
+  static const Color surfaceAmoled = Color(0xFF000000);
+  static const Color outlineAmoled = Color(0xFF1A1A1A);
+  static const Color outlineVariantAmoled = Color(0xFF0F0F0F);
 }

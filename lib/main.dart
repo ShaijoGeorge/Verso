@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -9,6 +10,7 @@ import 'package:verso/core/providers/package_info_provider.dart';
 import 'package:verso/core/router.dart';
 import 'package:verso/core/utils/verso_error_observer.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
+import 'package:verso/features/settings/providers/theme_resolver.dart';
 import 'package:verso/features/settings/services/notification_service.dart';
 
 void main() async {
@@ -51,10 +53,16 @@ class BibliaApp extends ConsumerStatefulWidget {
   ConsumerState<BibliaApp> createState() => _BibliaAppState();
 }
 
-class _BibliaAppState extends ConsumerState<BibliaApp> {
+class _BibliaAppState extends ConsumerState<BibliaApp>
+    with WidgetsBindingObserver {
+  Brightness _systemBrightness =
+      SchedulerBinding.instance.platformDispatcher.platformBrightness;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
     // Listen for the "Password Recovery" event
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       final event = data.event;
@@ -66,6 +74,29 @@ class _BibliaAppState extends ConsumerState<BibliaApp> {
 
     // Re-schedule reminders on app start
     _initializeReminders();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    final brightness =
+        SchedulerBinding.instance.platformDispatcher.platformBrightness;
+    if (brightness != _systemBrightness) {
+      setState(() => _systemBrightness = brightness);
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Re-evaluate schedule boundaries when returning from background.
+      ref.invalidate(scheduleTickStreamProvider);
+    }
   }
 
   Future<void> _initializeReminders() async {
@@ -86,22 +117,14 @@ class _BibliaAppState extends ConsumerState<BibliaApp> {
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
-    // Watch the settings provider to get the current theme preference
-    final settingsAsync = ref.watch(currentSettingsProvider);
+    final resolved = ref.watch(resolvedThemeProvider(_systemBrightness));
 
     return MaterialApp.router(
       title: 'Verso',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-
-      // Determine the ThemeMode based on the loaded settings
-      themeMode: settingsAsync.when(
-        data: (settings) =>
-            settings.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-        loading: () => ThemeMode.system, // Default while loading
-        error: (_, __) => ThemeMode.system, // Default on error
-      ),
+      darkTheme: resolved.darkTheme,
+      themeMode: resolved.themeMode,
 
       // Connect GoRouter
       routerConfig: router,
