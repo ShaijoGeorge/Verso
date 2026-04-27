@@ -376,6 +376,8 @@ class _QuickStatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final isAmoled = !isLight && scheme.surface == AppColors.surfaceAmoled;
 
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -386,7 +388,9 @@ class _QuickStatCard extends StatelessWidget {
         color: scheme.surface,
         borderRadius: AppRadii.borderRadiusLG,
         border: Border.all(
-          color: scheme.outline.withValues(alpha: 0.08),
+          color: isAmoled
+              ? scheme.outline
+              : scheme.outline.withValues(alpha: 0.08),
         ),
         boxShadow: AppShadows.sm,
       ),
@@ -839,6 +843,8 @@ class _DailyVerseCard extends StatelessWidget {
     required bool isLight,
     required Widget child,
   }) {
+    final isAmoled = !isLight && scheme.surface == AppColors.surfaceAmoled;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
@@ -851,7 +857,9 @@ class _DailyVerseCard extends StatelessWidget {
             : scheme.secondaryContainer.withValues(alpha: 0.12),
         borderRadius: AppRadii.borderRadiusLG,
         border: Border.all(
-          color: scheme.secondary.withValues(alpha: isLight ? 0.12 : 0.08),
+          color: isAmoled
+              ? scheme.outline
+              : scheme.secondary.withValues(alpha: isLight ? 0.12 : 0.08),
         ),
       ),
       child: child,

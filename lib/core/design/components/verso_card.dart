@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/shadows.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
@@ -33,6 +34,7 @@ class VersoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
+    final isAmoled = !isLight && scheme.surface == AppColors.surfaceAmoled;
 
     final content = Container(
       padding: padding ?? Spacing.cardPadding,
@@ -41,7 +43,9 @@ class VersoCard extends StatelessWidget {
         borderRadius: borderRadius ?? AppRadii.borderRadiusLG,
         border: border ??
             Border.all(
-              color: scheme.outline.withValues(alpha: isLight ? 0.5 : 0.15),
+              color: isAmoled
+                  ? scheme.outline
+                  : scheme.outline.withValues(alpha: isLight ? 0.5 : 0.15),
             ),
         boxShadow: shadow ?? AppShadows.sm,
       ),

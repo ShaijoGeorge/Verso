@@ -188,9 +188,11 @@ class _VersoBottomNav extends StatelessWidget {
             isLight ? scheme.surface : scheme.surface.withValues(alpha: 0.95),
         borderRadius: AppRadii.borderRadiusXL,
         border: Border.all(
-          color: isLight 
-              ? scheme.outline.withValues(alpha: 0.1) 
-              : (isAmoled ? scheme.outline : scheme.outline.withValues(alpha: 0.2)),
+          color: isLight
+              ? scheme.outline.withValues(alpha: 0.1)
+              : (isAmoled
+                  ? scheme.outline
+                  : scheme.outline.withValues(alpha: 0.2)),
         ),
         boxShadow: [
           BoxShadow(

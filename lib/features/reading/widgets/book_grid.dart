@@ -70,8 +70,8 @@ class _BookGridState extends State<BookGrid> {
                   color: scheme.primary.withValues(alpha: 0.5),
                 ),
                 filled: true,
-                fillColor: isAmoled 
-                    ? scheme.surfaceContainerHighest 
+                fillColor: isAmoled
+                    ? scheme.surfaceContainerHighest
                     : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),

@@ -22,8 +22,8 @@ class BibleScreen extends StatelessWidget {
           Container(
             margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             decoration: BoxDecoration(
-              color: isAmoled 
-                  ? scheme.surfaceContainerHighest 
+              color: isAmoled
+                  ? scheme.surfaceContainerHighest
                   : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(16),
             ),
