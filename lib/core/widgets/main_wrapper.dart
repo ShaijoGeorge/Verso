@@ -167,6 +167,7 @@ class _VersoBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
+    final isAmoled = !isLight && scheme.surface == const Color(0xFF000000);
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     // Map selected index -> alignment x in the range [-1, 1] so the pill sits
@@ -186,7 +187,9 @@ class _VersoBottomNav extends StatelessWidget {
             isLight ? scheme.surface : scheme.surface.withValues(alpha: 0.95),
         borderRadius: AppRadii.borderRadiusXL,
         border: Border.all(
-          color: scheme.outline.withValues(alpha: isLight ? 0.1 : 0.08),
+          color: isLight 
+              ? scheme.outline.withValues(alpha: 0.1) 
+              : (isAmoled ? scheme.outline : scheme.outline.withValues(alpha: 0.2)),
         ),
         boxShadow: [
           BoxShadow(
