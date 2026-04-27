@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:verso/core/design/extensions.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 import 'package:verso/features/stats/widgets/time_period_navigator.dart';
 
@@ -224,12 +225,14 @@ class WeeklyTab extends ConsumerWidget {
                                       : count > 0
                                           ? isLight
                                               ? [
-                                                  const Color(0xFF7EB8E0),
-                                                  const Color(0xFFBBDEFB),
+                                                  context
+                                                      .appColors.primaryAccent,
+                                                  context.appColors.ntContainer,
                                                 ]
                                               : [
-                                                  const Color(0xFF1B3A5C),
-                                                  const Color(0xFF7EB8E0),
+                                                  context.colors.primary,
+                                                  context
+                                                      .appColors.primaryAccent,
                                                 ]
                                           : [
                                               scheme.outline

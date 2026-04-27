@@ -782,7 +782,7 @@ class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = (isDark ? const Color(0xFFFFFFFF) : const Color(0xFF000000))
+      ..color = (isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight)
           .withValues(alpha: 0.03)
       ..strokeWidth = 0.5;
 
