@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/providers/connectivity_provider.dart';
 import 'package:verso/features/auth/widgets/profile_drawer.dart';
@@ -167,7 +168,7 @@ class _VersoBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final isAmoled = !isLight && scheme.surface == const Color(0xFF000000);
+    final isAmoled = !isLight && scheme.surface == AppColors.surfaceAmoled;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     // Map selected index -> alignment x in the range [-1, 1] so the pill sits

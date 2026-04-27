@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 import 'package:verso/features/reading/widgets/book_progress_card.dart';
@@ -42,6 +43,10 @@ class _BookGridState extends State<BookGrid> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final isAmoled = !isLight && scheme.surface == AppColors.surfaceAmoled;
+
     final groupedBooks = _groupBooks(widget.books);
     final sortedCategories =
         BookCategory.values.where(groupedBooks.containsKey).toList();
@@ -62,16 +67,12 @@ class _BookGridState extends State<BookGrid> {
                 hintText: 'Search books...',
                 prefixIcon: Icon(
                   Icons.search_rounded,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.5),
+                  color: scheme.primary.withValues(alpha: 0.5),
                 ),
                 filled: true,
-                fillColor: Theme.of(context)
-                    .colorScheme
-                    .surfaceContainerHighest
-                    .withValues(alpha: 0.5),
+                fillColor: isAmoled 
+                    ? scheme.surfaceContainerHighest 
+                    : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,

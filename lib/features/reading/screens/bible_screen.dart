@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/features/reading/screens/new_testament_screen.dart';
 import 'package:verso/features/reading/screens/old_testament_screen.dart';
 
@@ -7,6 +8,10 @@ class BibleScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final isAmoled = !isLight && scheme.surface == AppColors.surfaceAmoled;
+
     // DefaultTabController automatically manages the state for the TabBar and TabBarView
     return DefaultTabController(
       length: 2,
@@ -17,10 +22,9 @@ class BibleScreen extends StatelessWidget {
           Container(
             margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .surfaceContainerHighest
-                  .withValues(alpha: 0.5),
+              color: isAmoled 
+                  ? scheme.surfaceContainerHighest 
+                  : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Padding(
@@ -29,26 +33,22 @@ class BibleScreen extends StatelessWidget {
                 indicatorSize: TabBarIndicatorSize.tab,
                 dividerColor: Colors.transparent, // Removes standard underline
                 indicator: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
+                  color: scheme.surface,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .shadow
-                          .withValues(alpha: 0.05),
+                      color: scheme.shadow.withValues(alpha: 0.05),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
                   ],
                 ),
-                labelColor: Theme.of(context).colorScheme.primary,
+                labelColor: scheme.primary,
                 labelStyle: Theme.of(context)
                     .textTheme
                     .titleSmall
                     ?.copyWith(fontWeight: FontWeight.bold),
-                unselectedLabelColor:
-                    Theme.of(context).colorScheme.onSurfaceVariant,
+                unselectedLabelColor: scheme.onSurfaceVariant,
                 tabs: const [
                   Tab(
                     height: 40,
