@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
+import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/features/stats/providers/activity_providers.dart';
@@ -517,8 +518,8 @@ class _StickyDateHeaderDelegate extends SliverPersistentHeaderDelegate {
             ),
             child: Text(
               _formatDateLabel(date),
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: colorScheme.onPrimary,
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
               ),
@@ -578,7 +579,7 @@ class _ActivityCard extends StatelessWidget {
               Container(
                 width: 2,
                 height: 16,
-                color: Colors.grey.withValues(alpha: 0.3),
+                color: colorScheme.onSurface.withValues(alpha: 0.12),
               ),
               // Icon badge
               Container(
@@ -587,7 +588,7 @@ class _ActivityCard extends StatelessWidget {
                   color: group.isFinish
                       ? Colors.amber.shade100
                       : (isBulk
-                          ? Colors.orange.withValues(alpha: 0.2)
+                          ? context.appColors.otColor.withValues(alpha: 0.15)
                           : colorScheme.primaryContainer),
                   shape: BoxShape.circle,
                   boxShadow: group.isFinish
@@ -607,7 +608,9 @@ class _ActivityCard extends StatelessWidget {
                   size: 16,
                   color: group.isFinish
                       ? Colors.amber.shade800
-                      : (isBulk ? Colors.orange : colorScheme.primary),
+                      : (isBulk
+                          ? context.appColors.otColor
+                          : colorScheme.primary),
                 ),
               ),
               Expanded(
@@ -615,7 +618,7 @@ class _ActivityCard extends StatelessWidget {
                   width: 2,
                   color: isLast
                       ? Colors.transparent
-                      : Colors.grey.withValues(alpha: 0.3),
+                      : colorScheme.onSurface.withValues(alpha: 0.12),
                 ),
               ),
             ],
@@ -696,8 +699,8 @@ class _StandardCard extends StatelessWidget {
               if (isBulk)
                 _Tag(
                   text: 'Mass Update',
-                  color: Colors.orange.withValues(alpha: 0.1),
-                  textColor: Colors.orange,
+                  color: context.appColors.otColor.withValues(alpha: 0.12),
+                  textColor: context.appColors.otColor,
                 ),
             ],
           ),
@@ -937,7 +940,7 @@ class _EmptyState extends StatelessWidget {
           Icon(
             isFiltered ? Icons.filter_list_off_rounded : Icons.history_edu,
             size: 64,
-            color: Colors.grey,
+            color: colorScheme.onSurfaceVariant,
           ),
           const Gap(16),
           Text(

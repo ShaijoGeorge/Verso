@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 
@@ -23,6 +24,9 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
           onRetry: () => ref.invalidate(detailedStatsProvider),
         ),
         data: (stats) {
+          final cs = Theme.of(context).colorScheme;
+          final appColors = context.appColors;
+
           // Calculate Dynamic Y-Axis Max
           final maxMonthly = stats.currentMonthDailyCounts.values.isEmpty
               ? 0
@@ -37,21 +41,34 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
           final today = DateTime.now();
           final daysInMonth = DateUtils.getDaysInMonth(today.year, today.month);
 
+          final axisLabelStyle = TextStyle(
+            fontSize: 10,
+            color: cs.onSurfaceVariant,
+          );
+          final axisTitleStyle = TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: cs.onSurfaceVariant,
+          );
+          final chartBorder = Border(
+            bottom: BorderSide(color: cs.outline.withValues(alpha: 0.4)),
+            left: BorderSide(color: cs.outline.withValues(alpha: 0.4)),
+          );
+
           return ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
             children: [
               // ---  MONTHLY CHART ---
               _buildSectionTitle(
                 'This Month Progress (${_monthName(today.month)} ${today.year})',
+                cs,
               ),
               const Gap(24),
               Center(
-                // Horizontal Center
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 600),
                   child: SizedBox(
                     height: 250,
-                    // [FIX] Animated Wrapper for Monthly Chart
                     child: _AnimatedChartWrapper(
                       builder: (isAnimated) {
                         return LineChart(
@@ -68,16 +85,10 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
                               topTitles: const AxisTitles(),
                               rightTitles: const AxisTitles(),
                               bottomTitles: AxisTitles(
-                                axisNameWidget: const Padding(
-                                  padding: EdgeInsets.only(top: 4),
-                                  child: Text(
-                                    'Day of Month',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
+                                axisNameWidget: Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text('Day of Month',
+                                      style: axisTitleStyle),
                                 ),
                                 axisNameSize: 20,
                                 sideTitles: SideTitles(
@@ -91,26 +102,15 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
                                     }
                                     return Padding(
                                       padding: const EdgeInsets.only(top: 4),
-                                      child: Text(
-                                        day.toString(),
-                                        style: const TextStyle(
-                                          fontSize: 10,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
+                                      child: Text(day.toString(),
+                                          style: axisLabelStyle),
                                     );
                                   },
                                 ),
                               ),
                               leftTitles: AxisTitles(
-                                axisNameWidget: const Text(
-                                  'Chapters',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey,
-                                  ),
-                                ),
+                                axisNameWidget:
+                                    Text('Chapters', style: axisTitleStyle),
                                 axisNameSize: 20,
                                 sideTitles: SideTitles(
                                   showTitles: true,
@@ -118,36 +118,29 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
                                   reservedSize: 40,
                                   getTitlesWidget: (value, meta) => Text(
                                     value.toInt().toString(),
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.grey,
-                                    ),
+                                    style: axisLabelStyle,
                                   ),
                                 ),
                               ),
                             ),
                             borderData: FlBorderData(
                               show: true,
-                              border: Border(
-                                bottom: BorderSide(color: Colors.grey.shade300),
-                                left: BorderSide(color: Colors.grey.shade300),
-                              ),
+                              border: chartBorder,
                             ),
                             lineBarsData: [
                               LineChartBarData(
-                                // Pass the animation flag to the helper
                                 spots: _generateDailySpots(
                                   stats.currentMonthDailyCounts,
                                   isAnimated,
                                 ),
                                 isCurved: true,
-                                color: Colors.purpleAccent,
+                                color: appColors.chartPurple,
                                 barWidth: 3,
                                 isStrokeCapRound: true,
                                 dotData: const FlDotData(show: false),
                                 belowBarData: BarAreaData(
                                   show: true,
-                                  color: Colors.purpleAccent
+                                  color: appColors.chartPurple
                                       .withValues(alpha: 0.1),
                                 ),
                               ),
@@ -167,15 +160,13 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
               const Gap(40),
 
               // ---  YEARLY CHART ---
-              _buildSectionTitle('This Year Progress (${today.year})'),
+              _buildSectionTitle('This Year Progress (${today.year})', cs),
               const Gap(24),
               Center(
-                // Horizontal Center
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 600),
                   child: SizedBox(
                     height: 250,
-                    // [FIX] Animated Wrapper for Yearly Chart
                     child: _AnimatedChartWrapper(
                       builder: (isAnimated) {
                         return LineChart(
@@ -192,16 +183,9 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
                               topTitles: const AxisTitles(),
                               rightTitles: const AxisTitles(),
                               bottomTitles: AxisTitles(
-                                axisNameWidget: const Padding(
-                                  padding: EdgeInsets.only(top: 4),
-                                  child: Text(
-                                    'Month',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
+                                axisNameWidget: Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text('Month', style: axisTitleStyle),
                                 ),
                                 axisNameSize: 20,
                                 sideTitles: SideTitles(
@@ -213,24 +197,16 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
                                       padding: const EdgeInsets.only(top: 4),
                                       child: Text(
                                         _monthNameCaps(value.toInt()),
-                                        style: const TextStyle(
-                                          fontSize: 9,
-                                          color: Colors.grey,
-                                        ),
+                                        style: axisLabelStyle.copyWith(
+                                            fontSize: 9),
                                       ),
                                     );
                                   },
                                 ),
                               ),
                               leftTitles: AxisTitles(
-                                axisNameWidget: const Text(
-                                  'Chapters',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey,
-                                  ),
-                                ),
+                                axisNameWidget:
+                                    Text('Chapters', style: axisTitleStyle),
                                 axisNameSize: 20,
                                 sideTitles: SideTitles(
                                   showTitles: true,
@@ -238,20 +214,14 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
                                   reservedSize: 40,
                                   getTitlesWidget: (value, meta) => Text(
                                     value.toInt().toString(),
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.grey,
-                                    ),
+                                    style: axisLabelStyle,
                                   ),
                                 ),
                               ),
                             ),
                             borderData: FlBorderData(
                               show: true,
-                              border: Border(
-                                bottom: BorderSide(color: Colors.grey.shade300),
-                                left: BorderSide(color: Colors.grey.shade300),
-                              ),
+                              border: chartBorder,
                             ),
                             lineBarsData: [
                               LineChartBarData(
@@ -260,12 +230,13 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
                                   isAnimated,
                                 ),
                                 isCurved: true,
-                                color: Colors.teal,
+                                color: appColors.chartTeal,
                                 barWidth: 3,
                                 isStrokeCapRound: true,
                                 belowBarData: BarAreaData(
                                   show: true,
-                                  color: Colors.teal.withValues(alpha: 0.1),
+                                  color: appColors.chartTeal
+                                      .withValues(alpha: 0.1),
                                 ),
                               ),
                             ],
@@ -313,11 +284,15 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
     return spots;
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, ColorScheme cs) {
     return Center(
       child: Text(
         title,
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: cs.onSurface,
+        ),
       ),
     );
   }
