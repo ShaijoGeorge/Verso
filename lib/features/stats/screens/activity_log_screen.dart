@@ -7,6 +7,7 @@ import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/features/stats/providers/activity_providers.dart';
+import 'package:verso/core/design/components/verso_card.dart';
 import 'package:verso/features/stats/widgets/shimmer_skeletons.dart';
 
 class ActivityLogScreen extends ConsumerStatefulWidget {
@@ -652,22 +653,8 @@ class _StandardCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Container(
+    return VersoCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
