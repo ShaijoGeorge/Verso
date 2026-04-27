@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/data/bible_data.dart';
 
@@ -68,7 +69,7 @@ class _BookProgressCardState extends State<BookProgressCard> {
       return Icon(
         Icons.check_circle_rounded,
         size: 18,
-        color: Colors.amber.shade600,
+        color: scheme.secondary,
       ); // ✓
     } else if (isInProgress) {
       return Icon(Icons.tonality_rounded, size: 18, color: scheme.primary); // ◐
@@ -93,10 +94,10 @@ class _BookProgressCardState extends State<BookProgressCard> {
 
     // Define the card styling based on completion
     final borderColor = isCompleted
-        ? Colors.amber.shade400
+        ? scheme.secondary.withValues(alpha: 0.5)
         : scheme.outline.withValues(alpha: 0.2);
     final bgColor = isCompleted
-        ? Colors.amber.withValues(alpha: 0.05)
+        ? scheme.secondaryContainer.withValues(alpha: 0.5)
         : scheme.surfaceContainerHighest;
 
     return GestureDetector(
@@ -112,7 +113,7 @@ class _BookProgressCardState extends State<BookProgressCard> {
             boxShadow: isCompleted
                 ? [
                     BoxShadow(
-                      color: Colors.amber.withValues(alpha: 0.1),
+                      color: scheme.secondary.withValues(alpha: 0.1),
                       blurRadius: 8,
                       spreadRadius: 2,
                     ),
@@ -129,7 +130,7 @@ class _BookProgressCardState extends State<BookProgressCard> {
                 alignment: Alignment.centerLeft,
                 child: Container(
                   color: isCompleted
-                      ? Colors.amber.withValues(alpha: 0.15)
+                      ? scheme.secondary.withValues(alpha: 0.2)
                       : scheme.primary.withValues(alpha: 0.1),
                 ),
               ),
@@ -176,7 +177,7 @@ class _BookProgressCardState extends State<BookProgressCard> {
                       ),
                       decoration: BoxDecoration(
                         color: isCompleted
-                            ? Colors.amber.shade100
+                            ? scheme.secondaryContainer
                             : scheme.surface.withValues(alpha: 0.8),
                         borderRadius: BorderRadius.circular(6),
                       ),
@@ -186,7 +187,7 @@ class _BookProgressCardState extends State<BookProgressCard> {
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: isCompleted
-                              ? Colors.amber.shade900
+                              ? context.appColors.secondaryOnContainer
                               : scheme.onSurfaceVariant,
                         ),
                       ),

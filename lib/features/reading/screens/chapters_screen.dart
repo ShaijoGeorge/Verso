@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:verso/core/design/components/verso_circular_progress.dart';
 import 'package:verso/core/design/components/verso_progress_bar.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
+import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/shadows.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
@@ -305,12 +306,14 @@ class _CompletedBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
+    final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
     // Vibrant green-teal gradient for the achievement feel
-    final gradientColors = isLight
-        ? [const Color(0xFF2E7D4F), const Color(0xFF0D9488)]
-        : [const Color(0xFF4CAF7D), const Color(0xFF5EEAD4)];
+    final gradientColors = [
+      context.appColors.success,
+      context.appColors.chartTeal,
+    ];
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -333,13 +336,13 @@ class _CompletedBadge extends StatelessWidget {
           Icon(
             Icons.auto_awesome_rounded,
             size: 14,
-            color: isLight ? Colors.white : Colors.black87,
+            color: isLight ? scheme.onPrimary : scheme.onSurface,
           ),
           const Gap(Spacing.xs),
           Text(
             'Completed',
             style: textTheme.labelSmall?.copyWith(
-              color: isLight ? Colors.white : Colors.black87,
+              color: isLight ? scheme.onPrimary : scheme.onSurface,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.5,
             ),
@@ -547,7 +550,7 @@ class _ChapterTileState extends State<_ChapterTile>
                       style: textTheme.displayLarge?.copyWith(
                         color: isRead
                             ? (isLight
-                                ? Colors.white
+                                ? scheme.onPrimary
                                 : scheme.onPrimaryContainer)
                             : scheme.onSurfaceVariant,
                         fontWeight: FontWeight.bold,
@@ -561,7 +564,7 @@ class _ChapterTileState extends State<_ChapterTile>
                       style: textTheme.titleSmall?.copyWith(
                         color: isRead
                             ? (isLight
-                                ? Colors.white.withValues(alpha: 0.85)
+                                ? scheme.onPrimary.withValues(alpha: 0.85)
                                 : scheme.onPrimaryContainer
                                     .withValues(alpha: 0.8))
                             : scheme.onSurfaceVariant,
@@ -578,7 +581,7 @@ class _ChapterTileState extends State<_ChapterTile>
                       decoration: BoxDecoration(
                         color: isRead
                             ? (isLight
-                                ? Colors.white.withValues(alpha: 0.2)
+                                ? scheme.onPrimary.withValues(alpha: 0.2)
                                 : scheme.primary.withValues(alpha: 0.3))
                             : scheme.outline.withValues(alpha: 0.1),
                         borderRadius: AppRadii.borderRadiusFull,
@@ -592,7 +595,7 @@ class _ChapterTileState extends State<_ChapterTile>
                                 : Icons.radio_button_unchecked_rounded,
                             size: 14,
                             color: isRead
-                                ? (isLight ? Colors.white : scheme.primary)
+                                ? (isLight ? scheme.onPrimary : scheme.primary)
                                 : scheme.onSurfaceVariant,
                           ),
                           const Gap(6),
@@ -600,7 +603,9 @@ class _ChapterTileState extends State<_ChapterTile>
                             isRead ? 'Read' : 'Not yet read',
                             style: textTheme.labelMedium?.copyWith(
                               color: isRead
-                                  ? (isLight ? Colors.white : scheme.primary)
+                                  ? (isLight
+                                      ? scheme.onPrimary
+                                      : scheme.primary)
                                   : scheme.onSurfaceVariant,
                               fontWeight: FontWeight.w700,
                             ),
