@@ -64,12 +64,12 @@ class VersoGradientButton extends StatelessWidget {
           ),
           child: Center(
             child: isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                     ),
                   )
                 : Text(
@@ -77,7 +77,7 @@ class VersoGradientButton extends StatelessWidget {
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                       letterSpacing: 0.3,
                     ),
                   ),

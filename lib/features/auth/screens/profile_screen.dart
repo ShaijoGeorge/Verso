@@ -77,7 +77,7 @@ class ProfileScreen extends ConsumerWidget {
                 Text(
                   email,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
                 const Gap(40),
@@ -185,7 +185,10 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant
+                      .withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -323,7 +326,10 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant
+                      .withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
