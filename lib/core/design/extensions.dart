@@ -35,4 +35,17 @@ class AppSemanticColors {
       _isDark ? AppColors.chartTealDark : AppColors.chartTealLight;
   Color get otColor => _isDark ? AppColors.otColorDark : AppColors.otColorLight;
   Color get ntColor => _isDark ? AppColors.ntColorDark : AppColors.ntColorLight;
+  Color get otContainer =>
+      _isDark ? AppColors.otContainerDark : AppColors.otContainerLight;
+  Color get ntContainer =>
+      _isDark ? AppColors.ntContainerDark : AppColors.ntContainerLight;
+  Color get completionEmpty =>
+      _isDark ? AppColors.completionEmptyDark : AppColors.completionEmptyLight;
+  Color get primaryAccent =>
+      _isDark ? AppColors.primaryAccentDark : AppColors.primaryAccentLight;
+  Color get primaryHighlight => _isDark
+      ? AppColors.primaryHighlightDark
+      : AppColors.primaryHighlightLight;
+  Color get secondaryOnContainer =>
+      _isDark ? AppColors.secondaryDark : AppColors.secondaryOnContainerLight;
 }

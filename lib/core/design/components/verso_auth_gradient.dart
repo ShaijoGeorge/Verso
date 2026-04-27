@@ -18,14 +18,14 @@ abstract final class VersoAuthGradient {
       end: Alignment.bottomRight,
       colors: isDark
           ? [
-              const Color(0xFF0F2640),
+              AppColors.primaryContainerDark,
               AppColors.backgroundDark,
-              const Color(0xFF0D0D0F),
+              AppColors.backgroundDark,
             ]
           : [
-              const Color(0xFFD6E8F5),
+              AppColors.primaryContainerLight,
               AppColors.backgroundLight,
-              const Color(0xFFF0F2F5),
+              AppColors.backgroundLight,
             ],
       stops: const [0.0, 0.4, 1.0],
     );
