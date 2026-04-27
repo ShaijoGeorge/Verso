@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:verso/core/design/extensions.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 import 'package:verso/features/stats/widgets/book_completion_grid.dart';
 import 'package:verso/features/stats/widgets/stat_summary_card.dart';
@@ -54,7 +55,6 @@ class _TestamentRings extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final isLight = Theme.of(context).brightness == Brightness.light;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
@@ -75,8 +75,7 @@ class _TestamentRings extends StatelessWidget {
               totalChapters: 1074,
               booksCompleted: stats.otBooksCompleted,
               totalBooks: 46,
-              color:
-                  isLight ? const Color(0xFFE65100) : const Color(0xFFFF9800),
+              color: context.appColors.otColor,
             ),
           ),
           // Vertical divider
@@ -93,8 +92,7 @@ class _TestamentRings extends StatelessWidget {
               totalChapters: 260,
               booksCompleted: stats.ntBooksCompleted,
               totalBooks: 27,
-              color:
-                  isLight ? const Color(0xFF1565C0) : const Color(0xFF64B5F6),
+              color: context.appColors.ntColor,
             ),
           ),
         ],
@@ -198,7 +196,7 @@ class _SummaryCards extends StatelessWidget {
             Expanded(
               child: StatSummaryCard(
                 icon: Icons.local_fire_department_rounded,
-                iconColor: Colors.orange,
+                iconColor: context.appColors.streak,
                 label: 'Current Streak',
                 value: '${stats.streak}',
                 subtitle: 'days in a row',
@@ -208,7 +206,7 @@ class _SummaryCards extends StatelessWidget {
             Expanded(
               child: StatSummaryCard(
                 icon: Icons.auto_stories_rounded,
-                iconColor: Colors.blue,
+                iconColor: context.appColors.ntColor,
                 label: 'Chapters Read',
                 value: '${stats.totalRead}',
                 subtitle: 'of 1,334 total',
@@ -222,7 +220,7 @@ class _SummaryCards extends StatelessWidget {
             Expanded(
               child: StatSummaryCard(
                 icon: Icons.emoji_events_rounded,
-                iconColor: Colors.amber.shade700,
+                iconColor: context.appColors.streak,
                 label: 'Books Done',
                 value: '${stats.otBooksCompleted + stats.ntBooksCompleted}',
                 subtitle: 'of 73 books',
@@ -232,7 +230,7 @@ class _SummaryCards extends StatelessWidget {
             Expanded(
               child: StatSummaryCard(
                 icon: Icons.trending_up_rounded,
-                iconColor: Colors.green,
+                iconColor: context.appColors.success,
                 label: 'Total Progress',
                 value: '${(stats.totalProgress * 100).toStringAsFixed(1)}%',
                 subtitle: 'of entire Bible',

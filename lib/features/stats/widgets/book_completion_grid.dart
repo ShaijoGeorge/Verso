@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:verso/core/design/extensions.dart';
+import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/data/bible_data.dart';
 
 /// A compact mosaic grid showing all 73 Bible books.
@@ -36,7 +38,6 @@ class BookCompletionGrid extends StatelessWidget {
                   book: book,
                   fraction: fraction,
                   size: cellSize,
-                  isLight: isLight,
                 );
               }).toList(),
             );
@@ -52,16 +53,14 @@ class _BookCell extends StatelessWidget {
     required this.book,
     required this.fraction,
     required this.size,
-    required this.isLight,
   });
   final BibleBook book;
   final double fraction;
   final double size;
-  final bool isLight;
 
-  Color _cellColor() {
+  Color _cellColor(BuildContext context) {
     if (fraction <= 0.0) {
-      return isLight ? const Color(0xFFE8E8E8) : const Color(0xFF2A2A2E);
+      return context.appColors.completionEmpty;
     }
 
     // OT = warm orange tones, NT = cool blue tones
@@ -69,15 +68,15 @@ class _BookCell extends StatelessWidget {
     if (isOT) {
       // Orange scale: light at low %, deep at 100%
       return Color.lerp(
-        isLight ? const Color(0xFFFFE0B2) : const Color(0xFF3D2400),
-        isLight ? const Color(0xFFE65100) : const Color(0xFFFF9800),
+        context.appColors.otContainer,
+        context.appColors.otColor,
         fraction,
       )!;
     } else {
       // Blue scale
       return Color.lerp(
-        isLight ? const Color(0xFFBBDEFB) : const Color(0xFF0D2240),
-        isLight ? const Color(0xFF1565C0) : const Color(0xFF64B5F6),
+        context.appColors.ntContainer,
+        context.appColors.ntColor,
         fraction,
       )!;
     }
@@ -96,7 +95,7 @@ class _BookCell extends StatelessWidget {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: _cellColor(),
+          color: _cellColor(context),
           borderRadius: BorderRadius.circular(4),
         ),
         child: fraction >= 1.0
@@ -121,19 +120,21 @@ class _Legend extends StatelessWidget {
       children: [
         // OT legend
         _LegendDot(
-          color: isLight ? const Color(0xFFE65100) : const Color(0xFFFF9800),
+          color: context.appColors.otColor,
           label: 'OT',
         ),
         const SizedBox(width: 16),
         // NT legend
         _LegendDot(
-          color: isLight ? const Color(0xFF1565C0) : const Color(0xFF64B5F6),
+          color: context.appColors.ntColor,
           label: 'NT',
         ),
         const SizedBox(width: 16),
         // Empty legend
         _LegendDot(
-          color: isLight ? const Color(0xFFE8E8E8) : const Color(0xFF2A2A2E),
+          color: isLight
+              ? AppColors.completionEmptyLight
+              : AppColors.completionEmptyDark,
           label: 'Not started',
         ),
       ],

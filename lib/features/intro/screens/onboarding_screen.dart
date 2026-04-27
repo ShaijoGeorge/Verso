@@ -30,8 +30,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       subtitle:
           'Tap to log your progress with a visual book grid. Never lose your place again.',
       icon: Icons.grid_view_rounded,
-      accentColor: Color(0xFF7EB8E0),
-      gradientColors: [Color(0xFF0F2640), Color(0xFF1B3A5C)],
+      accentColor: AppColors.primaryDark,
+      gradientColors: [AppColors.primaryContainerDark, AppColors.primaryLight],
       illustrationElements: [
         _FloatingElement(
           icon: Icons.menu_book_rounded,
@@ -68,8 +68,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       subtitle:
           'Read daily to build your streak. Consistency is the key to finishing the Bible.',
       icon: Icons.local_fire_department_rounded,
-      accentColor: Color(0xFFC4973B),
-      gradientColors: [Color(0xFF3D2E14), Color(0xFF5C4520)],
+      accentColor: AppColors.secondaryLight,
+      gradientColors: [
+        AppColors.secondaryContainerDark,
+        AppColors.secondaryAccentDark,
+      ],
       illustrationElements: [
         _FloatingElement(
           icon: Icons.bolt_rounded,
@@ -106,8 +109,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       subtitle:
           'Visualize your progress with beautiful charts and detailed reading analytics.',
       icon: Icons.insights_rounded,
-      accentColor: Color(0xFFA78BFA),
-      gradientColors: [Color(0xFF2D1B69), Color(0xFF4C2E91)],
+      accentColor: AppColors.chartPurpleDark,
+      gradientColors: [
+        AppColors.chartPurpleContainerDark,
+        AppColors.chartPurpleDeepDark,
+      ],
       illustrationElements: [
         _FloatingElement(
           icon: Icons.pie_chart_rounded,
