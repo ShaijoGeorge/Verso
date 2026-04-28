@@ -486,6 +486,9 @@ class _ChapterTileState extends State<_ChapterTile>
           decoration: BoxDecoration(
             color: scheme.surface,
             borderRadius: AppRadii.borderRadiusXL,
+            border: Border.all(
+              color: scheme.outline.withValues(alpha: isLight ? 0.2 : 0.5),
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: isLight ? 0.1 : 0.3),

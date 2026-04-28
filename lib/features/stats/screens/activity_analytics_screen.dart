@@ -87,8 +87,10 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
                               bottomTitles: AxisTitles(
                                 axisNameWidget: Padding(
                                   padding: const EdgeInsets.only(top: 4),
-                                  child: Text('Day of Month',
-                                      style: axisTitleStyle),
+                                  child: Text(
+                                    'Day of Month',
+                                    style: axisTitleStyle,
+                                  ),
                                 ),
                                 axisNameSize: 20,
                                 sideTitles: SideTitles(
@@ -102,8 +104,10 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
                                     }
                                     return Padding(
                                       padding: const EdgeInsets.only(top: 4),
-                                      child: Text(day.toString(),
-                                          style: axisLabelStyle),
+                                      child: Text(
+                                        day.toString(),
+                                        style: axisLabelStyle,
+                                      ),
                                     );
                                   },
                                 ),
@@ -198,7 +202,8 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
                                       child: Text(
                                         _monthNameCaps(value.toInt()),
                                         style: axisLabelStyle.copyWith(
-                                            fontSize: 9),
+                                          fontSize: 9,
+                                        ),
                                       ),
                                     );
                                   },

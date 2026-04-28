@@ -32,11 +32,13 @@ class ProfileDrawer extends ConsumerWidget {
     final topPadding = MediaQuery.of(context).padding.top;
 
     return Drawer(
-      backgroundColor:
-          isLight ? AppColors.backgroundLight : AppColors.backgroundDark,
-      shape: const RoundedRectangleBorder(
+      backgroundColor: scheme.surface,
+      shape: RoundedRectangleBorder(
         borderRadius:
-            BorderRadius.horizontal(right: Radius.circular(AppRadii.xl)),
+            const BorderRadius.horizontal(right: Radius.circular(AppRadii.xl)),
+        side: BorderSide(
+          color: scheme.outline.withValues(alpha: isLight ? 0.2 : 0.5),
+        ),
       ),
       child: Column(
         children: [

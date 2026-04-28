@@ -76,6 +76,40 @@ abstract final class AppTheme {
           color: colorScheme.onSurface,
         ),
       ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
+          side: BorderSide(
+            color: colorScheme.outline.withValues(alpha: isLight ? 0.2 : 0.5),
+          ),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(AppRadii.xl)),
+          side: BorderSide(
+            color: colorScheme.outline.withValues(alpha: isLight ? 0.2 : 0.5),
+          ),
+        ),
+      ),
+      drawerTheme: DrawerThemeData(
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
+      ),
+      timePickerTheme: TimePickerThemeData(
+        backgroundColor: colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(AppRadii.xl)),
+          side: BorderSide(
+            color: colorScheme.outline.withValues(alpha: isLight ? 0.2 : 0.5),
+          ),
+        ),
+      ),
       cardTheme: CardThemeData(
         color: colorScheme.surface,
         elevation: 0,

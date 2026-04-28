@@ -3,11 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
+import 'package:verso/core/design/components/verso_card.dart';
 import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/features/stats/providers/activity_providers.dart';
-import 'package:verso/core/design/components/verso_card.dart';
 import 'package:verso/features/stats/widgets/shimmer_skeletons.dart';
 
 class ActivityLogScreen extends ConsumerStatefulWidget {
