@@ -6,11 +6,13 @@ import 'package:verso/core/design/components/verso_card.dart';
 import 'package:verso/core/design/components/verso_circular_progress.dart';
 import 'package:verso/core/design/components/verso_progress_bar.dart';
 import 'package:verso/core/design/components/verso_section_header.dart';
+import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/shadows.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
+import 'package:verso/data/local/entities/user_settings.dart';
 import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/stats/providers/activity_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
@@ -376,8 +378,7 @@ class _QuickStatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
-    final isLight = Theme.of(context).brightness == Brightness.light;
-    final isAmoled = !isLight && scheme.surface == AppColors.surfaceAmoled;
+    final isAmoled = context.palette.style == AppearanceStyle.amoled;
 
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -758,11 +759,13 @@ class _DailyVerseCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
+    final isAmoled = context.palette.style == AppearanceStyle.amoled;
 
     return verseAsync.when(
       loading: () => _buildShell(
         scheme: scheme,
         isLight: isLight,
+        isAmoled: isAmoled,
         child: const SizedBox(
           height: 48,
           child: Center(
@@ -775,6 +778,7 @@ class _DailyVerseCard extends StatelessWidget {
         return _buildShell(
           scheme: scheme,
           isLight: isLight,
+          isAmoled: isAmoled,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -841,10 +845,9 @@ class _DailyVerseCard extends StatelessWidget {
   Widget _buildShell({
     required ColorScheme scheme,
     required bool isLight,
+    required bool isAmoled,
     required Widget child,
   }) {
-    final isAmoled = !isLight && scheme.surface == AppColors.surfaceAmoled;
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
