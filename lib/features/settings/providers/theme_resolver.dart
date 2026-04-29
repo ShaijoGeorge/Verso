@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:verso/core/design/profiles/theme_profiles.dart';
 import 'package:verso/core/design/theme.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
@@ -9,7 +10,12 @@ import 'package:verso/features/settings/providers/settings_providers.dart';
 part 'theme_resolver.g.dart';
 
 class ResolvedTheme {
-  const ResolvedTheme({required this.darkTheme, required this.themeMode});
+  const ResolvedTheme({
+    required this.lightTheme,
+    required this.darkTheme,
+    required this.themeMode,
+  });
+  final ThemeData lightTheme;
   final ThemeData darkTheme;
   final ThemeMode themeMode;
 }
@@ -91,29 +97,29 @@ ResolvedTheme resolvedTheme(Ref ref, Brightness systemBrightness) {
     _ => null,
   };
 
+  final fallbackProfile = ThemeProfiles.byId(ThemeProfiles.defaultId);
+
   if (settings == null) {
     return ResolvedTheme(
-      darkTheme: AppTheme.darkTheme,
+      lightTheme: AppTheme.build(fallbackProfile.light),
+      darkTheme: AppTheme.build(fallbackProfile.dark),
       themeMode: ThemeMode.system,
     );
   }
 
+  final profile = ThemeProfiles.byId(settings.themeProfileId);
   final style = _resolveStyle(settings, systemBrightness);
 
-  return switch (style) {
-    AppearanceStyle.light => ResolvedTheme(
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.light,
-      ),
-    AppearanceStyle.dark => ResolvedTheme(
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.dark,
-      ),
-    AppearanceStyle.amoled => ResolvedTheme(
-        darkTheme: AppTheme.amoledTheme,
-        themeMode: ThemeMode.dark,
-      ),
+  final darkPalette = switch (style) {
+    AppearanceStyle.amoled => profile.amoled,
+    _ => profile.dark,
   };
+
+  return ResolvedTheme(
+    lightTheme: AppTheme.build(profile.light),
+    darkTheme: AppTheme.build(darkPalette),
+    themeMode: style.isLight ? ThemeMode.light : ThemeMode.dark,
+  );
 }
 
 /// Convenience: returns the resolved [AppearanceStyle] for use in UI.

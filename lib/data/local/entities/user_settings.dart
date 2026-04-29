@@ -2,6 +2,10 @@ enum AppThemeMode { system, light, dark }
 
 enum AppearanceStyle { light, dark, amoled }
 
+extension AppearanceStyleX on AppearanceStyle {
+  bool get isLight => this == AppearanceStyle.light;
+}
+
 class UserSettings {
   UserSettings({
     this.themeMode = AppThemeMode.system,
@@ -14,8 +18,9 @@ class UserSettings {
     this.nightStartHour = 22,
     this.nightStartMinute = 0,
     this.isReminderEnabled = false,
-    this.reminderHour = 7, // 0-23
-    this.reminderMinute = 0, // 0-59
+    this.reminderHour = 7,
+    this.reminderMinute = 0,
+    this.themeProfileId = 'current',
   });
 
   final AppThemeMode themeMode;
@@ -28,8 +33,9 @@ class UserSettings {
   final int nightStartHour;
   final int nightStartMinute;
   final bool isReminderEnabled;
-  final int reminderHour; // 0-23
-  final int reminderMinute; // 0-59
+  final int reminderHour;
+  final int reminderMinute;
+  final String themeProfileId;
 
   UserSettings copyWith({
     AppThemeMode? themeMode,
@@ -44,6 +50,7 @@ class UserSettings {
     bool? isReminderEnabled,
     int? reminderHour,
     int? reminderMinute,
+    String? themeProfileId,
   }) =>
       UserSettings(
         themeMode: themeMode ?? this.themeMode,
@@ -58,5 +65,6 @@ class UserSettings {
         isReminderEnabled: isReminderEnabled ?? this.isReminderEnabled,
         reminderHour: reminderHour ?? this.reminderHour,
         reminderMinute: reminderMinute ?? this.reminderMinute,
+        themeProfileId: themeProfileId ?? this.themeProfileId,
       );
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:verso/core/design/profiles/verso_palette.dart';
 import 'package:verso/core/design/tokens/colors.dart';
 
 /// Convenience extensions on [BuildContext] for quick access to theme tokens.
@@ -14,6 +15,7 @@ extension ThemeContextX on BuildContext {
   ColorScheme get colors => theme.colorScheme;
   TextTheme get textTheme => theme.textTheme;
   bool get isDark => theme.brightness == Brightness.dark;
+  VersoPalette get palette => theme.extension<VersoPalette>()!;
 }
 
 /// Semantic colors that aren't part of [ColorScheme] (success, charts, streaks).

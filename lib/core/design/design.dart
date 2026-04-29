@@ -16,6 +16,8 @@ export 'components/verso_progress_bar.dart';
 export 'components/verso_section_header.dart';
 export 'components/verso_snackbar.dart';
 export 'extensions.dart';
+// Profiles
+export 'profiles/theme_profiles.dart';
 // Theme
 export 'theme.dart';
 // Tokens

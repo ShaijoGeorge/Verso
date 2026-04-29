@@ -1,55 +1,39 @@
 import 'package:flutter/material.dart';
-import 'package:verso/core/design/tokens/colors.dart';
+import 'package:verso/core/design/profiles/verso_palette.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/typography.dart';
+import 'package:verso/data/local/entities/user_settings.dart';
 
-/// Builds light, dark, and AMOLED [ThemeData] from design tokens.
+/// Builds a [ThemeData] from a [VersoPalette].
+///
+/// The palette is attached as a [ThemeExtension] so widgets can access
+/// extended tokens via `context.palette`.
 abstract final class AppTheme {
-  static final ThemeData lightTheme = _build(Brightness.light);
-  static final ThemeData darkTheme = _build(Brightness.dark);
-  static final ThemeData amoledTheme = _build(Brightness.dark, amoled: true);
+  static ThemeData build(VersoPalette palette) {
+    final isLight = palette.style.isLight;
 
-  static ThemeData _build(Brightness brightness, {bool amoled = false}) {
-    final isLight = brightness == Brightness.light;
+    // Derive on-colors from luminance so profile authors don't need to specify them.
+    final onPrimary = _onColor(palette.primary);
+    final onSecondary = _onColor(palette.secondary);
 
     final colorScheme = ColorScheme(
-      brightness: brightness,
-      primary: isLight ? AppColors.primaryLight : AppColors.primaryDark,
-      onPrimary: isLight ? AppColors.onPrimaryLight : AppColors.onPrimaryDark,
-      primaryContainer: isLight
-          ? AppColors.primaryContainerLight
-          : AppColors.primaryContainerDark,
-      onPrimaryContainer: isLight
-          ? AppColors.onPrimaryContainerLight
-          : AppColors.onPrimaryContainerDark,
-      secondary: isLight ? AppColors.secondaryLight : AppColors.secondaryDark,
-      onSecondary:
-          isLight ? AppColors.onSecondaryLight : AppColors.onSecondaryDark,
-      secondaryContainer: isLight
-          ? AppColors.secondaryContainerLight
-          : AppColors.secondaryContainerDark,
-      onSecondaryContainer: isLight
-          ? AppColors.onPrimaryContainerLight
-          : AppColors.onPrimaryContainerDark,
-      surface: isLight
-          ? AppColors.surfaceLight
-          : (amoled ? AppColors.surfaceAmoled : AppColors.surfaceDark),
-      onSurface: isLight ? AppColors.onSurfaceLight : AppColors.onSurfaceDark,
-      onSurfaceVariant: isLight
-          ? AppColors.onSurfaceVariantLight
-          : AppColors.onSurfaceVariantDark,
-      error: isLight ? AppColors.errorLight : AppColors.errorDark,
-      onError: Colors.white,
-      outline: isLight
-          ? AppColors.outlineLight
-          : (amoled ? AppColors.outlineAmoled : AppColors.outlineDark),
-      outlineVariant: isLight
-          ? AppColors.outlineVariantLight
-          : (amoled
-              ? AppColors.outlineVariantAmoled
-              : AppColors.outlineVariantDark),
-      surfaceContainerHighest:
-          isLight ? AppColors.primaryContainerLight : AppColors.surfaceDark,
+      brightness: isLight ? Brightness.light : Brightness.dark,
+      primary: palette.primary,
+      onPrimary: onPrimary,
+      primaryContainer: palette.accentSoft,
+      onPrimaryContainer: palette.text,
+      secondary: palette.secondary,
+      onSecondary: onSecondary,
+      secondaryContainer: palette.tag,
+      onSecondaryContainer: palette.tagText,
+      surface: palette.surface,
+      onSurface: palette.text,
+      onSurfaceVariant: palette.textMuted,
+      error: palette.danger,
+      onError: _onColor(palette.danger),
+      outline: palette.border,
+      outlineVariant: palette.borderLight,
+      surfaceContainerHighest: palette.surfaceAlt,
     );
 
     final textTheme = AppTypography.textTheme(
@@ -57,18 +41,15 @@ abstract final class AppTheme {
       displayColor: colorScheme.primary,
     );
 
-    final bgColor = isLight
-        ? AppColors.backgroundLight
-        : (amoled ? AppColors.backgroundAmoled : AppColors.backgroundDark);
-
     return ThemeData(
       useMaterial3: true,
-      brightness: brightness,
+      brightness: isLight ? Brightness.light : Brightness.dark,
       colorScheme: colorScheme,
       textTheme: textTheme,
-      scaffoldBackgroundColor: bgColor,
+      scaffoldBackgroundColor: palette.bg,
+      extensions: [palette],
       appBarTheme: AppBarTheme(
-        backgroundColor: bgColor,
+        backgroundColor: palette.bg,
         foregroundColor: colorScheme.onSurface,
         centerTitle: true,
         elevation: 0,
@@ -83,7 +64,7 @@ abstract final class AppTheme {
           borderRadius:
               const BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
           side: BorderSide(
-            color: colorScheme.outline.withValues(alpha: isLight ? 0.2 : 0.5),
+            color: palette.border.withValues(alpha: isLight ? 0.2 : 0.5),
           ),
         ),
       ),
@@ -93,7 +74,7 @@ abstract final class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: const BorderRadius.all(Radius.circular(AppRadii.xl)),
           side: BorderSide(
-            color: colorScheme.outline.withValues(alpha: isLight ? 0.2 : 0.5),
+            color: palette.border.withValues(alpha: isLight ? 0.2 : 0.5),
           ),
         ),
       ),
@@ -106,7 +87,7 @@ abstract final class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: const BorderRadius.all(Radius.circular(AppRadii.xl)),
           side: BorderSide(
-            color: colorScheme.outline.withValues(alpha: isLight ? 0.2 : 0.5),
+            color: palette.border.withValues(alpha: isLight ? 0.2 : 0.5),
           ),
         ),
       ),
@@ -116,24 +97,22 @@ abstract final class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: AppRadii.borderRadiusLG,
           side: BorderSide(
-            color: colorScheme.outline.withValues(alpha: isLight ? 0.5 : 0.15),
+            color: palette.border.withValues(alpha: isLight ? 0.5 : 0.15),
           ),
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: isLight
-            ? AppColors.surfaceLight
-            : (amoled ? AppColors.surfaceAmoled : AppColors.surfaceDark),
+        backgroundColor: palette.footerBg,
         indicatorColor:
-            colorScheme.primary.withValues(alpha: isLight ? 0.15 : 0.2),
+            palette.footerActive.withValues(alpha: isLight ? 0.15 : 0.2),
         labelTextStyle: WidgetStateProperty.all(
-          AppTypography.labelSmall.copyWith(color: colorScheme.onSurface),
+          AppTypography.labelSmall.copyWith(color: palette.text),
         ),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return IconThemeData(color: colorScheme.primary);
+            return IconThemeData(color: palette.footerActive);
           }
-          return IconThemeData(color: colorScheme.onSurfaceVariant);
+          return IconThemeData(color: palette.footerInactive);
         }),
       ),
       snackBarTheme: SnackBarThemeData(
@@ -142,4 +121,8 @@ abstract final class AppTheme {
       ),
     );
   }
+
+  static Color _onColor(Color bg) => bg.computeLuminance() > 0.4
+      ? const Color(0xFF1C1C1E)
+      : const Color(0xFFF5F5F5);
 }
