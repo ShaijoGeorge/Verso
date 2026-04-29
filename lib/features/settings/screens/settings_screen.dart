@@ -176,6 +176,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             children: [
               const Gap(16),
 
+              // --- COLOR THEME SECTION ---
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  'Color Theme',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+
+              for (final profile in ThemeProfiles.all)
+                _ThemeProfileCard(
+                  profile: profile,
+                  isSelected: settings.themeProfileId == profile.id,
+                  onTap: () => ref
+                      .read(currentSettingsProvider.notifier)
+                      .setThemeProfileId(profile.id),
+                ),
+
+              const Divider(),
+              const Gap(4),
+
               // --- APPEARANCE SECTION ---
               Padding(
                 padding:
@@ -462,6 +487,138 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _ThemeProfileCard extends StatelessWidget {
+  const _ThemeProfileCard({
+    required this.profile,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final ThemeProfile profile;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final previewPalette = switch (context.palette.style) {
+      AppearanceStyle.light => profile.light,
+      AppearanceStyle.amoled => profile.amoled,
+      _ => profile.dark,
+    };
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? scheme.primary.withValues(alpha: 0.08)
+                : scheme.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isSelected
+                  ? scheme.primary
+                  : scheme.outline.withValues(alpha: 0.4),
+              width: isSelected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              // Color swatches
+              SizedBox(
+                width: 48,
+                height: 48,
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      child: _Swatch(color: previewPalette.bg, size: 28),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: _Swatch(
+                        color: previewPalette.primary,
+                        size: 22,
+                      ),
+                    ),
+                    Positioned(
+                      top: 6,
+                      right: 0,
+                      child: _Swatch(
+                        color: previewPalette.accent,
+                        size: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Gap(12),
+              // Text
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      profile.name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                    const Gap(2),
+                    Text(
+                      profile.tagline,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isSelected)
+                Icon(
+                  Icons.check_circle_rounded,
+                  color: scheme.primary,
+                  size: 20,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Swatch extends StatelessWidget {
+  const _Swatch({required this.color, required this.size});
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+        ),
       ),
     );
   }

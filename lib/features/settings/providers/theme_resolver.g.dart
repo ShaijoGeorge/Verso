@@ -112,7 +112,7 @@ final class ResolvedThemeProvider
   }
 }
 
-String _$resolvedThemeHash() => r'7f3478109527dd8cbb4f31666a100bc452b15f5a';
+String _$resolvedThemeHash() => r'ba87523f220e4c268325a36d0fcdede7292e6e87';
 
 /// Provides the [ResolvedTheme] to wire into [MaterialApp].
 
@@ -181,4 +181,4 @@ final class EffectiveStyleProvider extends $FunctionalProvider<AppearanceStyle?,
   }
 }
 
-String _$effectiveStyleHash() => r'63360439fc0d580ad02db4622b4c0af60746492d';
+String _$effectiveStyleHash() => r'13cc9fa62925b5d578ff5c4f35ee7d6913971032';

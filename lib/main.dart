@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/constants.dart';
-import 'package:verso/core/design/theme.dart';
 import 'package:verso/core/providers/package_info_provider.dart';
 import 'package:verso/core/router.dart';
 import 'package:verso/core/utils/verso_error_observer.dart';
@@ -122,7 +121,7 @@ class _BibliaAppState extends ConsumerState<BibliaApp>
     return MaterialApp.router(
       title: 'Verso',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      theme: resolved.lightTheme,
       darkTheme: resolved.darkTheme,
       themeMode: resolved.themeMode,
 

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:verso/core/design/tokens/colors.dart';
+import 'package:verso/core/design/extensions.dart';
 import 'package:verso/data/bible_data.dart';
+import 'package:verso/data/local/entities/user_settings.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 import 'package:verso/features/reading/widgets/book_progress_card.dart';
 
@@ -44,8 +45,7 @@ class _BookGridState extends State<BookGrid> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final isLight = Theme.of(context).brightness == Brightness.light;
-    final isAmoled = !isLight && scheme.surface == AppColors.surfaceAmoled;
+    final isAmoled = context.palette.style == AppearanceStyle.amoled;
 
     final groupedBooks = _groupBooks(widget.books);
     final sortedCategories =

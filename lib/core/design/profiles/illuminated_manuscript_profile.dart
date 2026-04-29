@@ -1,0 +1,83 @@
+import 'package:flutter/material.dart';
+import 'package:verso/core/design/profiles/theme_profile.dart';
+import 'package:verso/core/design/profiles/verso_palette.dart';
+import 'package:verso/core/design/tokens/colors.dart';
+import 'package:verso/data/local/entities/user_settings.dart';
+
+/// "Illuminated Manuscript" — Sacred Parchment × Gold Leaf × Cardinal Crimson.
+///
+/// Drawn from centuries-old Catholic illuminated Bibles — warm vellum parchment,
+/// deep cardinal crimson, and burnished gold. Familiar and reverent.
+const ThemeProfile illuminatedManuscriptProfile = ThemeProfile(
+  id: 'illuminated_manuscript',
+  name: 'Illuminated Manuscript',
+  tagline: 'Sacred Parchment × Gold Leaf × Cardinal Crimson',
+  description:
+      'Drawn from centuries-old Catholic illuminated Bibles — warm vellum parchment, deep cardinal crimson, and burnished gold. Familiar and reverent. Appeals strongly to older audiences while remaining elegant for all ages.',
+  inspiration:
+      'Knanaya church gold altars, Syrian-Catholic manuscript tradition, Kerala nilavilakku brass lamps',
+  light: VersoPalette(
+    style: AppearanceStyle.light,
+    bg: AppColors.backgroundLight,
+    surface: AppColors.surfaceLight,
+    surfaceAlt: Color(0xFFF3ECD8),
+    border: AppColors.outlineLight,
+    borderLight: AppColors.outlineVariantLight,
+    primary: Color(0xFF8B1A2A),
+    primaryHover: Color(0xFF6E1320),
+    secondary: Color(0xFFB5302A),
+    accent: Color(0xFFB8860B),
+    accentBright: Color(0xFFD4A017),
+    accentSoft: Color(0xFFFDF5D8),
+    text: AppColors.onSurfaceLight,
+    textMuted: AppColors.onSurfaceVariantLight,
+    textLight: Color(0xFFADB5BD),
+    success: Color(0xFF3A7A3A),
+    warning: Color(0xFFB8860B),
+    danger: Color(0xFFA01010),
+    progress: Color(0xFF8B1A2A),
+    progressBg: Color(0xFFEBD9B4),
+    tag: Color(0xFFF5ECD5),
+    tagText: Color(0xFF8B1A2A),
+    streakBg: Color(0xFFFDF5D8),
+    streakText: Color(0xFFB8860B),
+    divider: AppColors.outlineVariantLight,
+    footerBg: AppColors.surfaceLight,
+    footerActive: Color(0xFF8B1A2A),
+    footerInactive: AppColors.onSurfaceVariantLight,
+    highlight: Color(0xFFFFF9E8),
+    cross: Color(0xFF8B1A2A),
+  ),
+  dark: VersoPalette(
+    style: AppearanceStyle.dark,
+    bg: AppColors.backgroundDark,
+    surface: AppColors.surfaceDark,
+    surfaceAlt: Color(0xFF261A0C),
+    border: AppColors.outlineDark,
+    borderLight: AppColors.outlineVariantDark,
+    primary: Color(0xFFD4804A),
+    primaryHover: Color(0xFFE89A60),
+    secondary: Color(0xFFC06030),
+    accent: Color(0xFFD4A017),
+    accentBright: Color(0xFFEAB830),
+    accentSoft: Color(0xFF241A04),
+    text: AppColors.onSurfaceDark,
+    textMuted: AppColors.onSurfaceVariantDark,
+    textLight: Color(0xFF6B7280),
+    success: Color(0xFF5AB07A),
+    warning: Color(0xFFD4A017),
+    danger: Color(0xFFE05050),
+    progress: Color(0xFFD4804A),
+    progressBg: Color(0xFF2A1A0A),
+    tag: Color(0xFF2A1C0A),
+    tagText: Color(0xFFD4A017),
+    streakBg: Color(0xFF241A04),
+    streakText: Color(0xFFEAB830),
+    divider: AppColors.outlineVariantDark,
+    footerBg: AppColors.surfaceDark,
+    footerActive: Color(0xFFD4A017),
+    footerInactive: AppColors.onSurfaceVariantDark,
+    highlight: Color(0xFF201608),
+    cross: Color(0xFFD4A017),
+  ),
+);

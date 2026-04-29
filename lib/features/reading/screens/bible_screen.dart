@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:verso/core/design/tokens/colors.dart';
+import 'package:verso/core/design/extensions.dart';
+import 'package:verso/data/local/entities/user_settings.dart';
 import 'package:verso/features/reading/screens/new_testament_screen.dart';
 import 'package:verso/features/reading/screens/old_testament_screen.dart';
 
@@ -9,8 +10,7 @@ class BibleScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final isLight = Theme.of(context).brightness == Brightness.light;
-    final isAmoled = !isLight && scheme.surface == AppColors.surfaceAmoled;
+    final isAmoled = context.palette.style == AppearanceStyle.amoled;
 
     // DefaultTabController automatically manages the state for the TabBar and TabBarView
     return DefaultTabController(

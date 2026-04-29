@@ -73,6 +73,14 @@ class CurrentSettings extends _$CurrentSettings {
     ref.invalidateSelf(); // Refresh UI
   }
 
+  Future<void> setThemeProfileId(String id) async {
+    final current = _current;
+    if (current == null) return;
+    state = AsyncData(current.copyWith(themeProfileId: id));
+    await ref.read(settingsRepositoryProvider).setThemeProfileId(id);
+    ref.invalidateSelf(); // Refresh UI
+  }
+
   Future<void> updateReminder(bool isEnabled, int hour, int minute) async {
     final current = _current;
     if (current == null) return;
