@@ -110,8 +110,9 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
                           label: 'Total Bible',
                           currentValue: stats.totalRead,
                           maxValue: 1334,
-                          color: cs.primaryContainer,
-                          textColor: cs.primary,
+                          color:
+                              context.appColors.chapters.withValues(alpha: 0.1),
+                          textColor: context.appColors.chapters,
                         ),
                       ),
                     ],
@@ -225,13 +226,11 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
                                   );
                                 }),
                                 isCurved: true,
-                                color: Theme.of(context).colorScheme.primary,
+                                color: context.appColors.chapters,
                                 isStrokeCapRound: true,
                                 belowBarData: BarAreaData(
                                   show: true,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .primary
+                                  color: context.appColors.chapters
                                       .withValues(alpha: 0.1),
                                 ),
                               ),

@@ -325,10 +325,10 @@ class _QuickStatsRow extends StatelessWidget {
             icon: Icons.local_fire_department_rounded,
             value: '${stats.streak}',
             label: 'Day streak',
-            iconColor: isLight ? AppColors.otColorLight : AppColors.otColorDark,
+            iconColor: isLight ? AppColors.streakLight : AppColors.streakDark,
             bgColor: isLight
-                ? AppColors.otColorLight.withValues(alpha: 0.08)
-                : AppColors.otColorLight.withValues(alpha: 0.15),
+                ? AppColors.streakLight.withValues(alpha: 0.08)
+                : AppColors.streakDark.withValues(alpha: 0.15),
           ),
         ),
         const Gap(Spacing.sm),
@@ -337,10 +337,9 @@ class _QuickStatsRow extends StatelessWidget {
             icon: Icons.auto_stories_rounded,
             value: '${stats.totalChaptersRead}',
             label: 'Chapters',
-            iconColor: scheme.primary,
-            bgColor: isLight
-                ? scheme.primaryContainer
-                : scheme.primary.withValues(alpha: 0.15),
+            iconColor: context.appColors.chapters,
+            bgColor: context.appColors.chapters
+                .withValues(alpha: isLight ? 0.08 : 0.15),
           ),
         ),
         const Gap(Spacing.sm),

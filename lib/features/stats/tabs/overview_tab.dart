@@ -206,7 +206,7 @@ class _SummaryCards extends StatelessWidget {
             Expanded(
               child: StatSummaryCard(
                 icon: Icons.auto_stories_rounded,
-                iconColor: context.appColors.ntColor,
+                iconColor: context.appColors.chapters,
                 label: 'Chapters Read',
                 value: '${stats.totalRead}',
                 subtitle: 'of 1,334 total',
