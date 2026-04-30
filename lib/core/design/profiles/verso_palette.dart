@@ -31,8 +31,6 @@ class VersoPalette extends ThemeExtension<VersoPalette> {
     required this.progressBg,
     required this.tag,
     required this.tagText,
-    required this.streakBg,
-    required this.streakText,
     required this.divider,
     required this.footerBg,
     required this.footerActive,
@@ -79,10 +77,6 @@ class VersoPalette extends ThemeExtension<VersoPalette> {
   // Tags
   final Color tag;
   final Color tagText;
-
-  // Streak
-  final Color streakBg;
-  final Color streakText;
 
   // Divider
   final Color divider;
@@ -132,8 +126,6 @@ class VersoPalette extends ThemeExtension<VersoPalette> {
     Color? progressBg,
     Color? tag,
     Color? tagText,
-    Color? streakBg,
-    Color? streakText,
     Color? divider,
     Color? footerBg,
     Color? footerActive,
@@ -164,8 +156,6 @@ class VersoPalette extends ThemeExtension<VersoPalette> {
         progressBg: progressBg ?? this.progressBg,
         tag: tag ?? this.tag,
         tagText: tagText ?? this.tagText,
-        streakBg: streakBg ?? this.streakBg,
-        streakText: streakText ?? this.streakText,
         divider: divider ?? this.divider,
         footerBg: footerBg ?? this.footerBg,
         footerActive: footerActive ?? this.footerActive,
@@ -200,8 +190,6 @@ class VersoPalette extends ThemeExtension<VersoPalette> {
       progressBg: Color.lerp(progressBg, other.progressBg, t)!,
       tag: Color.lerp(tag, other.tag, t)!,
       tagText: Color.lerp(tagText, other.tagText, t)!,
-      streakBg: Color.lerp(streakBg, other.streakBg, t)!,
-      streakText: Color.lerp(streakText, other.streakText, t)!,
       divider: Color.lerp(divider, other.divider, t)!,
       footerBg: Color.lerp(footerBg, other.footerBg, t)!,
       footerActive: Color.lerp(footerActive, other.footerActive, t)!,
