@@ -33,6 +33,7 @@ class AppSemanticColors {
   Color get streak => _isDark ? AppColors.streakDark : AppColors.streakLight;
   Color get chapters =>
       _isDark ? AppColors.chaptersDark : AppColors.chaptersLight;
+  Color get books => _isDark ? AppColors.booksDark : AppColors.booksLight;
   Color get chartPurple =>
       _isDark ? AppColors.chartPurpleDark : AppColors.chartPurpleLight;
   Color get chartTeal =>

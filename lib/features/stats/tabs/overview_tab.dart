@@ -220,7 +220,7 @@ class _SummaryCards extends StatelessWidget {
             Expanded(
               child: StatSummaryCard(
                 icon: Icons.emoji_events_rounded,
-                iconColor: context.appColors.streak,
+                iconColor: context.appColors.books,
                 label: 'Books Done',
                 value: '${stats.otBooksCompleted + stats.ntBooksCompleted}',
                 subtitle: 'of 73 books',

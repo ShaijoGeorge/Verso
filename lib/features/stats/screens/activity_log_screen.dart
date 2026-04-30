@@ -587,7 +587,7 @@ class _ActivityCard extends StatelessWidget {
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   color: group.isFinish
-                      ? context.appColors.success.withValues(alpha: 0.15)
+                      ? context.appColors.books.withValues(alpha: 0.15)
                       : (isBulk
                           ? context.appColors.otColor.withValues(alpha: 0.15)
                           : context.appColors.chapters.withValues(alpha: 0.15)),
@@ -595,8 +595,8 @@ class _ActivityCard extends StatelessWidget {
                   boxShadow: group.isFinish
                       ? [
                           BoxShadow(
-                            color: context.appColors.success
-                                .withValues(alpha: 0.4),
+                            color:
+                                context.appColors.books.withValues(alpha: 0.4),
                             blurRadius: 8,
                             spreadRadius: 1,
                           ),
@@ -609,7 +609,7 @@ class _ActivityCard extends StatelessWidget {
                       : (isBulk ? Icons.done_all : Icons.auto_stories),
                   size: 16,
                   color: group.isFinish
-                      ? context.appColors.success
+                      ? context.appColors.books
                       : (isBulk
                           ? context.appColors.otColor
                           : context.appColors.chapters),
@@ -723,25 +723,24 @@ class _CompletionCard extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: isDark
               ? [
-                  const Color(0xFF3D2E00),
-                  const Color(0xFF2A2000),
-                  const Color(0xFF1E1800),
+                  context.appColors.books.withValues(alpha: 0.15),
+                  context.appColors.books.withValues(alpha: 0.08),
+                  context.appColors.books.withValues(alpha: 0.05),
                 ]
               : [
-                  Colors.amber.shade50,
-                  Colors.orange.shade50,
-                  Colors.yellow.shade50,
+                  context.appColors.books.withValues(alpha: 0.08),
+                  context.appColors.books.withValues(alpha: 0.04),
+                  Colors.white,
                 ],
         ),
         border: Border.all(
-          color: isDark
-              ? Colors.amber.shade700.withValues(alpha: 0.5)
-              : Colors.amber.withValues(alpha: 0.5),
+          color: context.appColors.books.withValues(alpha: isDark ? 0.3 : 0.2),
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.amber.withValues(alpha: isDark ? 0.15 : 0.2),
+            color:
+                context.appColors.books.withValues(alpha: isDark ? 0.1 : 0.15),
             blurRadius: 16,
             offset: const Offset(0, 4),
             spreadRadius: 1,
@@ -757,7 +756,7 @@ class _CompletionCard extends StatelessWidget {
             child: Icon(
               Icons.auto_awesome,
               size: 16,
-              color: Colors.amber.withValues(alpha: 0.3),
+              color: context.appColors.books.withValues(alpha: 0.3),
             ),
           ),
           Positioned(
@@ -766,7 +765,7 @@ class _CompletionCard extends StatelessWidget {
             child: Icon(
               Icons.auto_awesome,
               size: 10,
-              color: Colors.amber.withValues(alpha: 0.2),
+              color: context.appColors.books.withValues(alpha: 0.2),
             ),
           ),
           Positioned(
@@ -775,7 +774,7 @@ class _CompletionCard extends StatelessWidget {
             child: Icon(
               Icons.auto_awesome,
               size: 12,
-              color: Colors.amber.withValues(alpha: 0.25),
+              color: context.appColors.books.withValues(alpha: 0.25),
             ),
           ),
 
@@ -792,11 +791,12 @@ class _CompletionCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.amber.shade100,
+                        color: context.appColors.books.withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.amber.withValues(alpha: 0.4),
+                            color:
+                                context.appColors.books.withValues(alpha: 0.3),
                             blurRadius: 12,
                             spreadRadius: 2,
                           ),
@@ -804,8 +804,8 @@ class _CompletionCard extends StatelessWidget {
                       ),
                       child: Icon(
                         Icons.emoji_events,
-                        size: 20,
-                        color: Colors.amber.shade800,
+                        size: 24,
+                        color: context.appColors.books,
                       ),
                     ),
                     const Gap(12),

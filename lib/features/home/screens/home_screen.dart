@@ -348,10 +348,9 @@ class _QuickStatsRow extends StatelessWidget {
             icon: Icons.emoji_events_rounded,
             value: '${stats.booksCompleted}',
             label: 'Books completed',
-            iconColor: scheme.secondary,
-            bgColor: isLight
-                ? scheme.secondaryContainer
-                : scheme.secondary.withValues(alpha: 0.15),
+            iconColor: context.appColors.books,
+            bgColor: context.appColors.books
+                .withValues(alpha: isLight ? 0.08 : 0.15),
           ),
         ),
       ],

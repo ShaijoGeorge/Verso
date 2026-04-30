@@ -54,6 +54,8 @@ abstract final class AppColors {
   static const Color streakDark = Color(0xFFFF9800); // Bright Orange
   static const Color chaptersLight = Color(0xFF0D9488); // Teal
   static const Color chaptersDark = Color(0xFF2DD4BF);
+  static const Color booksLight = Color(0xFFEAB308); // Yellow/Gold
+  static const Color booksDark = Color(0xFFFACC15);
 
   static const Color chartPurpleLight = Color(0xFF7C3AED);
   static const Color chartPurpleDark = Color(0xFFA78BFA);
