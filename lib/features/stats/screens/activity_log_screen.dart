@@ -587,15 +587,16 @@ class _ActivityCard extends StatelessWidget {
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   color: group.isFinish
-                      ? Colors.amber.shade100
+                      ? context.appColors.success.withValues(alpha: 0.15)
                       : (isBulk
                           ? context.appColors.otColor.withValues(alpha: 0.15)
-                          : colorScheme.primaryContainer),
+                          : context.appColors.chapters.withValues(alpha: 0.15)),
                   shape: BoxShape.circle,
                   boxShadow: group.isFinish
                       ? [
                           BoxShadow(
-                            color: Colors.amber.withValues(alpha: 0.4),
+                            color: context.appColors.success
+                                .withValues(alpha: 0.4),
                             blurRadius: 8,
                             spreadRadius: 1,
                           ),
@@ -608,10 +609,10 @@ class _ActivityCard extends StatelessWidget {
                       : (isBulk ? Icons.done_all : Icons.auto_stories),
                   size: 16,
                   color: group.isFinish
-                      ? Colors.amber.shade800
+                      ? context.appColors.success
                       : (isBulk
                           ? context.appColors.otColor
-                          : colorScheme.primary),
+                          : context.appColors.chapters),
                 ),
               ),
               Expanded(

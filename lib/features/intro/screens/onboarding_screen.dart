@@ -30,8 +30,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       subtitle:
           'Tap to log your progress with a visual book grid. Never lose your place again.',
       icon: Icons.grid_view_rounded,
-      accentColor: AppColors.primaryDark,
-      gradientColors: [AppColors.primaryContainerDark, AppColors.primaryLight],
+      accentColor: AppColors.chaptersLight,
+      gradientColors: [
+        Color(0xFF064E3B), // Dark Teal
+        Color(0xFF0D9488), // Teal 600
+      ],
       illustrationElements: [
         _FloatingElement(
           icon: Icons.menu_book_rounded,
@@ -68,10 +71,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       subtitle:
           'Read daily to build your streak. Consistency is the key to finishing the Bible.',
       icon: Icons.local_fire_department_rounded,
-      accentColor: AppColors.secondaryLight,
+      accentColor: AppColors.streakLight,
       gradientColors: [
-        AppColors.secondaryContainerDark,
-        AppColors.secondaryAccentDark,
+        AppColors.otContainerDark,
+        Color(0xFF5C3D20), // Dark brownish orange
       ],
       illustrationElements: [
         _FloatingElement(

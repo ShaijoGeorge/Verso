@@ -50,9 +50,10 @@ abstract final class AppColors {
   static const Color errorDark = Color(0xFFEF5350); // Salmon
 
   // ──────────────── Accent / Chart Colors ────────────────
-  static const Color streakLight =
-      Color(0xFFC4973B); // Warm Gold (same as secondary)
-  static const Color streakDark = Color(0xFFA8864A);
+  static const Color streakLight = Color(0xFFFF8A00); // Vibrant Orange
+  static const Color streakDark = Color(0xFFFF9800); // Bright Orange
+  static const Color chaptersLight = Color(0xFF0D9488); // Teal
+  static const Color chaptersDark = Color(0xFF2DD4BF);
 
   static const Color chartPurpleLight = Color(0xFF7C3AED);
   static const Color chartPurpleDark = Color(0xFFA78BFA);
