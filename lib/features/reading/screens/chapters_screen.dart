@@ -444,16 +444,12 @@ class _ChapterTileState extends State<_ChapterTile>
     _cachedIsRead = _isRead;
     _cachedBrightness = isLight ? Brightness.light : Brightness.dark;
     _cachedDecoration = BoxDecoration(
-      color: _isRead
-          ? context.palette.primary
-          : (isLight
-              ? scheme.surface
-              : scheme.surfaceContainerHighest.withValues(alpha: 0.5)),
+      color: _isRead ? context.palette.primary : scheme.surface,
       borderRadius: AppRadii.borderRadiusMD,
       border: _isRead
           ? null
           : Border.all(
-              color: scheme.outline.withValues(alpha: isLight ? 0.15 : 0.1),
+              color: scheme.outline.withValues(alpha: isLight ? 0.5 : 0.2),
             ),
       boxShadow: _isRead
           ? [

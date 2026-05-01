@@ -375,6 +375,7 @@ class _QuickStatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
+    final isLight = Theme.of(context).brightness == Brightness.light;
     final isAmoled = context.palette.style == AppearanceStyle.amoled;
 
     return Container(
@@ -388,7 +389,7 @@ class _QuickStatCard extends StatelessWidget {
         border: Border.all(
           color: isAmoled
               ? scheme.outline
-              : scheme.outline.withValues(alpha: 0.08),
+              : scheme.outline.withValues(alpha: isLight ? 0.5 : 0.15),
         ),
         boxShadow: AppShadows.sm,
       ),
