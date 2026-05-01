@@ -763,10 +763,13 @@ class _DailyVerseCard extends StatelessWidget {
         scheme: scheme,
         isLight: isLight,
         isAmoled: isAmoled,
-        child: const SizedBox(
-          height: 48,
+        child: SizedBox(
+          height: 84,
           child: Center(
-            child: CircularProgressIndicator(strokeWidth: 2),
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: scheme.secondary,
+            ),
           ),
         ),
       ),
@@ -776,60 +779,59 @@ class _DailyVerseCard extends StatelessWidget {
           scheme: scheme,
           isLight: isLight,
           isAmoled: isAmoled,
-          child: Row(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Large decorative opening quote mark
+              // Eyebrow label
+              Row(
+                children: [
+                  Container(
+                    width: 5,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: scheme.secondary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const Gap(Spacing.sm),
+                  Text(
+                    'VERSE OF THE DAY',
+                    style: textTheme.labelSmall?.copyWith(
+                      color: scheme.secondary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ],
+              ),
+              const Gap(Spacing.md),
+              // Verse text - DM Serif Display
               Text(
-                '\u201C',
-                style: textTheme.displayLarge?.copyWith(
-                  color: scheme.secondary.withValues(alpha: 0.35),
-                  height: 0.9,
-                  fontSize: 48,
+                verse['text'] as String,
+                style: textTheme.headlineSmall?.copyWith(
+                  fontSize: 20,
+                  height: 1.45,
+                  color: isLight
+                      ? scheme.onSurface.withValues(alpha: 0.92)
+                      : const Color(0xFFF5EFE3).withValues(alpha: 0.95),
                 ),
               ),
+              const Gap(Spacing.md),
+              // Gold hairline rule
+              Container(
+                width: 32,
+                height: 1,
+                color: scheme.secondary.withValues(alpha: 0.7),
+              ),
               const Gap(Spacing.sm),
-
-              // Verse text + reference
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Gap(Spacing.sm),
-                    Text(
-                      verse['text'] as String,
-                      style: textTheme.bodyMedium?.copyWith(
-                        fontStyle: FontStyle.italic,
-                        height: 1.6,
-                        color: isLight
-                            ? scheme.onSurface.withValues(alpha: 0.85)
-                            : scheme.onSurface.withValues(alpha: 0.9),
-                      ),
-                    ),
-                    const Gap(Spacing.sm),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: scheme.secondary
-                              .withValues(alpha: isLight ? 0.1 : 0.15),
-                          borderRadius: AppRadii.borderRadiusFull,
-                        ),
-                        child: Text(
-                          verse['ref'] as String,
-                          style: textTheme.labelSmall?.copyWith(
-                            color: scheme.secondary,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+              // Reference
+              Text(
+                (verse['ref'] as String).toUpperCase(),
+                style: textTheme.labelSmall?.copyWith(
+                  color: scheme.secondary,
+                  letterSpacing: 1.8,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -845,24 +847,82 @@ class _DailyVerseCard extends StatelessWidget {
     required bool isAmoled,
     required Widget child,
   }) {
+    // Theme-adaptive gradient stops
+    final gradientColors = isAmoled
+        ? [const Color(0xFF0A0A0E), Colors.black]
+        : isLight
+            ? [
+                scheme.primaryContainer.withValues(alpha: 0.6),
+                scheme.surface,
+              ]
+            : [
+                scheme.primaryContainer.withValues(alpha: 0.55),
+                scheme.surface,
+              ];
+
+    // Multi-layer shadow: elevation drop + warm gold ambient
+    final shadows = isAmoled
+        ? [
+            BoxShadow(
+              color: scheme.secondary.withValues(alpha: 0.08),
+              blurRadius: 32,
+              offset: const Offset(0, 4),
+            ),
+          ]
+        : [
+            const BoxShadow(
+              color: Color(0x14000000),
+              blurRadius: 24,
+              offset: Offset(0, 8),
+            ),
+            BoxShadow(
+              color: scheme.secondary.withValues(alpha: 0.08),
+              blurRadius: 32,
+              offset: const Offset(0, 4),
+            ),
+          ];
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.md,
-        vertical: Spacing.md,
-      ),
       decoration: BoxDecoration(
-        color: isLight
-            ? scheme.secondaryContainer.withValues(alpha: 0.3)
-            : scheme.secondaryContainer.withValues(alpha: 0.12),
-        borderRadius: AppRadii.borderRadiusLG,
-        border: Border.all(
-          color: isAmoled
-              ? scheme.outline
-              : scheme.secondary.withValues(alpha: isLight ? 0.12 : 0.08),
+        borderRadius: AppRadii.borderRadiusXL,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: gradientColors,
         ),
+        border: Border.all(
+          color: scheme.secondary.withValues(alpha: 0.28),
+        ),
+        boxShadow: shadows,
       ),
-      child: child,
+      child: Stack(
+        children: [
+          // Soft gold radial glow at top-right
+          Positioned(
+            top: -40,
+            right: -40,
+            child: Container(
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    scheme.secondary.withValues(alpha: 0.16),
+                    scheme.secondary.withValues(alpha: 0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Content
+          Padding(
+            padding: const EdgeInsets.all(Spacing.lg),
+            child: child,
+          ),
+        ],
+      ),
     );
   }
 }
