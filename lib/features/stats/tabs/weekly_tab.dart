@@ -14,7 +14,6 @@ class WeeklyTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
-    final isLight = Theme.of(context).brightness == Brightness.light;
 
     final offset = ref.watch(weeklyOffsetProvider);
     final asyncData = ref.watch(weeklyChartStatsProvider(offset));

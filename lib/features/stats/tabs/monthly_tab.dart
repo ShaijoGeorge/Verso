@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:verso/core/design/extensions.dart';
-import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 import 'package:verso/features/stats/widgets/time_period_navigator.dart';
 
@@ -389,7 +388,6 @@ class _IntensityLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLight = Theme.of(context).brightness == Brightness.light;
     final scheme = Theme.of(context).colorScheme;
 
     final colors = [

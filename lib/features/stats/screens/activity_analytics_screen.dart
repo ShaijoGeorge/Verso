@@ -25,7 +25,6 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
         ),
         data: (stats) {
           final cs = Theme.of(context).colorScheme;
-          final appColors = context.appColors;
 
           // Calculate Dynamic Y-Axis Max
           final maxMonthly = stats.currentMonthDailyCounts.values.isEmpty
