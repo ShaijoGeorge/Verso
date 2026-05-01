@@ -223,17 +223,10 @@ class WeeklyTab extends ConsumerWidget {
                                           scheme.primary.withValues(alpha: 0.7),
                                         ]
                                       : count > 0
-                                          ? isLight
-                                              ? [
-                                                  context
-                                                      .appColors.primaryAccent,
-                                                  context.appColors.ntContainer,
-                                                ]
-                                              : [
-                                                  context.colors.primary,
-                                                  context
-                                                      .appColors.primaryAccent,
-                                                ]
+                                          ? [
+                                              context.palette.primary,
+                                              context.palette.primaryHover,
+                                            ]
                                           : [
                                               scheme.outline
                                                   .withValues(alpha: 0.15),

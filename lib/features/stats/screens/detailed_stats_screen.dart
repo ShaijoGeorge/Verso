@@ -226,11 +226,11 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
                                   );
                                 }),
                                 isCurved: true,
-                                color: context.appColors.chapters,
+                                color: context.palette.primary,
                                 isStrokeCapRound: true,
                                 belowBarData: BarAreaData(
                                   show: true,
-                                  color: context.appColors.chapters
+                                  color: context.palette.primary
                                       .withValues(alpha: 0.1),
                                 ),
                               ),

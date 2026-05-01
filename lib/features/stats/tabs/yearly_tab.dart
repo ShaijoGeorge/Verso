@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:verso/core/design/extensions.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 import 'package:verso/features/stats/widgets/time_period_navigator.dart';
 
@@ -227,7 +228,7 @@ class YearlyTab extends ConsumerWidget {
                         value: bestMonthLabel,
                         subtitle: '$bestMonthCount chapters',
                         icon: Icons.star_rounded,
-                        iconColor: Colors.amber.shade700,
+                        iconColor: context.appColors.books,
                       ),
                     ),
                     const Gap(12),
@@ -240,7 +241,7 @@ class YearlyTab extends ConsumerWidget {
                             : '0',
                         subtitle: 'chapters / month',
                         icon: Icons.show_chart_rounded,
-                        iconColor: scheme.primary,
+                        iconColor: context.appColors.chartPurple,
                       ),
                     ),
                   ],

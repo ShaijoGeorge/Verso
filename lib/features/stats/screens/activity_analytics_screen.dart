@@ -138,13 +138,13 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
                                   isAnimated,
                                 ),
                                 isCurved: true,
-                                color: appColors.chartPurple,
+                                color: context.palette.primary,
                                 barWidth: 3,
                                 isStrokeCapRound: true,
                                 dotData: const FlDotData(show: false),
                                 belowBarData: BarAreaData(
                                   show: true,
-                                  color: appColors.chartPurple
+                                  color: context.palette.primary
                                       .withValues(alpha: 0.1),
                                 ),
                               ),
@@ -235,12 +235,12 @@ class ActivityAnalyticsScreen extends ConsumerWidget {
                                   isAnimated,
                                 ),
                                 isCurved: true,
-                                color: appColors.chartTeal,
+                                color: context.palette.accent,
                                 barWidth: 3,
                                 isStrokeCapRound: true,
                                 belowBarData: BarAreaData(
                                   show: true,
-                                  color: appColors.chartTeal
+                                  color: context.palette.accent
                                       .withValues(alpha: 0.1),
                                 ),
                               ),

@@ -365,22 +365,18 @@ class _HeatmapCalendar extends StatelessWidget {
   }
 
   Color _heatColor(BuildContext context, double intensity) {
-    final isLight = Theme.of(context).brightness == Brightness.light;
     if (intensity <= 0) {
-      return isLight ? AppColors.backgroundLight : AppColors.backgroundDark;
+      return context.palette.surfaceAlt;
     }
 
-    // Sacred Blue scale
     if (intensity <= 0.25) {
-      return isLight
-          ? AppColors.primaryContainerLight
-          : AppColors.primaryContainerDark;
+      return context.palette.primary.withValues(alpha: 0.3);
     } else if (intensity <= 0.5) {
-      return isLight ? AppColors.primaryDark : AppColors.primaryLight;
+      return context.palette.primary.withValues(alpha: 0.5);
     } else if (intensity <= 0.75) {
-      return context.appColors.primaryHighlight;
+      return context.palette.primary.withValues(alpha: 0.75);
     } else {
-      return isLight ? AppColors.primaryLight : AppColors.primaryDark;
+      return context.palette.primary;
     }
   }
 }
@@ -396,21 +392,13 @@ class _IntensityLegend extends StatelessWidget {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final scheme = Theme.of(context).colorScheme;
 
-    final colors = isLight
-        ? [
-            AppColors.backgroundLight,
-            AppColors.primaryContainerLight,
-            AppColors.primaryDark,
-            AppColors.primaryHighlightLight,
-            AppColors.primaryLight,
-          ]
-        : [
-            AppColors.backgroundDark,
-            AppColors.primaryContainerDark,
-            AppColors.primaryLight,
-            AppColors.primaryHighlightDark,
-            AppColors.primaryDark,
-          ];
+    final colors = [
+      context.palette.surfaceAlt,
+      context.palette.primary.withValues(alpha: 0.3),
+      context.palette.primary.withValues(alpha: 0.5),
+      context.palette.primary.withValues(alpha: 0.75),
+      context.palette.primary,
+    ];
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
