@@ -50,6 +50,8 @@ abstract final class AppTheme {
       extensions: [palette],
       appBarTheme: AppBarTheme(
         backgroundColor: palette.bg,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         foregroundColor: colorScheme.onSurface,
         centerTitle: true,
         elevation: 0,
