@@ -134,7 +134,7 @@ Future<List<ReadingProgress>> _fetchOfflineFirstHistory(Ref ref) async {
   }
 
   // 4. Merge any pending actions the user JUST took
-  // so the Journal immediately reflects their progress even before it syncs.
+  // so the History immediately reflects their progress even before it syncs.
   final queue = await cacheService.getWriteQueue();
   if (queue.isNotEmpty && userId.isNotEmpty) {
     history = cacheService.mergeWithPendingWrites(history, queue, userId);

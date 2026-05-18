@@ -94,7 +94,7 @@ class HomeScreen extends ConsumerWidget {
                 VersoSectionHeader(
                   title: 'Recent activity',
                   action: 'See all',
-                  onAction: () => context.go('/journal'),
+                  onAction: () => context.go('/history'),
                 ),
                 const Gap(Spacing.md),
                 _RecentActivityList(

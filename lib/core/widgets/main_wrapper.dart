@@ -24,7 +24,7 @@ class MainWrapper extends ConsumerStatefulWidget {
 
 class _MainWrapperState extends ConsumerState<MainWrapper> {
   void _goBranch(int index) {
-    // 0 = Home, 1 = Bible, 2 = Stats, 3 = Journal
+    // 0 = Home, 1 = Bible, 2 = Stats, 3 = History
 
     // Home Page Animation Trigger
     if (index == 0 && widget.navigationShell.currentIndex != 0) {
@@ -41,7 +41,7 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
       ref.invalidate(detailedStatsProvider);
     }
 
-    // Journal Trigger
+    // History Trigger
     if (index == 3 && widget.navigationShell.currentIndex != 3) {
       ref.invalidate(activityLogProvider);
     }
@@ -67,7 +67,7 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
       case 2:
         title = 'Stats';
       case 3:
-        title = 'Reading Journal';
+        title = 'Reading History';
       default:
         title = 'Verso';
     }
@@ -161,7 +161,7 @@ class _VersoBottomNav extends StatelessWidget {
     _NavItem(
       icon: Icons.history_edu_outlined,
       activeIcon: Icons.history_edu_rounded,
-      label: 'Journal',
+      label: 'History',
     ),
   ];
 

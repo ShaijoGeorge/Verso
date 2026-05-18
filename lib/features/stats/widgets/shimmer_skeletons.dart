@@ -192,7 +192,7 @@ class YearlyShimmer extends StatelessWidget {
   }
 }
 
-/// Shimmer skeleton for the Activity Log (Journal) tab
+/// Shimmer skeleton for the Activity Log (History) tab
 class ActivityLogShimmer extends StatelessWidget {
   const ActivityLogShimmer({super.key});
 

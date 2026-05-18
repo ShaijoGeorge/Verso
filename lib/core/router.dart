@@ -220,11 +220,11 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Branch 3: Journal (Activity Log)
+          // Branch 3: History (Activity Log)
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/journal',
+                path: '/history',
                 pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
                   key: state.pageKey,
                   child: const ActivityLogScreen(),
