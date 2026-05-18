@@ -190,7 +190,6 @@ class _HeroProgressCard extends StatelessWidget {
         children: [
           // Progress circle
           TweenAnimationBuilder<double>(
-            key: ValueKey(stats),
             tween: Tween<double>(begin: 0, end: stats.totalProgress),
             duration: const Duration(milliseconds: 1500),
             curve: Curves.easeOutCubic,
@@ -405,7 +404,7 @@ class _QuickStatCard extends StatelessWidget {
           ),
           const Gap(Spacing.sm),
           TweenAnimationBuilder<int>(
-            key: ValueKey('stat_${label}_$value'),
+            key: ValueKey('stat_$label'),
             tween: IntTween(begin: 0, end: int.tryParse(value) ?? 0),
             duration: const Duration(milliseconds: 1200),
             curve: Curves.easeOutCubic,

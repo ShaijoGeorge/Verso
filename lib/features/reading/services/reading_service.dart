@@ -143,6 +143,8 @@ ReadingService readingService(Ref ref) {
   ref.listen(connectivityProvider, (previous, next) {
     if (previous == false && next) {
       service.flushWriteQueue();
+      // Restart the real-time stream subscription if it died during offline mode
+      ref.invalidate(globalProgressProvider);
     }
   });
 

@@ -64,7 +64,7 @@ Stream<List<ReadingProgress>> globalProgress(Ref ref) async* {
       final merged = cache.mergeWithPendingWrites(data, queue, userId);
 
       // Persist the merged result to cache for next offline session
-      cache.cacheProgress(merged);
+      await cache.cacheProgress(merged);
       yield merged;
     }
   } catch (_) {
