@@ -49,6 +49,13 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
     final statsAsync = ref.watch(detailedStatsProvider);
     final scheme = Theme.of(context).colorScheme;
 
+    // Reset to Overview tab whenever the user re-enters the Stats branch.
+    ref.listen<int>(statsTabResetTriggerProvider, (_, __) {
+      if (_tabController.index != 0) {
+        _tabController.animateTo(0);
+      }
+    });
+
     return Column(
       children: [
         // Tab Bar

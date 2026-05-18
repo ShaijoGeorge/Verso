@@ -36,9 +36,10 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
       ref.read(biblePageTriggerProvider.notifier).increment();
     }
 
-    // Stats Tab Trigger — refresh detailed stats
+    // Stats Tab Trigger - refresh detailed stats and reset to Overview tab
     if (index == 2 && widget.navigationShell.currentIndex != 2) {
       ref.invalidate(detailedStatsProvider);
+      ref.read(statsTabResetTriggerProvider.notifier).trigger();
     }
 
     // History Trigger

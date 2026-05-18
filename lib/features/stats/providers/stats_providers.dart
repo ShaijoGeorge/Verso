@@ -1,9 +1,21 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/reading_progress.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 
 part 'stats_providers.g.dart';
+
+/// Increments when the user re-enters the Stats branch from another tab.
+/// StatsScreen listens to this and resets to the Overview tab.
+class StatsTabResetTrigger extends Notifier<int> {
+  @override
+  int build() => 0;
+  void trigger() => state++;
+}
+
+final statsTabResetTriggerProvider =
+    NotifierProvider<StatsTabResetTrigger, int>(StatsTabResetTrigger.new);
 
 class UserStats {
   UserStats({
