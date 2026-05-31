@@ -78,13 +78,12 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // IF NOT LOGGED IN 
       if (!isLoggedIn) {
-        // Allow access to /onboarding and /profile-setup alongside the auth pages
+        // Allow access to /onboarding alongside the auth pages. Profile setup is now POST-login.
         if (!isLoginRoute &&
             !isForgotRoute &&
             !isUpdatePasswordRoute &&
             !isResetCallback &&
-            !isOnboardingRoute &&
-            !isProfileSetupRoute) {
+            !isOnboardingRoute) {
           return '/login';
         }
       }

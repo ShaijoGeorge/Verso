@@ -10,12 +10,12 @@ import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/core/widgets/verso_avatar.dart';
 import 'package:verso/features/settings/data/settings_repository.dart';
 
-/// Shown once - right after the onboarding slides and before the login screen.
-/// Collects gender and birthday, persists them locally, then routes to /login.
+/// Shown after successful login/registration if the user's profile is incomplete.
+/// Collects gender and birthday, persists them to Supabase and locally,
+/// then routes to /home.
 ///
-/// For existing users who are already logged in but missing profile data,
-/// the router gate sends them here too - in that case we sync to Supabase
-/// directly and navigate to /home.
+/// The router gate automatically sends users here if they are logged in
+/// but their Supabase user_metadata is missing gender or birthday.
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
 
@@ -144,36 +144,26 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
     setState(() => _isSaving = true);
 
     try {
-      final settingsRepo = SettingsRepository();
+      // 1. Sync to Supabase (User is guaranteed to be logged in here)
+      await Supabase.instance.client.auth.updateUser(
+        UserAttributes(
+          data: {
+            'gender': _selectedGender,
+            'birthday':
+                '${_selectedBirthday!.year.toString().padLeft(4, '0')}-'
+                '${_selectedBirthday!.month.toString().padLeft(2, '0')}-'
+                '${_selectedBirthday!.day.toString().padLeft(2, '0')}',
+          },
+        ),
+      );
 
-      // Always save locally first
-      await settingsRepo.saveUserProfile(
+      // 2. Save locally for instant offline access
+      await SettingsRepository().saveUserProfile(
         gender: _selectedGender!,
         birthday: _selectedBirthday!,
       );
 
-      if (!mounted) return;
-
-      final session = Supabase.instance.client.auth.currentSession;
-
-      if (session != null) {
-        // Existing user: sync to Supabase immediately
-        await Supabase.instance.client.auth.updateUser(
-          UserAttributes(
-            data: {
-              'gender': _selectedGender,
-              'birthday':
-                  '${_selectedBirthday!.year.toString().padLeft(4, '0')}-'
-                  '${_selectedBirthday!.month.toString().padLeft(2, '0')}-'
-                  '${_selectedBirthday!.day.toString().padLeft(2, '0')}',
-            },
-          ),
-        );
-        if (mounted) context.go('/home');
-      } else {
-        // New user: go to login; sync happens after authentication
-        context.go('/login');
-      }
+      if (mounted) context.go('/home');
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }

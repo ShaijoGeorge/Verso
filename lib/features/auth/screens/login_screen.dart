@@ -15,7 +15,6 @@ import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/core/utils/app_error_handler.dart';
 import 'package:verso/features/auth/data/auth_repository.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
-import 'package:verso/features/settings/data/settings_repository.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -139,13 +138,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           await prefs.remove(_rememberedEmailKey);
         }
 
-        // Sync local profile data -> Supabase user_metadata 
-        // We read whatever was saved during profile setup and push it up.
-        // This is fire-and-forget: if it fails (no network, etc.), the user
-        // still gets into the app - the data is safe in SharedPreferences.
-        // On their next login it will sync successfully.
-        _syncProfileToSupabase(auth);
-
         // Router handles navigation via auth state change
       }
 
@@ -163,37 +155,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     _animController.reset();
     _animController.forward();
   }
-
-  /// Reads gender + birthday from local storage and pushes them to Supabase.
-  /// Called without await - runs in the background after login succeeds.
-  /// Any failure is swallowed: the data is safe locally and will retry on
-  /// the next login.
-  Future<void> _syncProfileToSupabase(AuthRepository auth) async {
-    try {
-      final settingsRepo = SettingsRepository();
-      final gender = await settingsRepo.getUserGender();
-      final birthday = await settingsRepo.getUserBirthday();
-
-      // Only sync if we actually have data to push
-      if (gender == null && birthday == null) return;
-
-      final metadata = <String, dynamic>{};
-      if (gender != null) metadata['gender'] = gender;
-      if (birthday != null) {
-        // Store as ISO-8601 string - readable and sortable in Supabase
-        metadata['birthday'] =
-            '${birthday.year.toString().padLeft(4, '0')}-'
-            '${birthday.month.toString().padLeft(2, '0')}-'
-            '${birthday.day.toString().padLeft(2, '0')}';
-      }
-
-      await auth.updateUserMetadata(metadata);
-    } catch (_) {
-      // Non-critical - silent failure is acceptable here.
-      // The user's profile data is already saved in SharedPreferences.
-    }
-  }
-
 
   @override
   Widget build(BuildContext context) {
