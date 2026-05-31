@@ -288,7 +288,7 @@ class _HeroProgressCard extends StatelessWidget {
                   const Gap(Spacing.xs),
                   _HeroStatRow(
                     icon: Icons.today_rounded,
-                    text: '$todayCount read today',
+                    text: '$todayCount chapter${todayCount == 1 ? '' : 's'} read today',
                     isLight: isLight,
                     scheme: scheme,
                   ),
