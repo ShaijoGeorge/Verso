@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:verso/core/design/components/verso_auth_gradient.dart';
 import 'package:verso/core/design/components/verso_gradient_button.dart';
 import 'package:verso/core/design/components/verso_header_icon.dart';
@@ -31,6 +32,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   bool _isSignUp = false;
   bool _isLoading = false;
   bool _isPasswordVisible = false;
+
+  // "Remember me" state - true means we save the email for next time
+  bool _rememberMe = false;
+
+  // The SharedPreferences key - a constant so we never mistype it
+  static const _rememberedEmailKey = 'remembered_email';
 
   late final AnimationController _animController;
   late final Animation<double> _fadeIn;
@@ -61,6 +68,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     );
 
     _animController.forward();
+
+    // Load any previously remembered email right after the widget initialises
+    _loadRememberedEmail();
+  }
+
+  // Read the saved email from disk and pre-fills the field + checkbox
+  Future<void> _loadRememberedEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_rememberedEmailKey);
+    if (saved != null && saved.isNotEmpty) {
+      // Only run setState if the widget is still mounted
+      if (mounted) {
+        setState(() {
+          _emailController.text = saved;
+          _rememberMe = true; // If we have a saved email, tick the box
+        });
+      }
+    }
   }
 
   @override
@@ -98,6 +123,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           _emailController.text.trim(),
           _passwordController.text.trim(),
         );
+
+        // Save or clear the email depending on the checkbox
+        final prefs = await SharedPreferences.getInstance();
+        if (_rememberMe) {
+          // We ONLY save the email - never the password
+          await prefs.setString(
+            _rememberedEmailKey,
+            _emailController.text.trim(),
+          );
+        } else {
+          // User opted out - clear any previously saved email
+          await prefs.remove(_rememberedEmailKey);
+        }
 
         // Router handles navigation via auth state change
       }
@@ -274,29 +312,66 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
                               if (!_isSignUp) ...[
                                 const Gap(Spacing.sm),
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: TextButton(
-                                    onPressed: () => GoRouter.of(context)
-                                        .push('/forgot-password'),
-                                    style: TextButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: Spacing.sm,
-                                        vertical: Spacing.xs,
-                                      ),
-                                      minimumSize: Size.zero,
-                                      tapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap,
+                                // Row holds both "Remember me" and "Forgot password?" side by side
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    // Remember Me checkbox
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: Checkbox(
+                                            value: _rememberMe,
+                                            // Toggle the flag on tap
+                                            onChanged: (value) => setState(
+                                              () =>
+                                                  _rememberMe = value ?? false,
+                                            ),
+                                            materialTapTargetSize:
+                                                MaterialTapTargetSize
+                                                    .shrinkWrap,
+                                            visualDensity:
+                                                VisualDensity.compact,
+                                          ),
+                                        ),
+                                        const Gap(Spacing.xs),
+                                        Text(
+                                          'Remember me',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 13,
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    child: Text(
-                                      'Forgot password?',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: colorScheme.primary,
+
+                                    // Forgot Password link
+                                    TextButton(
+                                      onPressed: () => GoRouter.of(context)
+                                          .push('/forgot-password'),
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: Spacing.sm,
+                                          vertical: Spacing.xs,
+                                        ),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                      ),
+                                      child: Text(
+                                        'Forgot password?',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: colorScheme.primary,
+                                        ),
                                       ),
                                     ),
-                                  ),
+                                  ],
                                 ),
                               ],
 
