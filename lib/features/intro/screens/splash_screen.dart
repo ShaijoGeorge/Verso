@@ -23,30 +23,27 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _startTimer() async {
-    // Define our two tasks
+    // Define our tasks - run all three in parallel for speed
     final minimumDelay =
         Future<void>.delayed(const Duration(milliseconds: 1500));
-    final checkOnboarding = SettingsRepository().hasSeenOnboarding();
-
-    // Run them simultaneously: the minimum delay is already started above.
-    // Await the onboarding flag; the delay future runs concurrently.
-    final hasSeenOnboarding = await checkOnboarding;
-    // Ensure the minimum 1.5s delay is also respected.
+    final repo = SettingsRepository();
+    final hasSeenOnboarding = await repo.hasSeenOnboarding();
     await minimumDelay;
 
-    // Perform our routing
     if (!mounted) return;
 
     final session = Supabase.instance.client.auth.currentSession;
+
     if (session != null) {
-      context.go('/home');
+      // ── Already logged in → go straight to the app ───────────────────────
+      context
+          .go('/home'); // Router gate will intercept if profile is incomplete
+    } else if (!hasSeenOnboarding) {
+      // ── Brand new user → start from the beginning ─────────────────────────
+      context.go('/onboarding');
     } else {
-      // Logged out -> Check if they've seen onboarding
-      if (hasSeenOnboarding) {
-        context.go('/login');
-      } else {
-        context.go('/onboarding');
-      }
+      // ── Fully onboarded, no session → login screen ────────────────────────
+      context.go('/login');
     }
   }
 

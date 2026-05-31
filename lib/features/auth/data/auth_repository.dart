@@ -55,6 +55,16 @@ class AuthRepository {
     await _supabase.auth.updateUser(UserAttributes(password: newPassword));
   }
 
+  /// Merges [data] into the current user's metadata without overwriting
+  /// existing fields (e.g. full_name set during sign-up is preserved).
+  /// Safe to call even if the user isn't logged in - it's a no-op then.
+  Future<void> updateUserMetadata(Map<String, dynamic> data) async {
+    if (_supabase.auth.currentUser == null) return;
+
+    // Supabase merges the new map into existing metadata - safe, non-destructive
+    await _supabase.auth.updateUser(UserAttributes(data: data));
+  }
+
   // Verify user identity before sensitive changes ---
   Future<void> reauthenticate(String currentPassword) async {
     final email = _supabase.auth.currentUser?.email;

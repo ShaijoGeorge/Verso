@@ -44,8 +44,7 @@ flutter:
   assets:
     - .env
     - assets/app_logo.png
-
-
+    - assets/avatars/
 flutter_launcher_icons:
   android: "ic_launcher"
   ios: true

@@ -37,21 +37,32 @@ class VerseRepository {
         .length;
 
     if (futureVersesCount < 3) {
-      // Fire-and-forget: we do NOT await this. It runs silently in the background.
-      _fetchAndCacheNextBatch(todayDayOfYear).ignore();
+      if (todayVerse == null) {
+        // We have no verse for today (e.g. cache cleared)! Await the fetch so the UI gets it instantly.
+        await _fetchAndCacheNextBatch(todayDayOfYear);
+        // Try reading from cache again
+        final newVerses = await _getLocalVerses();
+        try {
+          todayVerse = newVerses.firstWhere(
+            (verse) =>
+                (verse as Map<String, dynamic>)['day_of_year'] ==
+                todayDayOfYear,
+          ) as Map<String, dynamic>;
+        } catch (_) {}
+      } else {
+        // We have today's verse, but are running low. Fetch silently in the background.
+        _fetchAndCacheNextBatch(todayDayOfYear).ignore();
+      }
     }
 
-    // 4. Return the verse, or a safe fallback if they are offline and the cache is completely empty
+    // 4. Return the verse, or throw if they are offline and the cache is completely empty
     if (todayVerse != null) {
       return {
         'text': todayVerse['text'],
         'ref': todayVerse['reference'],
       };
     } else {
-      return {
-        'text': 'Your word is a lamp to my feet and a light to my path.',
-        'ref': 'Psalm 119:105',
-      };
+      throw Exception('Unable to fetch the daily verse.');
     }
   }
 

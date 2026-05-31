@@ -177,6 +177,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     final repo = SettingsRepository();
     await repo.completeOnboarding();
     if (mounted) {
+      // Go directly to login. After login, the router gate will send them to profile setup if needed.
       context.go('/login');
     }
   }
