@@ -66,8 +66,12 @@ Future<int> todayChapters(Ref ref) async {
 
   return history.where((p) {
     if (!p.isRead || p.readAt == null) return false;
-    final d = p.readAt!;
-    return d.year == today.year && d.month == today.month && d.day == today.day;
+    final d = p.readAt!.toLocal(); // Convert to local time
+    final dt = DateTime(d.year, d.month, d.day);
+    
+    // Sanitization: If an old record was saved with the timezone bug, 
+    // it might appear as "tomorrow". Count it as today.
+    return dt.isAfter(today) || dt == today;
   }).length;
 }
 

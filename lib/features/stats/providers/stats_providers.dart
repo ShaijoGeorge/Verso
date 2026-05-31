@@ -33,19 +33,25 @@ class UserStats {
 int _calculateStreak(List<ReadingProgress> history) {
   if (history.isEmpty) return 0;
 
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final yesterday = today.subtract(const Duration(days: 1));
+
   final readDates = history
       .where((p) => p.isRead && p.readAt != null)
-      .map((p) => p.readAt!)
-      .map((dt) => DateTime(dt.year, dt.month, dt.day))
+      .map((p) => p.readAt!.toLocal()) // Convert to local time
+      .map((dt) {
+        final d = DateTime(dt.year, dt.month, dt.day);
+        // Sanitization: If an old record was saved with the timezone bug, 
+        // it might appear as "tomorrow". Clamp it to today to avoid breaking streaks.
+        if (d.isAfter(today)) return today;
+        return d;
+      })
       .toSet()
       .toList()
     ..sort((a, b) => b.compareTo(a)); // Descending
 
   if (readDates.isEmpty) return 0;
-
-  final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
-  final yesterday = today.subtract(const Duration(days: 1));
 
   // If the most recent read is not today or yesterday, streak is broken
   if (readDates.first != today && readDates.first != yesterday) {
@@ -185,42 +191,41 @@ Future<DetailedStats> detailedStats(Ref ref) async {
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
 
+  // Sanitize history: Convert to local time and clamp corrupted future dates to today
+  final sanitizedHistory = readHistory.where((p) => p.readAt != null).map((p) {
+    final localDt = p.readAt!.toLocal();
+    if (DateTime(localDt.year, localDt.month, localDt.day).isAfter(today)) {
+      return DateTime(today.year, today.month, today.day, localDt.hour, localDt.minute);
+    }
+    return localDt;
+  }).toList();
+
   // 1. Weekly Data
   final last7DaysDates = <DateTime>[];
   final last7DaysCounts = <int>[];
   for (var i = 6; i >= 0; i--) {
     final date = today.subtract(Duration(days: i));
     last7DaysDates.add(date);
-    final count = readHistory.where((p) {
-      if (p.readAt == null) return false;
-      final pDate = p.readAt!;
-      return pDate.year == date.year &&
-          pDate.month == date.month &&
-          pDate.day == date.day;
+    final count = sanitizedHistory.where((dt) {
+      return dt.year == date.year && dt.month == date.month && dt.day == date.day;
     }).length;
     last7DaysCounts.add(count);
   }
 
   // 2. Monthly Data
   final currentMonthDailyCounts = <int, int>{};
-  final monthHistory = readHistory.where(
-    (p) =>
-        p.readAt != null &&
-        p.readAt!.year == now.year &&
-        p.readAt!.month == now.month,
+  final monthHistory = sanitizedHistory.where(
+    (dt) => dt.year == now.year && dt.month == now.month,
   );
-  for (final entry in monthHistory) {
-    currentMonthDailyCounts[entry.readAt!.day] =
-        (currentMonthDailyCounts[entry.readAt!.day] ?? 0) + 1;
+  for (final dt in monthHistory) {
+    currentMonthDailyCounts[dt.day] = (currentMonthDailyCounts[dt.day] ?? 0) + 1;
   }
 
   // 3. Yearly Data
   final currentYearMonthlyCounts = <int, int>{};
-  final yearHistory =
-      readHistory.where((p) => p.readAt != null && p.readAt!.year == now.year);
-  for (final entry in yearHistory) {
-    currentYearMonthlyCounts[entry.readAt!.month] =
-        (currentYearMonthlyCounts[entry.readAt!.month] ?? 0) + 1;
+  final yearHistory = sanitizedHistory.where((dt) => dt.year == now.year);
+  for (final dt in yearHistory) {
+    currentYearMonthlyCounts[dt.month] = (currentYearMonthlyCounts[dt.month] ?? 0) + 1;
   }
 
   // 4. Average
