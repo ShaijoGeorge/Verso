@@ -10,6 +10,7 @@ import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/core/providers/package_info_provider.dart';
 import 'package:verso/core/router.dart';
+import 'package:verso/core/widgets/verso_avatar.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 
@@ -25,7 +26,8 @@ class ProfileDrawer extends ConsumerWidget {
     // 2. Get user metadata (like the name we saved during sign up)
     final name = (user?.userMetadata?['full_name'] as String?) ?? 'Reader';
     final email = user?.email ?? '';
-    final initial = name.isNotEmpty ? name[0].toUpperCase() : 'V';
+    final gender =
+        (user?.userMetadata?['gender'] as String?) ?? 'male';
 
     final scheme = Theme.of(context).colorScheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
@@ -46,7 +48,7 @@ class ProfileDrawer extends ConsumerWidget {
           _DrawerHeader(
             name: name,
             email: email,
-            initial: initial,
+            gender: gender,
             topPadding: topPadding,
             scheme: scheme,
             isLight: isLight,
@@ -346,14 +348,14 @@ class _DrawerHeader extends StatelessWidget {
   const _DrawerHeader({
     required this.name,
     required this.email,
-    required this.initial,
+    required this.gender,
     required this.topPadding,
     required this.scheme,
     required this.isLight,
   });
   final String name;
   final String email;
-  final String initial;
+  final String gender;
   final double topPadding;
   final ColorScheme scheme;
   final bool isLight;
@@ -386,31 +388,12 @@ class _DrawerHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: isLight
-                  ? Colors.white.withValues(alpha: 0.2)
-                  : AppColors.primaryDark.withValues(alpha: 0.2),
-              borderRadius: AppRadii.borderRadiusLG,
-              border: Border.all(
-                color: isLight
-                    ? Colors.white.withValues(alpha: 0.3)
-                    : AppColors.primaryDark.withValues(alpha: 0.3),
-                width: 1.5,
-              ),
-            ),
-            child: Center(
-              child: Text(
-                initial,
-                style: GoogleFonts.dmSerifDisplay(
-                  fontSize: 24,
-                  color: isLight ? Colors.white : AppColors.primaryDark,
-                ),
-              ),
-            ),
+          // Avatar - using the gender-based image
+          VersoAvatar.fromGender(
+            gender,
+            size: 56,
+            borderColor:
+                isLight ? Colors.white : AppColors.primaryDark,
           ),
 
           const Gap(Spacing.md),

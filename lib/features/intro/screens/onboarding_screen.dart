@@ -177,7 +177,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     final repo = SettingsRepository();
     await repo.completeOnboarding();
     if (mounted) {
-      context.go('/login');
+      // Go to profile setup next - not directly to login.
+      // After profile setup is saved, *that* screen navigates to /login.
+      context.go('/profile-setup');
     }
   }
 

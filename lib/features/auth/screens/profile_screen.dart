@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
 import 'package:verso/core/utils/app_error_handler.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
+import 'package:verso/core/widgets/verso_avatar.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -32,7 +32,6 @@ class ProfileScreen extends ConsumerWidget {
 
         final name = (user.userMetadata?['full_name'] as String?) ?? 'Reader';
         final email = user.email ?? 'No Email';
-        final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
 
         return Scaffold(
           appBar: AppBar(title: const Text('My Profile')),
@@ -41,30 +40,9 @@ class ProfileScreen extends ConsumerWidget {
             child: Column(
               children: [
                 const Gap(20),
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    // Keep the squircle look proportionally scaled up from the drawer (16px for 56px size -> ~34px for 120px)
-                    borderRadius: BorderRadius.circular(32),
-                    border: Border.all(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.1),
-                      width: 2,
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      initial,
-                      style: GoogleFonts.dmSerifDisplay(
-                        fontSize: 56,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                  ),
+                const VersoAvatar(
+                  size: 120,
+                  borderWidth: 3,
                 ),
                 const Gap(24),
                 Text(

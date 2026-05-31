@@ -16,6 +16,10 @@ class SettingsRepository {
   static const _kReminderHourKey = 'reminder_hour';
   static const _kReminderMinuteKey = 'reminder_minute';
   static const _kOnboardingKey = 'has_seen_onboarding';
+  // Profile Setup keys (collected before login)
+  static const _kProfileSetupKey = 'has_completed_profile_setup';
+  static const _kUserGenderKey = 'user_gender';
+  static const _kUserBirthdayKey = 'user_birthday';
   static const _kThemeProfileKey = 'theme_profile_id';
   // Legacy key - migrated on first read
   static const _kLegacyThemeKey = 'is_dark_mode';
@@ -61,6 +65,47 @@ class SettingsRepository {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kOnboardingKey, true);
   }
+
+  // ── Profile Setup ────────────────────────────────────────────────────────
+
+  /// Returns true once the user has submitted the profile-setup screen.
+  Future<bool> hasCompletedProfileSetup() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_kProfileSetupKey) ?? false;
+  }
+
+  /// Persists gender ('male' | 'female') and birthday (ISO-8601 date string).
+  Future<void> saveUserProfile({
+    required String gender,
+    required DateTime birthday,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kUserGenderKey, gender);
+    // Store as a plain date string so it survives encoding/decoding
+    await prefs.setString(
+      _kUserBirthdayKey,
+      '${birthday.year.toString().padLeft(4, '0')}-'
+      '${birthday.month.toString().padLeft(2, '0')}-'
+      '${birthday.day.toString().padLeft(2, '0')}',
+    );
+    await prefs.setBool(_kProfileSetupKey, true);
+  }
+
+  /// Returns the saved gender, or null if not yet set.
+  Future<String?> getUserGender() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_kUserGenderKey);
+  }
+
+  /// Returns the saved birthday as a DateTime, or null if not yet set.
+  Future<DateTime?> getUserBirthday() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_kUserBirthdayKey);
+    if (raw == null) return null;
+    return DateTime.tryParse(raw);
+  }
+
+  // ── Theme ─────────────────────────────────────────────────────────────────
 
   Future<void> setThemeMode(AppThemeMode mode) async {
     final prefs = await SharedPreferences.getInstance();

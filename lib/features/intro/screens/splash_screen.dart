@@ -23,30 +23,40 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _startTimer() async {
-    // Define our two tasks
-    final minimumDelay =
-        Future<void>.delayed(const Duration(milliseconds: 1500));
-    final checkOnboarding = SettingsRepository().hasSeenOnboarding();
+    // Define our tasks - run all three in parallel for speed
+    final minimumDelay = Future<void>.delayed(const Duration(milliseconds: 1500));
+    final repo = SettingsRepository();
+    final checkOnboarding = repo.hasSeenOnboarding();
+    final checkProfileSetup = repo.hasCompletedProfileSetup();
 
-    // Run them simultaneously: the minimum delay is already started above.
-    // Await the onboarding flag; the delay future runs concurrently.
-    final hasSeenOnboarding = await checkOnboarding;
-    // Ensure the minimum 1.5s delay is also respected.
+    // Await all three concurrently
+    final results = await Future.wait([checkOnboarding, checkProfileSetup]);
     await minimumDelay;
 
-    // Perform our routing
+    final hasSeenOnboarding = results[0];
+    final hasCompletedProfileSetup = results[1];
+
     if (!mounted) return;
 
     final session = Supabase.instance.client.auth.currentSession;
+
     if (session != null) {
+      // ── Already logged in → go straight to the app ───────────────────────
       context.go('/home');
+    } else if (!hasSeenOnboarding) {
+      // ── Brand new user → start from the beginning ─────────────────────────
+      context.go('/onboarding');
+    } else if (!hasCompletedProfileSetup) {
+      // ── Completed onboarding but quit before finishing profile setup ───────
+      // This handles the "killed app mid profile-setup" case for new users.
+      // Existing users before this feature shipped always have
+      // has_completed_profile_setup = false (key doesn't exist), BUT they
+      // also have an active session, so they hit the branch above first.
+      // The only way to reach here without a session is a new user mid-flow.
+      context.go('/profile-setup');
     } else {
-      // Logged out -> Check if they've seen onboarding
-      if (hasSeenOnboarding) {
-        context.go('/login');
-      } else {
-        context.go('/onboarding');
-      }
+      // ── Fully onboarded, no session → login screen ────────────────────────
+      context.go('/login');
     }
   }
 

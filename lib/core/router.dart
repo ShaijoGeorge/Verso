@@ -15,6 +15,7 @@ import 'package:verso/features/auth/screens/profile_screen.dart';
 import 'package:verso/features/auth/screens/update_password_screen.dart';
 import 'package:verso/features/home/screens/home_screen.dart';
 import 'package:verso/features/intro/screens/onboarding_screen.dart';
+import 'package:verso/features/intro/screens/profile_setup_screen.dart';
 import 'package:verso/features/intro/screens/splash_screen.dart';
 import 'package:verso/features/reading/screens/bible_screen.dart';
 import 'package:verso/features/reading/screens/chapters_screen.dart';
@@ -68,31 +69,47 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isResetCallback = cleanPath == '/reset-callback';
 
       final isOnboardingRoute = cleanPath == '/onboarding';
+      final isProfileSetupRoute = cleanPath == '/profile-setup';
 
-      // Allow Splash Screen to stay
+      // Allow Splash Screen to stay and do its own routing
       if (isSplash) {
         return null;
       }
 
-      // IF NOT LOGGED IN
+      // IF NOT LOGGED IN 
       if (!isLoggedIn) {
-        // Allow access to /onboarding alongside the auth pages
+        // Allow access to /onboarding and /profile-setup alongside the auth pages
         if (!isLoginRoute &&
             !isForgotRoute &&
             !isUpdatePasswordRoute &&
             !isResetCallback &&
-            !isOnboardingRoute) {
+            !isOnboardingRoute &&
+            !isProfileSetupRoute) {
           return '/login';
         }
       }
 
-      // IF LOGGED IN
+      // IF LOGGED IN 
       if (isLoggedIn) {
-        // If they somehow navigate to /onboarding while logged in, send them Home
+        // Check Supabase user_metadata for profile completeness.
+        // currentUser is already in memory - this is synchronous, zero cost.
+        final metadata = Supabase.instance.client.auth.currentUser?.userMetadata;
+        final hasProfileData =
+            metadata?['gender'] != null && metadata?['birthday'] != null;
+
+        // Profile gate: if data is missing, intercept every route and send
+        // the user to profile setup - EXCEPT if they're already there.
+        if (!hasProfileData && !isProfileSetupRoute) {
+          return '/profile-setup';
+        }
+
+        // Once profile is complete, bounce away from all pre-auth screens.
+        // Also bounce off /profile-setup itself (so back-button can't return there).
         if (isLoginRoute ||
             isForgotRoute ||
             isResetCallback ||
-            isOnboardingRoute) {
+            isOnboardingRoute ||
+            isProfileSetupRoute) {
           return '/home';
         }
       }
@@ -112,6 +129,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
           key: state.pageKey,
           child: const OnboardingScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/profile-setup',
+        pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
+          key: state.pageKey,
+          child: const ProfileSetupScreen(),
         ),
       ),
       GoRoute(
