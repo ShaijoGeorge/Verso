@@ -45,7 +45,8 @@ class VerseRepository {
         try {
           todayVerse = newVerses.firstWhere(
             (verse) =>
-                (verse as Map<String, dynamic>)['day_of_year'] == todayDayOfYear,
+                (verse as Map<String, dynamic>)['day_of_year'] ==
+                todayDayOfYear,
           ) as Map<String, dynamic>;
         } catch (_) {}
       } else {

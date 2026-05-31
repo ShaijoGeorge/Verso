@@ -13,7 +13,6 @@ import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/core/utils/app_error_handler.dart';
-import 'package:verso/features/auth/data/auth_repository.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -140,7 +139,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
         // Router handles navigation via auth state change
       }
-
     } catch (e) {
       if (mounted) {
         VersoSnackbar.error(context, message: AppErrorHandler.getMessage(e));

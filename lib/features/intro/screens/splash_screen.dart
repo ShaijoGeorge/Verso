@@ -24,7 +24,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   Future<void> _startTimer() async {
     // Define our tasks - run all three in parallel for speed
-    final minimumDelay = Future<void>.delayed(const Duration(milliseconds: 1500));
+    final minimumDelay =
+        Future<void>.delayed(const Duration(milliseconds: 1500));
     final repo = SettingsRepository();
     final hasSeenOnboarding = await repo.hasSeenOnboarding();
     await minimumDelay;
@@ -35,7 +36,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
     if (session != null) {
       // ── Already logged in → go straight to the app ───────────────────────
-      context.go('/home'); // Router gate will intercept if profile is incomplete
+      context
+          .go('/home'); // Router gate will intercept if profile is incomplete
     } else if (!hasSeenOnboarding) {
       // ── Brand new user → start from the beginning ─────────────────────────
       context.go('/onboarding');

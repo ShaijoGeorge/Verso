@@ -48,13 +48,27 @@ class HomeScreen extends ConsumerWidget {
                 Shimmer.fromColors(
                   baseColor: baseColor,
                   highlightColor: highlightColor,
-                  child: Container(width: 150, height: 32, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8))),
+                  child: Container(
+                    width: 150,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                 ),
                 const Gap(8),
                 Shimmer.fromColors(
                   baseColor: baseColor,
                   highlightColor: highlightColor,
-                  child: Container(width: 240, height: 16, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+                  child: Container(
+                    width: 240,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -121,8 +135,7 @@ class HomeScreen extends ConsumerWidget {
           ],
 
           // RECENT ACTIVITY
-          if (activityAsync.hasValue &&
-              activityAsync.value!.isNotEmpty) ...[
+          if (activityAsync.hasValue && activityAsync.value!.isNotEmpty) ...[
             VersoSectionHeader(
               title: 'Recent activity',
               action: 'See all',
@@ -130,10 +143,8 @@ class HomeScreen extends ConsumerWidget {
             ),
             const Gap(Spacing.md),
             _RecentActivityList(
-              groups: activityAsync.value!.values
-                  .expand((g) => g)
-                  .take(3)
-                  .toList(),
+              groups:
+                  activityAsync.value!.values.expand((g) => g).take(3).toList(),
             ),
           ],
 
@@ -288,7 +299,8 @@ class _HeroProgressCard extends StatelessWidget {
                   const Gap(Spacing.xs),
                   _HeroStatRow(
                     icon: Icons.today_rounded,
-                    text: '$todayCount chapter${todayCount == 1 ? '' : 's'} read today',
+                    text:
+                        '$todayCount chapter${todayCount == 1 ? '' : 's'} read today',
                     isLight: isLight,
                     scheme: scheme,
                   ),
@@ -994,8 +1006,12 @@ class _HeroProgressCardSkeleton extends StatelessWidget {
     final isLight = Theme.of(context).brightness == Brightness.light;
 
     // Use specific highlight/base colors that look good over the primary gradient
-    final baseColor = isLight ? Colors.white.withValues(alpha: 0.3) : scheme.onPrimaryContainer.withValues(alpha: 0.2);
-    final highlightColor = isLight ? Colors.white.withValues(alpha: 0.6) : scheme.onPrimaryContainer.withValues(alpha: 0.4);
+    final baseColor = isLight
+        ? Colors.white.withValues(alpha: 0.3)
+        : scheme.onPrimaryContainer.withValues(alpha: 0.2);
+    final highlightColor = isLight
+        ? Colors.white.withValues(alpha: 0.6)
+        : scheme.onPrimaryContainer.withValues(alpha: 0.4);
 
     return Container(
       width: double.infinity,
@@ -1006,7 +1022,10 @@ class _HeroProgressCardSkeleton extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: isLight
               ? [scheme.primary, scheme.primary.withValues(alpha: 0.85)]
-              : [scheme.primaryContainer, scheme.primaryContainer.withValues(alpha: 0.7)],
+              : [
+                  scheme.primaryContainer,
+                  scheme.primaryContainer.withValues(alpha: 0.7),
+                ],
         ),
         borderRadius: AppRadii.borderRadiusXL,
         boxShadow: AppShadows.lg,
@@ -1031,13 +1050,41 @@ class _HeroProgressCardSkeleton extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(width: 120, height: 24, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+                  Container(
+                    width: 120,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
                   const Gap(16),
-                  Container(width: double.infinity, height: 14, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+                  Container(
+                    width: double.infinity,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
                   const Gap(8),
-                  Container(width: double.infinity, height: 14, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+                  Container(
+                    width: double.infinity,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
                   const Gap(8),
-                  Container(width: 100, height: 14, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+                  Container(
+                    width: 100,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1097,11 +1144,32 @@ class _QuickStatCardSkeleton extends StatelessWidget {
         highlightColor: highlightColor,
         child: Column(
           children: [
-            Container(width: 36, height: 36, decoration: BoxDecoration(color: Colors.white, borderRadius: AppRadii.borderRadiusSM)),
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: AppRadii.borderRadiusSM,
+              ),
+            ),
             const Gap(Spacing.sm),
-            Container(width: 40, height: 24, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+            Container(
+              width: 40,
+              height: 24,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
             const Gap(4),
-            Container(width: 60, height: 12, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(2))),
+            Container(
+              width: 60,
+              height: 12,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
           ],
         ),
       ),

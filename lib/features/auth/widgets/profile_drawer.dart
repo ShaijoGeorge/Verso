@@ -26,8 +26,7 @@ class ProfileDrawer extends ConsumerWidget {
     // 2. Get user metadata (like the name we saved during sign up)
     final name = (user?.userMetadata?['full_name'] as String?) ?? 'Reader';
     final email = user?.email ?? '';
-    final gender =
-        (user?.userMetadata?['gender'] as String?) ?? 'male';
+    final gender = (user?.userMetadata?['gender'] as String?) ?? 'male';
 
     final scheme = Theme.of(context).colorScheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
@@ -392,8 +391,7 @@ class _DrawerHeader extends StatelessWidget {
           VersoAvatar.fromGender(
             gender,
             size: 56,
-            borderColor:
-                isLight ? Colors.white : AppColors.primaryDark,
+            borderColor: isLight ? Colors.white : AppColors.primaryDark,
           ),
 
           const Gap(Spacing.md),

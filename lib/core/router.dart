@@ -76,7 +76,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         return null;
       }
 
-      // IF NOT LOGGED IN 
+      // IF NOT LOGGED IN
       if (!isLoggedIn) {
         // Allow access to /onboarding alongside the auth pages. Profile setup is now POST-login.
         if (!isLoginRoute &&
@@ -88,11 +88,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
       }
 
-      // IF LOGGED IN 
+      // IF LOGGED IN
       if (isLoggedIn) {
         // Check Supabase user_metadata for profile completeness.
         // currentUser is already in memory - this is synchronous, zero cost.
-        final metadata = Supabase.instance.client.auth.currentUser?.userMetadata;
+        final metadata =
+            Supabase.instance.client.auth.currentUser?.userMetadata;
         final hasProfileData =
             metadata?['gender'] != null && metadata?['birthday'] != null;
 

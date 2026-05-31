@@ -49,7 +49,7 @@ Stream<List<ReadingProgress>> globalProgress(Ref ref) async* {
 
   // Emit cached data first for instant UI
   var cached = await cache.getCachedProgress();
-  
+
   if (cached.isEmpty && userId.isNotEmpty) {
     // Cache was cleared, or brand new install.
     // Fetch a true snapshot from the server to prevent the UI from flickering to 0.
@@ -59,7 +59,9 @@ Stream<List<ReadingProgress>> globalProgress(Ref ref) async* {
     } catch (e) {
       // If we have no cache AND we can't reach the server, we must throw.
       // Yielding an empty list would make the UI display fake 0s.
-      throw Exception('Cannot load your reading progress. Please check your connection.');
+      throw Exception(
+        'Cannot load your reading progress. Please check your connection.',
+      );
     }
   }
 

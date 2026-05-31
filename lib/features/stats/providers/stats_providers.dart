@@ -42,7 +42,7 @@ int _calculateStreak(List<ReadingProgress> history) {
       .map((p) => p.readAt!.toLocal()) // Convert to local time
       .map((dt) {
         final d = DateTime(dt.year, dt.month, dt.day);
-        // Sanitization: If an old record was saved with the timezone bug, 
+        // Sanitization: If an old record was saved with the timezone bug,
         // it might appear as "tomorrow". Clamp it to today to avoid breaking streaks.
         if (d.isAfter(today)) return today;
         return d;
@@ -195,7 +195,13 @@ Future<DetailedStats> detailedStats(Ref ref) async {
   final sanitizedHistory = readHistory.where((p) => p.readAt != null).map((p) {
     final localDt = p.readAt!.toLocal();
     if (DateTime(localDt.year, localDt.month, localDt.day).isAfter(today)) {
-      return DateTime(today.year, today.month, today.day, localDt.hour, localDt.minute);
+      return DateTime(
+        today.year,
+        today.month,
+        today.day,
+        localDt.hour,
+        localDt.minute,
+      );
     }
     return localDt;
   }).toList();
@@ -207,7 +213,9 @@ Future<DetailedStats> detailedStats(Ref ref) async {
     final date = today.subtract(Duration(days: i));
     last7DaysDates.add(date);
     final count = sanitizedHistory.where((dt) {
-      return dt.year == date.year && dt.month == date.month && dt.day == date.day;
+      return dt.year == date.year &&
+          dt.month == date.month &&
+          dt.day == date.day;
     }).length;
     last7DaysCounts.add(count);
   }
@@ -218,14 +226,16 @@ Future<DetailedStats> detailedStats(Ref ref) async {
     (dt) => dt.year == now.year && dt.month == now.month,
   );
   for (final dt in monthHistory) {
-    currentMonthDailyCounts[dt.day] = (currentMonthDailyCounts[dt.day] ?? 0) + 1;
+    currentMonthDailyCounts[dt.day] =
+        (currentMonthDailyCounts[dt.day] ?? 0) + 1;
   }
 
   // 3. Yearly Data
   final currentYearMonthlyCounts = <int, int>{};
   final yearHistory = sanitizedHistory.where((dt) => dt.year == now.year);
   for (final dt in yearHistory) {
-    currentYearMonthlyCounts[dt.month] = (currentYearMonthlyCounts[dt.month] ?? 0) + 1;
+    currentYearMonthlyCounts[dt.month] =
+        (currentYearMonthlyCounts[dt.month] ?? 0) + 1;
   }
 
   // 4. Average

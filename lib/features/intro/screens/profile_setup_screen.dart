@@ -149,8 +149,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
         UserAttributes(
           data: {
             'gender': _selectedGender,
-            'birthday':
-                '${_selectedBirthday!.year.toString().padLeft(4, '0')}-'
+            'birthday': '${_selectedBirthday!.year.toString().padLeft(4, '0')}-'
                 '${_selectedBirthday!.month.toString().padLeft(2, '0')}-'
                 '${_selectedBirthday!.day.toString().padLeft(2, '0')}',
           },
@@ -172,14 +171,23 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
   // ── Helpers ────────────────────────────────────────────────────────────────
   String _formatBirthday(DateTime date) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
-  bool get _canContinue =>
-      _selectedGender != null && _selectedBirthday != null;
+  bool get _canContinue => _selectedGender != null && _selectedBirthday != null;
 
   // ── Build ──────────────────────────────────────────────────────────────────
   @override
@@ -246,7 +254,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
     );
   }
 
-  // Floating Particles 
+  // Floating Particles
   List<Widget> _buildFloatingParticles() {
     // Decorative floating icons - same technique as onboarding
     const elements = [
@@ -269,15 +277,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
             final yOffset =
                 math.sin(_floatController.value * math.pi + phase) * 8;
             final opacity =
-                0.15 +
-                math.sin(_floatController.value * math.pi + phase) * 0.1;
+                0.15 + math.sin(_floatController.value * math.pi + phase) * 0.1;
 
             return Transform.translate(
               offset: Offset(0, yOffset),
               child: Icon(
                 e.icon,
                 size: e.size,
-                color: _accentColor.withValues(alpha: opacity.clamp(0.08, 0.25)),
+                color:
+                    _accentColor.withValues(alpha: opacity.clamp(0.08, 0.25)),
               ),
             );
           },
@@ -593,7 +601,8 @@ class _PremiumGenderCard extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(vertical: Spacing.lg, horizontal: 8),
+        padding:
+            const EdgeInsets.symmetric(vertical: Spacing.lg, horizontal: 8),
         decoration: BoxDecoration(
           gradient: isSelected
               ? LinearGradient(
@@ -630,9 +639,8 @@ class _PremiumGenderCard extends StatelessWidget {
             AnimatedBuilder(
               animation: floatController,
               builder: (context, child) {
-                final glowOpacity = isSelected
-                    ? 0.2 + floatController.value * 0.15
-                    : 0.0;
+                final glowOpacity =
+                    isSelected ? 0.2 + floatController.value * 0.15 : 0.0;
 
                 return Container(
                   width: 108,
@@ -642,8 +650,7 @@ class _PremiumGenderCard extends StatelessWidget {
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color:
-                                  accentColor.withValues(alpha: glowOpacity),
+                              color: accentColor.withValues(alpha: glowOpacity),
                               blurRadius: 24,
                               spreadRadius: 4,
                             ),
