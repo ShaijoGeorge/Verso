@@ -272,16 +272,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ],
                         ),
                       ),
-                      _SettingsSwitchTile(
-                        title: 'Pure Black (AMOLED)',
-                        subtitle: 'Applies when dark theme is active',
-                        icon: Icons.brightness_1_outlined,
-                        iconColor: const Color(0xFF8B5CF6),
-                        value: settings.useAmoledForDark,
-                        onChanged: (v) => ref
-                            .read(currentSettingsProvider.notifier)
-                            .setUseAmoledForDark(v),
-                      ),
+                      if (settings.themeMode != AppThemeMode.light)
+                        _SettingsSwitchTile(
+                          title: 'Pure Black (AMOLED)',
+                          subtitle: 'Applies when dark theme is active',
+                          icon: Icons.brightness_1_outlined,
+                          iconColor: const Color(0xFF8B5CF6),
+                          value: settings.useAmoledForDark,
+                          onChanged: (v) => ref
+                              .read(currentSettingsProvider.notifier)
+                              .setUseAmoledForDark(v),
+                        ),
                     ],
                   ),
                   const Gap(24),
