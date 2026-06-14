@@ -105,8 +105,8 @@ final routerProvider = Provider<GoRouter>((ref) {
 
         // Once profile is complete, bounce away from all pre-auth screens.
         // Also bounce off /profile-setup itself (so back-button can't return there).
+        // Note: isForgotRoute removed so logged-in users can reset their password from the profile screen.
         if (isLoginRoute ||
-            isForgotRoute ||
             isResetCallback ||
             isOnboardingRoute ||
             isProfileSetupRoute) {
