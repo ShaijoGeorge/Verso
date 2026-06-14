@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:verso/core/design/components/verso_card.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
 import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/core/design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/shadows.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/core/router.dart';
 import 'package:verso/core/utils/app_error_handler.dart';
@@ -38,278 +41,756 @@ class ProfileScreen extends ConsumerWidget {
 
         final name = (user.userMetadata?['full_name'] as String?) ?? 'Reader';
         final email = user.email ?? 'No Email';
+        final readingSince = DateFormat('MMM yyyy')
+            .format(DateTime.parse(user.createdAt).toLocal());
+
+        final scheme = Theme.of(context).colorScheme;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return Scaffold(
-          appBar: AppBar(title: const Text('My Profile')),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                const Gap(20),
-                const VersoAvatar(
-                  size: 120,
-                  borderWidth: 3,
+          body: CustomScrollView(
+            slivers: [
+              // Hero Header
+              SliverToBoxAdapter(
+                child: _ProfileHeroHeader(
+                  name: name,
+                  email: email,
+                  readingSince: readingSince,
+                  isDark: isDark,
+                  scheme: scheme,
                 ),
-                const Gap(24),
-                Text(
-                  name,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+              ),
+
+              // Stats Strip
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _ProfileStatsStrip(isDark: isDark, scheme: scheme),
+                ),
+              ),
+
+              const SliverToBoxAdapter(child: Gap(28)),
+
+              // Account Settings Group
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _SettingsGroup(
+                    label: 'Account',
+                    isDark: isDark,
+                    scheme: scheme,
+                    items: [
+                      _SettingsItem(
+                        icon: Icons.email_outlined,
+                        iconColor: const Color(0xFF3B82F6),
+                        label: 'Change Email',
+                        onTap: () => showModalBottomSheet<void>(
+                          context: context,
+                          isScrollControlled: true,
+                          useSafeArea: true,
+                          builder: (_) => const _ChangeEmailSheet(),
+                        ),
                       ),
-                ),
-                const Gap(8),
-                Text(
-                  email,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      _SettingsItem(
+                        icon: Icons.lock_outline_rounded,
+                        iconColor: const Color(0xFF8B5CF6),
+                        label: 'Change Password',
+                        onTap: () => showModalBottomSheet<void>(
+                          context: context,
+                          isScrollControlled: true,
+                          useSafeArea: true,
+                          builder: (_) => const _ChangePasswordSheet(),
+                        ),
                       ),
-                ),
-                const Gap(40),
-
-                // --- ACTION BUTTONS (Using Bottom Sheets) ---
-
-                ListTile(
-                  leading: const Icon(Icons.email_outlined),
-                  title: const Text('Change Email'),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () => showModalBottomSheet<void>(
-                    context: context,
-                    isScrollControlled:
-                        true, // Allows sheet to expand with keyboard
-                    useSafeArea: true,
-                    builder: (_) => const _ChangeEmailSheet(),
+                    ],
                   ),
                 ),
-                const Divider(),
+              ),
 
-                ListTile(
-                  leading: const Icon(Icons.lock_outline),
-                  title: const Text('Change Password'),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () => showModalBottomSheet<void>(
-                    context: context,
-                    isScrollControlled: true,
-                    useSafeArea: true,
-                    builder: (_) => const _ChangePasswordSheet(),
+              const SliverToBoxAdapter(child: Gap(16)),
+
+              // App Settings Group
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _SettingsGroup(
+                    label: 'App',
+                    isDark: isDark,
+                    scheme: scheme,
+                    items: [
+                      _SettingsItem(
+                        icon: Icons.settings_outlined,
+                        iconColor: const Color(0xFF6B7280),
+                        label: 'Settings',
+                        onTap: () => GoRouter.of(context).push('/settings'),
+                      ),
+                    ],
                   ),
                 ),
-                const Divider(),
+              ),
 
-                ListTile(
-                  leading: const Icon(Icons.settings_outlined),
-                  title: const Text('Settings'),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {
-                    GoRouter.of(context).push('/settings');
-                  },
+              const SliverToBoxAdapter(child: Gap(24)),
+
+              // Sign Out
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _SignOutTile(scheme: scheme, isDark: isDark),
                 ),
-                const Divider(),
+              ),
 
-                ListTile(
-                  leading: const Icon(Icons.logout_rounded, color: Colors.red),
-                  title: const Text(
-                    'Sign Out',
-                    style: TextStyle(color: Colors.red),
-                  ),
-                  trailing: const Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: Colors.red,
-                  ),
-                  onTap: () async {
-                    final cacheService = ref.read(offlineCacheServiceProvider);
-                    final pendingCount = await cacheService.pendingWriteCount();
-
-                    if (!context.mounted) return;
-
-                    final confirmed = await showDialog<bool>(
-                      context: context,
-                      barrierColor: Colors.black54,
-                      builder: (dialogContext) {
-                        final dialogScheme =
-                            Theme.of(dialogContext).colorScheme;
-                        final dialogIsLight =
-                            Theme.of(dialogContext).brightness ==
-                                Brightness.light;
-                        final errorColor = dialogIsLight
-                            ? AppColors.errorLight
-                            : AppColors.errorDark;
-                        final hasPending = pendingCount > 0;
-
-                        return Dialog(
-                          backgroundColor: dialogScheme.surface,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppRadii.borderRadiusXL,
-                          ),
-                          insetPadding:
-                              const EdgeInsets.symmetric(horizontal: 32),
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(
-                              Spacing.lg,
-                              Spacing.xl,
-                              Spacing.lg,
-                              Spacing.lg,
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 56,
-                                  height: 56,
-                                  decoration: BoxDecoration(
-                                    color: errorColor.withValues(alpha: 0.1),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.logout_rounded,
-                                    color: errorColor,
-                                    size: 26,
-                                  ),
-                                ),
-                                const Gap(Spacing.md),
-                                Text(
-                                  'Sign out of Verso?',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 19,
-                                    fontWeight: FontWeight.w700,
-                                    color: dialogScheme.onSurface,
-                                  ),
-                                ),
-                                const Gap(Spacing.xs),
-                                Text(
-                                  hasPending
-                                      ? 'Signing out will remove your local data from this device.'
-                                      : 'Your reading progress is synced. You can sign back in at any time.',
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w400,
-                                    color: dialogScheme.onSurfaceVariant,
-                                    height: 1.5,
-                                  ),
-                                ),
-                                if (hasPending) ...[
-                                  const Gap(Spacing.md),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 10,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: errorColor.withValues(alpha: 0.08),
-                                      borderRadius: AppRadii.borderRadiusMD,
-                                      border: Border.all(
-                                        color:
-                                            errorColor.withValues(alpha: 0.2),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.warning_amber_rounded,
-                                          size: 18,
-                                          color: errorColor,
-                                        ),
-                                        const Gap(8),
-                                        Expanded(
-                                          child: Text(
-                                            '$pendingCount unsynced ${pendingCount == 1 ? 'record' : 'records'} will be lost',
-                                            style: GoogleFonts.plusJakartaSans(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                              color: errorColor,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                                const Gap(Spacing.lg),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: FilledButton(
-                                    onPressed: () =>
-                                        Navigator.pop(dialogContext, true),
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: errorColor,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 14,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: AppRadii.borderRadiusMD,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      'Sign Out',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const Gap(Spacing.sm),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(dialogContext, false),
-                                    style: TextButton.styleFrom(
-                                      foregroundColor:
-                                          dialogScheme.onSurfaceVariant,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 14,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: AppRadii.borderRadiusMD,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      'Cancel',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    );
-
-                    if (confirmed != true) return;
-
-                    final router = ref.read(routerProvider);
-
-                    await cacheService.clearAll();
-                    await ref.read(authRepositoryProvider).signOut();
-
-                    Future.delayed(const Duration(milliseconds: 150), () {
-                      final rootContext =
-                          router.routerDelegate.navigatorKey.currentContext;
-                      if (rootContext != null && rootContext.mounted) {
-                        VersoSnackbar.success(
-                          rootContext,
-                          message: 'Signed out successfully',
-                        );
-                      }
-                    });
-                  },
-                ),
-                const Divider(),
-              ],
-            ),
+              const SliverToBoxAdapter(child: Gap(40)),
+            ],
           ),
         );
       },
     );
   }
 }
+
+// -- Hero Header --
+
+class _ProfileHeroHeader extends StatelessWidget {
+  const _ProfileHeroHeader({
+    required this.name,
+    required this.email,
+    required this.readingSince,
+    required this.isDark,
+    required this.scheme,
+  });
+
+  final String name;
+  final String email;
+  final String readingSince;
+  final bool isDark;
+  final ColorScheme scheme;
+
+  @override
+  Widget build(BuildContext context) {
+    final primaryColor = isDark
+        ? AppColors.primaryDark
+        : AppColors.primaryLight;
+
+    final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: isDark
+              ? [
+                  AppColors.primaryContainerDark.withValues(alpha: 0.9),
+                  scaffoldBg,
+                ]
+              : [
+                  AppColors.primaryContainerLight,
+                  scaffoldBg,
+                ],
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          child: Column(
+            children: [
+              // Back button row
+              Row(
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: primaryColor,
+                      size: 20,
+                    ),
+                    onPressed: () => GoRouter.of(context).pop(),
+                  ),
+                  const Spacer(),
+                ],
+              ),
+              const Gap(8),
+
+              // Avatar with ring
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      primaryColor,
+                      if (isDark) AppColors.secondaryDark
+                      else AppColors.secondaryLight,
+                    ],
+                  ),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isDark
+                        ? AppColors.primaryContainerDark
+                        : AppColors.primaryContainerLight,
+                  ),
+                  child: const VersoAvatar(size: 104, borderWidth: 0),
+                ),
+              ),
+
+              const Gap(20),
+
+              // Name
+              Text(
+                name,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: scheme.onSurface,
+                  letterSpacing: -0.3,
+                ),
+              ),
+
+              const Gap(4),
+
+              // Email
+              Text(
+                email,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+
+              const Gap(14),
+
+              // "Reading since" badge
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: primaryColor.withValues(alpha: isDark ? 0.15 : 0.1),
+                  borderRadius: BorderRadius.circular(AppRadii.full),
+                  border: Border.all(
+                    color: primaryColor.withValues(alpha: 0.25),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.auto_stories_rounded,
+                      size: 13,
+                      color: primaryColor,
+                    ),
+                    const Gap(6),
+                    Text(
+                      'Reading since $readingSince',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: primaryColor,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// -- Stats Strip --
+
+class _ProfileStatsStrip extends ConsumerWidget {
+  const _ProfileStatsStrip({required this.isDark, required this.scheme});
+
+  final bool isDark;
+  final ColorScheme scheme;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final progressAsync = ref.watch(globalProgressProvider);
+
+    final chaptersRead = progressAsync.whenOrNull(
+          data: (list) => list.where((p) => p.isRead).length,
+        ) ??
+        0;
+
+    final booksRead = progressAsync.whenOrNull(
+          data: (list) {
+            return list.where((p) => p.isRead).map((p) => p.bookId).toSet().length;
+          },
+        ) ??
+        0;
+
+    final isLoading = progressAsync.isLoading;
+
+    return Row(
+      children: [
+        Expanded(
+          child: _StatCard(
+            icon: Icons.menu_book_rounded,
+            iconColor: isDark
+                ? AppColors.chaptersDark
+                : AppColors.chaptersLight,
+            value: isLoading ? '–' : '$chaptersRead',
+            label: 'Chapters\nRead',
+            isDark: isDark,
+            scheme: scheme,
+          ),
+        ),
+        const Gap(12),
+        Expanded(
+          child: _StatCard(
+            icon: Icons.library_books_rounded,
+            iconColor: isDark ? AppColors.booksDark : AppColors.booksLight,
+            value: isLoading ? '–' : '$booksRead',
+            label: 'Books\nCompleted',
+            isDark: isDark,
+            scheme: scheme,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  const _StatCard({
+    required this.icon,
+    required this.iconColor,
+    required this.value,
+    required this.label,
+    required this.isDark,
+    required this.scheme,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final String value;
+  final String label;
+  final bool isDark;
+  final ColorScheme scheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return VersoCard(
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadii.md),
+            ),
+            child: Icon(icon, size: 20, color: iconColor),
+          ),
+          const Gap(12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: scheme.onSurface,
+                  height: 1,
+                ),
+              ),
+              const Gap(3),
+              Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: scheme.onSurfaceVariant,
+                  height: 1.3,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// -- Settings Group --
+
+class _SettingsItem {
+  const _SettingsItem({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final VoidCallback onTap;
+}
+
+class _SettingsGroup extends StatelessWidget {
+  const _SettingsGroup({
+    required this.label,
+    required this.items,
+    required this.isDark,
+    required this.scheme,
+  });
+
+  final String label;
+  final List<_SettingsItem> items;
+  final bool isDark;
+  final ColorScheme scheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 10),
+          child: Text(
+            label.toUpperCase(),
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: scheme.onSurfaceVariant,
+              letterSpacing: 1.1,
+            ),
+          ),
+        ),
+        VersoCard(
+          padding: EdgeInsets.zero,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            child: Column(
+              children: [
+                for (int i = 0; i < items.length; i++) ...[
+                  _SettingsRow(
+                    item: items[i],
+                    scheme: scheme,
+                  ),
+                  if (i < items.length - 1)
+                    Divider(
+                      height: 1,
+                      thickness: 1,
+                      indent: 60,
+                      color: scheme.outlineVariant
+                          .withValues(alpha: isDark ? 0.3 : 0.5),
+                    ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SettingsRow extends StatelessWidget {
+  const _SettingsRow({required this.item, required this.scheme});
+
+  final _SettingsItem item;
+  final ColorScheme scheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: item.onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: item.iconColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadii.sm),
+                ),
+                child: Icon(item.icon, size: 18, color: item.iconColor),
+              ),
+              const Gap(14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.label,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20,
+                color: scheme.onSurfaceVariant.withValues(alpha: 0.5),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// -- Sign Out --
+
+class _SignOutTile extends ConsumerWidget {
+  const _SignOutTile({
+    required this.scheme,
+    required this.isDark,
+  });
+
+  final ColorScheme scheme;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext ctx, WidgetRef widgetRef) {
+    final errorColor =
+        isDark ? AppColors.errorDark : AppColors.errorLight;
+
+    return VersoCard(
+      padding: EdgeInsets.zero,
+      color: errorColor.withValues(alpha: 0.06),
+      border: Border.all(color: errorColor.withValues(alpha: 0.2)),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          onTap: () => _handleSignOut(ctx, widgetRef),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: errorColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
+                  ),
+                  child: Icon(
+                    Icons.logout_rounded,
+                    size: 18,
+                    color: errorColor,
+                  ),
+                ),
+                const Gap(14),
+                Text(
+                  'Sign Out',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: errorColor,
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: errorColor.withValues(alpha: 0.5),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleSignOut(BuildContext ctx, WidgetRef widgetRef) async {
+    final cacheService = widgetRef.read(offlineCacheServiceProvider);
+    final pendingCount = await cacheService.pendingWriteCount();
+
+    if (!ctx.mounted) return;
+
+    final errorColor = isDark ? AppColors.errorDark : AppColors.errorLight;
+
+    final confirmed = await showDialog<bool>(
+      context: ctx,
+      barrierColor: Colors.black54,
+      builder: (dialogContext) {
+        final dialogScheme = Theme.of(dialogContext).colorScheme;
+        final hasPending = pendingCount > 0;
+
+        return Dialog(
+          backgroundColor: dialogScheme.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: AppRadii.borderRadiusXL,
+          ),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              Spacing.lg,
+              Spacing.xl,
+              Spacing.lg,
+              Spacing.lg,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: errorColor.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.logout_rounded,
+                    color: errorColor,
+                    size: 26,
+                  ),
+                ),
+                const Gap(Spacing.md),
+                Text(
+                  'Sign out of Verso?',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                    color: dialogScheme.onSurface,
+                  ),
+                ),
+                const Gap(Spacing.xs),
+                Text(
+                  hasPending
+                      ? 'Signing out will remove your local data from this device.'
+                      : 'Your reading progress is synced. You can sign back in at any time.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: dialogScheme.onSurfaceVariant,
+                    height: 1.5,
+                  ),
+                ),
+                if (hasPending) ...[
+                  const Gap(Spacing.md),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: errorColor.withValues(alpha: 0.08),
+                      borderRadius: AppRadii.borderRadiusMD,
+                      border: Border.all(
+                        color: errorColor.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          size: 18,
+                          color: errorColor,
+                        ),
+                        const Gap(8),
+                        Expanded(
+                          child: Text(
+                            '$pendingCount unsynced ${pendingCount == 1 ? 'record' : 'records'} will be lost',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: errorColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const Gap(Spacing.lg),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(dialogContext, true),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: errorColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadii.borderRadiusMD,
+                      ),
+                    ),
+                    child: Text(
+                      'Sign Out',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const Gap(Spacing.sm),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(dialogContext, false),
+                    style: TextButton.styleFrom(
+                      foregroundColor: dialogScheme.onSurfaceVariant,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadii.borderRadiusMD,
+                      ),
+                    ),
+                    child: Text(
+                      'Cancel',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    final router = widgetRef.read(routerProvider);
+
+    await cacheService.clearAll();
+    await widgetRef.read(authRepositoryProvider).signOut();
+
+    Future.delayed(const Duration(milliseconds: 150), () {
+      final rootContext =
+          router.routerDelegate.navigatorKey.currentContext;
+      if (rootContext != null && rootContext.mounted) {
+        VersoSnackbar.success(
+          rootContext,
+          message: 'Signed out successfully',
+        );
+      }
+    });
+  }
+}
+
 
 // --- 1. CHANGE EMAIL SHEET (Bottom Sheet) ---
 class _ChangeEmailSheet extends ConsumerStatefulWidget {
