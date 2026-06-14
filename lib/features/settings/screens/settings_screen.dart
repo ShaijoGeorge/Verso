@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:verso/core/design/components/verso_card.dart';
-import 'package:verso/core/design/components/verso_snackbar.dart';
 import 'package:verso/core/design/design.dart';
-import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/providers/package_info_provider.dart';
 import 'package:verso/core/utils/app_error_handler.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
@@ -140,7 +137,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               for (final style in AppearanceStyle.values)
                 ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-                  leading: Icon(_styleIcon(style), color: scheme.onSurfaceVariant),
+                  leading:
+                      Icon(_styleIcon(style), color: scheme.onSurfaceVariant),
                   title: Text(
                     _styleLabel(style),
                     style: GoogleFonts.plusJakartaSans(
@@ -208,311 +206,315 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                      // --- COLOR THEME SECTION ---
-                      _SettingsSectionCard(
-                        title: 'Color Theme',
-                        children: [
-                          for (final profile in ThemeProfiles.all)
-                            _ThemeProfileTile(
-                              profile: profile,
-                              isSelected: settings.themeProfileId == profile.id,
-                              onTap: () => ref
-                                  .read(currentSettingsProvider.notifier)
-                                  .setThemeProfileId(profile.id),
-                            ),
-                        ],
-                      ),
-                      const Gap(24),
+                  // --- COLOR THEME SECTION ---
+                  _SettingsSectionCard(
+                    title: 'Color Theme',
+                    children: [
+                      for (final profile in ThemeProfiles.all)
+                        _ThemeProfileTile(
+                          profile: profile,
+                          isSelected: settings.themeProfileId == profile.id,
+                          onTap: () => ref
+                              .read(currentSettingsProvider.notifier)
+                              .setThemeProfileId(profile.id),
+                        ),
+                    ],
+                  ),
+                  const Gap(24),
 
-                      // --- APPEARANCE SECTION ---
-                      _SettingsSectionCard(
-                        title: 'Appearance',
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Text(
-                                  'Theme Mode',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: scheme.onSurface,
-                                  ),
+                  // --- APPEARANCE SECTION ---
+                  _SettingsSectionCard(
+                    title: 'Appearance',
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              'Theme Mode',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: scheme.onSurface,
+                              ),
+                            ),
+                            const Gap(12),
+                            SegmentedButton<AppThemeMode>(
+                              segments: const [
+                                ButtonSegment(
+                                  value: AppThemeMode.system,
+                                  icon: Icon(Icons.brightness_auto_outlined),
+                                  label: Text('System'),
                                 ),
-                                const Gap(12),
-                                SegmentedButton<AppThemeMode>(
-                                  segments: const [
-                                    ButtonSegment(
-                                      value: AppThemeMode.system,
-                                      icon: Icon(Icons.brightness_auto_outlined),
-                                      label: Text('System'),
-                                    ),
-                                    ButtonSegment(
-                                      value: AppThemeMode.light,
-                                      icon: Icon(Icons.light_mode_outlined),
-                                      label: Text('Light'),
-                                    ),
-                                    ButtonSegment(
-                                      value: AppThemeMode.dark,
-                                      icon: Icon(Icons.dark_mode_outlined),
-                                      label: Text('Dark'),
-                                    ),
-                                  ],
-                                  selected: {settings.themeMode},
-                                  onSelectionChanged: (s) => ref
-                                      .read(currentSettingsProvider.notifier)
-                                      .setThemeMode(s.first),
-                                  style: ButtonStyle(
-                                    textStyle: WidgetStatePropertyAll(
-                                      GoogleFonts.plusJakartaSans(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
+                                ButtonSegment(
+                                  value: AppThemeMode.light,
+                                  icon: Icon(Icons.light_mode_outlined),
+                                  label: Text('Light'),
+                                ),
+                                ButtonSegment(
+                                  value: AppThemeMode.dark,
+                                  icon: Icon(Icons.dark_mode_outlined),
+                                  label: Text('Dark'),
                                 ),
                               ],
-                            ),
-                          ),
-                          _SettingsSwitchTile(
-                            title: 'Pure Black (AMOLED)',
-                            subtitle: 'Applies when dark theme is active',
-                            icon: Icons.brightness_1_outlined,
-                            iconColor: const Color(0xFF8B5CF6),
-                            value: settings.useAmoledForDark,
-                            onChanged: (v) => ref
-                                .read(currentSettingsProvider.notifier)
-                                .setUseAmoledForDark(v),
-                          ),
-                        ],
-                      ),
-                      const Gap(24),
-
-                      // --- SCHEDULED THEME SECTION ---
-                      _SettingsSectionCard(
-                        title: 'Scheduled Theme',
-                        children: [
-                          _SettingsSwitchTile(
-                            title: 'Schedule Theme',
-                            subtitle: 'Auto-switch between day and night modes',
-                            icon: Icons.schedule_outlined,
-                            iconColor: const Color(0xFFF59E0B),
-                            value: settings.scheduleEnabled,
-                            onChanged: (v) => ref
-                                .read(currentSettingsProvider.notifier)
-                                .setSchedule(
-                                  enabled: v,
-                                  dayStyle: settings.dayStyle,
-                                  nightStyle: settings.nightStyle,
-                                  dayStartHour: settings.dayStartHour,
-                                  dayStartMinute: settings.dayStartMinute,
-                                  nightStartHour: settings.nightStartHour,
-                                  nightStartMinute: settings.nightStartMinute,
+                              selected: {settings.themeMode},
+                              onSelectionChanged: (s) => ref
+                                  .read(currentSettingsProvider.notifier)
+                                  .setThemeMode(s.first),
+                              style: ButtonStyle(
+                                textStyle: WidgetStatePropertyAll(
+                                  GoogleFonts.plusJakartaSans(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
-                          ),
-                          if (settings.scheduleEnabled) ...[
-                            _SettingsActionTile(
-                              title: 'Day Mode',
-                              icon: Icons.wb_sunny_outlined,
-                              iconColor: const Color(0xFFF59E0B),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    _styleLabel(settings.dayStyle),
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 13,
-                                      color: scheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                  const Gap(8),
-                                  _TimeChip(
-                                    label: _formatTime(
-                                      settings.dayStartHour,
-                                      settings.dayStartMinute,
-                                    ),
-                                    onTap: () => _pickScheduleTime(settings, isDay: true),
-                                  ),
-                                ],
                               ),
-                              onTap: () async {
-                                final picked = await _pickStyle(
-                                  settings.dayStyle,
-                                  'Day mode',
-                                );
-                                if (picked != null) {
-                                  await ref
-                                      .read(currentSettingsProvider.notifier)
-                                      .setSchedule(
-                                        enabled: settings.scheduleEnabled,
-                                        dayStyle: picked,
-                                        nightStyle: settings.nightStyle,
-                                        dayStartHour: settings.dayStartHour,
-                                        dayStartMinute: settings.dayStartMinute,
-                                        nightStartHour: settings.nightStartHour,
-                                        nightStartMinute: settings.nightStartMinute,
-                                      );
-                                }
-                              },
-                            ),
-                            _SettingsActionTile(
-                              title: 'Night Mode',
-                              icon: Icons.nightlight_outlined,
-                              iconColor: const Color(0xFF6366F1),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    _styleLabel(settings.nightStyle),
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 13,
-                                      color: scheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                  const Gap(8),
-                                  _TimeChip(
-                                    label: _formatTime(
-                                      settings.nightStartHour,
-                                      settings.nightStartMinute,
-                                    ),
-                                    onTap: () => _pickScheduleTime(settings, isDay: false),
-                                  ),
-                                ],
-                              ),
-                              onTap: () async {
-                                final picked = await _pickStyle(
-                                  settings.nightStyle,
-                                  'Night mode',
-                                );
-                                if (picked != null) {
-                                  await ref
-                                      .read(currentSettingsProvider.notifier)
-                                      .setSchedule(
-                                        enabled: settings.scheduleEnabled,
-                                        dayStyle: settings.dayStyle,
-                                        nightStyle: picked,
-                                        dayStartHour: settings.dayStartHour,
-                                        dayStartMinute: settings.dayStartMinute,
-                                        nightStartHour: settings.nightStartHour,
-                                        nightStartMinute: settings.nightStartMinute,
-                                      );
-                                }
-                              },
                             ),
                           ],
-                        ],
+                        ),
                       ),
-                      const Gap(24),
+                      _SettingsSwitchTile(
+                        title: 'Pure Black (AMOLED)',
+                        subtitle: 'Applies when dark theme is active',
+                        icon: Icons.brightness_1_outlined,
+                        iconColor: const Color(0xFF8B5CF6),
+                        value: settings.useAmoledForDark,
+                        onChanged: (v) => ref
+                            .read(currentSettingsProvider.notifier)
+                            .setUseAmoledForDark(v),
+                      ),
+                    ],
+                  ),
+                  const Gap(24),
 
-                      // --- NOTIFICATIONS SECTION ---
-                      _SettingsSectionCard(
-                        title: 'Reminders',
-                        children: [
-                          _SettingsSwitchTile(
-                            title: 'Daily Reminder',
-                            subtitle: settings.isReminderEnabled
-                                ? 'Scheduled for ${_formatTime(settings.reminderHour, settings.reminderMinute)}'
-                                : 'Get a daily nudge to read',
-                            icon: Icons.notifications_active_outlined,
-                            iconColor: const Color(0xFF10B981),
-                            value: settings.isReminderEnabled,
-                            onChanged: (value) async {
-                              try {
-                                await ref
-                                    .read(currentSettingsProvider.notifier)
-                                    .updateReminder(
-                                      value,
-                                      settings.reminderHour,
-                                      settings.reminderMinute,
-                                    );
-                                if (value) {
-                                  await NotificationService().scheduleDailyReminder(
-                                    settings.reminderHour,
-                                    settings.reminderMinute,
-                                  );
-                                  if (mounted) {
-                                    VersoSnackbar.success(
-                                      context,
-                                      message: 'Daily reminder enabled',
-                                    );
-                                  }
-                                } else {
-                                  await NotificationService().cancelReminders();
-                                }
-                              } catch (e) {
-                                if (mounted) {
-                                  VersoSnackbar.error(
-                                    context,
-                                    message: AppErrorHandler.getMessage(e),
-                                  );
-                                }
-                              }
-                            },
-                          ),
-                          if (settings.isReminderEnabled)
-                            _SettingsActionTile(
-                              title: 'Reminder Time',
-                              icon: Icons.access_time,
-                              iconColor: const Color(0xFF3B82F6),
-                              trailing: _TimeChip(
-                                label: _formatTime(
-                                  settings.reminderHour,
-                                  settings.reminderMinute,
-                                ),
-                                onTap: () => _pickReminderTime(
-                                  settings.reminderHour,
-                                  settings.reminderMinute,
-                                ),
-                              ),
-                              onTap: () => _pickReminderTime(
-                                settings.reminderHour,
-                                settings.reminderMinute,
-                              ),
+                  // --- SCHEDULED THEME SECTION ---
+                  _SettingsSectionCard(
+                    title: 'Scheduled Theme',
+                    children: [
+                      _SettingsSwitchTile(
+                        title: 'Schedule Theme',
+                        subtitle: 'Auto-switch between day and night modes',
+                        icon: Icons.schedule_outlined,
+                        iconColor: const Color(0xFFF59E0B),
+                        value: settings.scheduleEnabled,
+                        onChanged: (v) => ref
+                            .read(currentSettingsProvider.notifier)
+                            .setSchedule(
+                              enabled: v,
+                              dayStyle: settings.dayStyle,
+                              nightStyle: settings.nightStyle,
+                              dayStartHour: settings.dayStartHour,
+                              dayStartMinute: settings.dayStartMinute,
+                              nightStartHour: settings.nightStartHour,
+                              nightStartMinute: settings.nightStartMinute,
                             ),
-                        ],
                       ),
-                      const Gap(32),
-
-                      // --- ABOUT SECTION ---
-                      Center(
-                        child: GestureDetector(
-                          onLongPress: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => const DebugCacheScreen(),
-                              ),
-                            );
-                          },
-                          child: Column(
+                      if (settings.scheduleEnabled) ...[
+                        _SettingsActionTile(
+                          title: 'Day Mode',
+                          icon: Icons.wb_sunny_outlined,
+                          iconColor: const Color(0xFFF59E0B),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'Verso v${ref.watch(packageInfoProvider).version}',
+                                _styleLabel(settings.dayStyle),
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                  color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                                  fontSize: 13,
+                                  color: scheme.onSurfaceVariant,
                                 ),
                               ),
-                              const Gap(4),
-                              Text(
-                                'Made by Shaijo George',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 12,
-                                  color: scheme.onSurfaceVariant.withValues(alpha: 0.5),
+                              const Gap(8),
+                              _TimeChip(
+                                label: _formatTime(
+                                  settings.dayStartHour,
+                                  settings.dayStartMinute,
                                 ),
+                                onTap: () =>
+                                    _pickScheduleTime(settings, isDay: true),
                               ),
                             ],
                           ),
+                          onTap: () async {
+                            final picked = await _pickStyle(
+                              settings.dayStyle,
+                              'Day mode',
+                            );
+                            if (picked != null) {
+                              await ref
+                                  .read(currentSettingsProvider.notifier)
+                                  .setSchedule(
+                                    enabled: settings.scheduleEnabled,
+                                    dayStyle: picked,
+                                    nightStyle: settings.nightStyle,
+                                    dayStartHour: settings.dayStartHour,
+                                    dayStartMinute: settings.dayStartMinute,
+                                    nightStartHour: settings.nightStartHour,
+                                    nightStartMinute: settings.nightStartMinute,
+                                  );
+                            }
+                          },
                         ),
-                      ),
-                      const Gap(48),
+                        _SettingsActionTile(
+                          title: 'Night Mode',
+                          icon: Icons.nightlight_outlined,
+                          iconColor: const Color(0xFF6366F1),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _styleLabel(settings.nightStyle),
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const Gap(8),
+                              _TimeChip(
+                                label: _formatTime(
+                                  settings.nightStartHour,
+                                  settings.nightStartMinute,
+                                ),
+                                onTap: () =>
+                                    _pickScheduleTime(settings, isDay: false),
+                              ),
+                            ],
+                          ),
+                          onTap: () async {
+                            final picked = await _pickStyle(
+                              settings.nightStyle,
+                              'Night mode',
+                            );
+                            if (picked != null) {
+                              await ref
+                                  .read(currentSettingsProvider.notifier)
+                                  .setSchedule(
+                                    enabled: settings.scheduleEnabled,
+                                    dayStyle: settings.dayStyle,
+                                    nightStyle: picked,
+                                    dayStartHour: settings.dayStartHour,
+                                    dayStartMinute: settings.dayStartMinute,
+                                    nightStartHour: settings.nightStartHour,
+                                    nightStartMinute: settings.nightStartMinute,
+                                  );
+                            }
+                          },
+                        ),
+                      ],
                     ],
                   ),
-                ),
-              );
+                  const Gap(24),
+
+                  // --- NOTIFICATIONS SECTION ---
+                  _SettingsSectionCard(
+                    title: 'Reminders',
+                    children: [
+                      _SettingsSwitchTile(
+                        title: 'Daily Reminder',
+                        subtitle: settings.isReminderEnabled
+                            ? 'Scheduled for ${_formatTime(settings.reminderHour, settings.reminderMinute)}'
+                            : 'Get a daily nudge to read',
+                        icon: Icons.notifications_active_outlined,
+                        iconColor: const Color(0xFF10B981),
+                        value: settings.isReminderEnabled,
+                        onChanged: (value) async {
+                          try {
+                            await ref
+                                .read(currentSettingsProvider.notifier)
+                                .updateReminder(
+                                  value,
+                                  settings.reminderHour,
+                                  settings.reminderMinute,
+                                );
+                            if (value) {
+                              await NotificationService().scheduleDailyReminder(
+                                settings.reminderHour,
+                                settings.reminderMinute,
+                              );
+                              if (mounted) {
+                                VersoSnackbar.success(
+                                  context,
+                                  message: 'Daily reminder enabled',
+                                );
+                              }
+                            } else {
+                              await NotificationService().cancelReminders();
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              VersoSnackbar.error(
+                                context,
+                                message: AppErrorHandler.getMessage(e),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                      if (settings.isReminderEnabled)
+                        _SettingsActionTile(
+                          title: 'Reminder Time',
+                          icon: Icons.access_time,
+                          iconColor: const Color(0xFF3B82F6),
+                          trailing: _TimeChip(
+                            label: _formatTime(
+                              settings.reminderHour,
+                              settings.reminderMinute,
+                            ),
+                            onTap: () => _pickReminderTime(
+                              settings.reminderHour,
+                              settings.reminderMinute,
+                            ),
+                          ),
+                          onTap: () => _pickReminderTime(
+                            settings.reminderHour,
+                            settings.reminderMinute,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const Gap(32),
+
+                  // --- ABOUT SECTION ---
+                  Center(
+                    child: GestureDetector(
+                      onLongPress: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const DebugCacheScreen(),
+                          ),
+                        );
+                      },
+                      child: Column(
+                        children: [
+                          Text(
+                            'Verso v${ref.watch(packageInfoProvider).version}',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              color: scheme.onSurfaceVariant
+                                  .withValues(alpha: 0.7),
+                            ),
+                          ),
+                          const Gap(4),
+                          Text(
+                            'Made by Shaijo George',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w400,
+                              fontSize: 12,
+                              color: scheme.onSurfaceVariant
+                                  .withValues(alpha: 0.5),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const Gap(48),
+                ],
+              ),
+            ),
+          );
         },
       ),
     );
@@ -534,7 +536,7 @@ class _SettingsSectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -564,7 +566,8 @@ class _SettingsSectionCard extends StatelessWidget {
                       thickness: 1,
                       indent: 16,
                       endIndent: 16,
-                      color: scheme.outlineVariant.withValues(alpha: isDark ? 0.3 : 0.5),
+                      color: scheme.outlineVariant
+                          .withValues(alpha: isDark ? 0.3 : 0.5),
                     ),
                 ],
               ],
@@ -634,8 +637,8 @@ class _SettingsActionTile extends StatelessWidget {
     required this.title,
     required this.icon,
     required this.iconColor,
-    this.trailing,
     required this.onTap,
+    this.trailing,
   });
 
   final String title;
@@ -705,7 +708,9 @@ class _ThemeProfileTile extends StatelessWidget {
     };
 
     return Material(
-      color: isSelected ? scheme.primary.withValues(alpha: 0.08) : Colors.transparent,
+      color: isSelected
+          ? scheme.primary.withValues(alpha: 0.08)
+          : Colors.transparent,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -789,7 +794,6 @@ class _Swatch extends StatelessWidget {
         shape: BoxShape.circle,
         border: Border.all(
           color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-          width: 1,
         ),
       ),
     );
@@ -808,7 +812,10 @@ class _TimeChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          color: Theme.of(context)
+              .colorScheme
+              .surfaceContainerHighest
+              .withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(AppRadii.sm),
         ),
         child: Text(

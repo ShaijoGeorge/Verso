@@ -8,7 +8,6 @@ import 'package:verso/core/design/components/verso_card.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
 import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/core/design/tokens/radii.dart';
-import 'package:verso/core/design/tokens/shadows.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/core/router.dart';
 import 'package:verso/core/utils/app_error_handler.dart';
