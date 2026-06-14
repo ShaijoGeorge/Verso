@@ -181,7 +181,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: scheme.surface,
       appBar: AppBar(
         title: Text(
           'Settings',
@@ -190,7 +189,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             letterSpacing: -0.5,
           ),
         ),
-        backgroundColor: scheme.surface,
         scrolledUnderElevation: 0,
       ),
       body: settingsAsync.when(
@@ -553,6 +551,7 @@ class _SettingsSectionCard extends StatelessWidget {
           ),
         ),
         VersoCard(
+          shadow: AppShadows.md,
           padding: EdgeInsets.zero,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppRadii.lg),
