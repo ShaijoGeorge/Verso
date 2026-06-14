@@ -556,21 +556,26 @@ class _SettingsSectionCard extends StatelessWidget {
           padding: EdgeInsets.zero,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppRadii.lg),
-            child: Column(
-              children: [
-                for (int i = 0; i < children.length; i++) ...[
-                  children[i],
-                  if (i < children.length - 1)
-                    Divider(
-                      height: 1,
-                      thickness: 1,
-                      indent: 16,
-                      endIndent: 16,
-                      color: scheme.outlineVariant
-                          .withValues(alpha: isDark ? 0.3 : 0.5),
-                    ),
+            child: AnimatedSize(
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child: Column(
+                children: [
+                  for (int i = 0; i < children.length; i++) ...[
+                    children[i],
+                    if (i < children.length - 1)
+                      Divider(
+                        height: 1,
+                        thickness: 1,
+                        indent: 16,
+                        endIndent: 16,
+                        color: scheme.outlineVariant
+                            .withValues(alpha: isDark ? 0.3 : 0.5),
+                      ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -765,12 +770,25 @@ class _ThemeProfileTile extends StatelessWidget {
                   ],
                 ),
               ),
-              if (isSelected)
-                Icon(
-                  Icons.check_circle_rounded,
-                  color: scheme.primary,
-                  size: 22,
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                transitionBuilder: (child, animation) => ScaleTransition(
+                  scale: animation,
+                  child: FadeTransition(opacity: animation, child: child),
                 ),
+                child: isSelected
+                    ? Icon(
+                        Icons.check_circle_rounded,
+                        key: const ValueKey('checked'),
+                        color: scheme.primary,
+                        size: 22,
+                      )
+                    : const SizedBox(
+                        key: ValueKey('unchecked'),
+                        width: 22,
+                        height: 22,
+                      ),
+              ),
             ],
           ),
         ),
