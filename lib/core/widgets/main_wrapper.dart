@@ -143,8 +143,8 @@ class _VersoBottomNav extends StatelessWidget {
       isMiddle: true,
     ),
     _NavItem(
-      icon: Icons.history_edu_outlined,
-      activeIcon: Icons.history_edu_rounded,
+      icon: Icons.history_rounded,
+      activeIcon: Icons.history_rounded,
       label: 'History',
     ),
     _NavItem(
