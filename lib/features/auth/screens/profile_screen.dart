@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
+import 'package:verso/core/design/tokens/colors.dart';
+import 'package:verso/core/design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/spacing.dart';
+import 'package:verso/core/router.dart';
 import 'package:verso/core/utils/app_error_handler.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/core/widgets/verso_avatar.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
+import 'package:verso/features/reading/providers/reading_providers.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -86,6 +92,214 @@ class ProfileScreen extends ConsumerWidget {
                     useSafeArea: true,
                     builder: (_) => const _ChangePasswordSheet(),
                   ),
+                ),
+                const Divider(),
+
+                ListTile(
+                  leading: const Icon(Icons.settings_outlined),
+                  title: const Text('Settings'),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () {
+                    GoRouter.of(context).push('/settings');
+                  },
+                ),
+                const Divider(),
+
+                ListTile(
+                  leading: const Icon(Icons.logout_rounded, color: Colors.red),
+                  title: const Text(
+                    'Sign Out',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: Colors.red,
+                  ),
+                  onTap: () async {
+                    final cacheService = ref.read(offlineCacheServiceProvider);
+                    final pendingCount = await cacheService.pendingWriteCount();
+
+                    if (!context.mounted) return;
+
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      barrierColor: Colors.black54,
+                      builder: (dialogContext) {
+                        final dialogScheme =
+                            Theme.of(dialogContext).colorScheme;
+                        final dialogIsLight =
+                            Theme.of(dialogContext).brightness ==
+                                Brightness.light;
+                        final errorColor = dialogIsLight
+                            ? AppColors.errorLight
+                            : AppColors.errorDark;
+                        final hasPending = pendingCount > 0;
+
+                        return Dialog(
+                          backgroundColor: dialogScheme.surface,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppRadii.borderRadiusXL,
+                          ),
+                          insetPadding:
+                              const EdgeInsets.symmetric(horizontal: 32),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(
+                              Spacing.lg,
+                              Spacing.xl,
+                              Spacing.lg,
+                              Spacing.lg,
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 56,
+                                  height: 56,
+                                  decoration: BoxDecoration(
+                                    color: errorColor.withValues(alpha: 0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.logout_rounded,
+                                    color: errorColor,
+                                    size: 26,
+                                  ),
+                                ),
+                                const Gap(Spacing.md),
+                                Text(
+                                  'Sign out of Verso?',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 19,
+                                    fontWeight: FontWeight.w700,
+                                    color: dialogScheme.onSurface,
+                                  ),
+                                ),
+                                const Gap(Spacing.xs),
+                                Text(
+                                  hasPending
+                                      ? 'Signing out will remove your local data from this device.'
+                                      : 'Your reading progress is synced. You can sign back in at any time.',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w400,
+                                    color: dialogScheme.onSurfaceVariant,
+                                    height: 1.5,
+                                  ),
+                                ),
+                                if (hasPending) ...[
+                                  const Gap(Spacing.md),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 10,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: errorColor.withValues(alpha: 0.08),
+                                      borderRadius: AppRadii.borderRadiusMD,
+                                      border: Border.all(
+                                        color:
+                                            errorColor.withValues(alpha: 0.2),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.warning_amber_rounded,
+                                          size: 18,
+                                          color: errorColor,
+                                        ),
+                                        const Gap(8),
+                                        Expanded(
+                                          child: Text(
+                                            '$pendingCount unsynced ${pendingCount == 1 ? 'record' : 'records'} will be lost',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: errorColor,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                                const Gap(Spacing.lg),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: FilledButton(
+                                    onPressed: () =>
+                                        Navigator.pop(dialogContext, true),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: errorColor,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: AppRadii.borderRadiusMD,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Sign Out',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const Gap(Spacing.sm),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(dialogContext, false),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor:
+                                          dialogScheme.onSurfaceVariant,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: AppRadii.borderRadiusMD,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Cancel',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+
+                    if (confirmed != true) return;
+
+                    final router = ref.read(routerProvider);
+
+                    await cacheService.clearAll();
+                    await ref.read(authRepositoryProvider).signOut();
+
+                    Future.delayed(const Duration(milliseconds: 150), () {
+                      final rootContext =
+                          router.routerDelegate.navigatorKey.currentContext;
+                      if (rootContext != null && rootContext.mounted) {
+                        VersoSnackbar.success(
+                          rootContext,
+                          message: 'Signed out successfully',
+                        );
+                      }
+                    });
+                  },
                 ),
                 const Divider(),
               ],

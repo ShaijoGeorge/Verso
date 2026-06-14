@@ -197,19 +197,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         },
         branches: [
-          // Branch 0: Home
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/home',
-                pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
-                  key: state.pageKey,
-                  child: const HomeScreen(),
-                ),
-              ),
-            ],
-          ),
-          // Branch 1: Bible (The new combined screen)
+          // Branch 0: Bible (The new combined screen)
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -221,7 +209,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Branch 2: Stats (Tabbed Stats Screen)
+          // Branch 1: Stats (Tabbed Stats Screen)
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -244,6 +232,18 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
+          // Branch 2: Home
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/home',
+                pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
+                  key: state.pageKey,
+                  child: const HomeScreen(),
+                ),
+              ),
+            ],
+          ),
           // Branch 3: History (Activity Log)
           StatefulShellBranch(
             routes: [
@@ -252,6 +252,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                 pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
                   key: state.pageKey,
                   child: const ActivityLogScreen(),
+                ),
+              ),
+            ],
+          ),
+          // Branch 4: Profile
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/profile',
+                pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
+                  key: state.pageKey,
+                  child: const ProfileScreen(),
                 ),
               ),
             ],
@@ -270,16 +282,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             child: ChaptersScreen(book: book),
           );
         },
-      ),
-
-      // Profile Route
-      GoRoute(
-        path: '/profile',
-        parentNavigatorKey: rootNavigatorKey,
-        pageBuilder: (context, state) => AppPageTransitions.slideFromBottom(
-          key: state.pageKey,
-          child: const ProfileScreen(),
-        ),
       ),
 
       // Settings Route
