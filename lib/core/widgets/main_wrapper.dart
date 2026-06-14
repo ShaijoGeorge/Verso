@@ -59,70 +59,53 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
   Widget build(BuildContext context) {
     final isOnline = ref.watch(connectivityProvider);
 
-    String title;
-    switch (widget.navigationShell.currentIndex) {
-      case 0:
-        title = 'Verso';
-      case 1:
-        title = 'The Bible';
-      case 2:
-        title = 'Stats';
-      case 3:
-        title = 'Reading History';
-      default:
-        title = 'Verso';
-    }
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        centerTitle: true,
-        actions: const [],
-      ),
       drawer: const ProfileDrawer(),
-      body: Column(
-        children: [
-          // Offline indicator banner
-          AnimatedSize(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            child: isOnline
-                ? const SizedBox.shrink()
-                : Material(
-                    color: Theme.of(context).colorScheme.secondaryContainer,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.cloud_off,
-                            size: 14,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSecondaryContainer,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Reading in offline mode. Changes will sync when connected.',
-                            style: TextStyle(
-                              fontSize: 12,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Offline indicator banner
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              child: isOnline
+                  ? const SizedBox.shrink()
+                  : Material(
+                      color: Theme.of(context).colorScheme.secondaryContainer,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.cloud_off,
+                              size: 14,
                               color: Theme.of(context)
                                   .colorScheme
                                   .onSecondaryContainer,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Text(
+                              'Reading in offline mode. Changes will sync when connected.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSecondaryContainer,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-          ),
-          // Main content
-          Expanded(child: widget.navigationShell),
-        ],
+            ),
+            // Main content
+            Expanded(child: widget.navigationShell),
+          ],
+        ),
       ),
       extendBody: true,
       bottomNavigationBar: _VersoBottomNav(
