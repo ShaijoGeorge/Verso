@@ -167,9 +167,8 @@ class _ProfileHeroHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = isDark
-        ? AppColors.primaryDark
-        : AppColors.primaryLight;
+    final primaryColor =
+        isDark ? AppColors.primaryDark : AppColors.primaryLight;
 
     final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
 
@@ -220,8 +219,10 @@ class _ProfileHeroHeader extends StatelessWidget {
                   gradient: LinearGradient(
                     colors: [
                       primaryColor,
-                      if (isDark) AppColors.secondaryDark
-                      else AppColors.secondaryLight,
+                      if (isDark)
+                        AppColors.secondaryDark
+                      else
+                        AppColors.secondaryLight,
                     ],
                   ),
                 ),
@@ -325,7 +326,11 @@ class _ProfileStatsStrip extends ConsumerWidget {
 
     final booksRead = progressAsync.whenOrNull(
           data: (list) {
-            return list.where((p) => p.isRead).map((p) => p.bookId).toSet().length;
+            return list
+                .where((p) => p.isRead)
+                .map((p) => p.bookId)
+                .toSet()
+                .length;
           },
         ) ??
         0;
@@ -337,9 +342,8 @@ class _ProfileStatsStrip extends ConsumerWidget {
         Expanded(
           child: _StatCard(
             icon: Icons.menu_book_rounded,
-            iconColor: isDark
-                ? AppColors.chaptersDark
-                : AppColors.chaptersLight,
+            iconColor:
+                isDark ? AppColors.chaptersDark : AppColors.chaptersLight,
             value: isLoading ? '–' : '$chaptersRead',
             label: 'Chapters\nRead',
             isDark: isDark,
@@ -567,8 +571,7 @@ class _SignOutTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext ctx, WidgetRef widgetRef) {
-    final errorColor =
-        isDark ? AppColors.errorDark : AppColors.errorLight;
+    final errorColor = isDark ? AppColors.errorDark : AppColors.errorLight;
 
     return VersoCard(
       padding: EdgeInsets.zero,
@@ -779,8 +782,7 @@ class _SignOutTile extends ConsumerWidget {
     await widgetRef.read(authRepositoryProvider).signOut();
 
     Future.delayed(const Duration(milliseconds: 150), () {
-      final rootContext =
-          router.routerDelegate.navigatorKey.currentContext;
+      final rootContext = router.routerDelegate.navigatorKey.currentContext;
       if (rootContext != null && rootContext.mounted) {
         VersoSnackbar.success(
           rootContext,
@@ -790,7 +792,6 @@ class _SignOutTile extends ConsumerWidget {
     });
   }
 }
-
 
 // --- 1. CHANGE EMAIL SHEET (Bottom Sheet) ---
 class _ChangeEmailSheet extends ConsumerStatefulWidget {
