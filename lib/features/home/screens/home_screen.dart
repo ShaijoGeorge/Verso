@@ -13,7 +13,6 @@ import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/shadows.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
-import 'package:verso/core/widgets/verso_avatar.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
 import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/stats/providers/activity_providers.dart';
@@ -41,17 +40,6 @@ class HomeScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // PROFILE DRAWER TRIGGER
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () => Scaffold.of(context).openDrawer(),
-                child: const VersoAvatar(size: 56, borderWidth: 2),
-              ),
-            ],
-          ),
-          const Gap(Spacing.md),
-
           // GREETING
           statsAsync.when(
             loading: () => Column(
