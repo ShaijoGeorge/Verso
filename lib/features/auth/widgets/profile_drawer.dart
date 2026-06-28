@@ -313,6 +313,7 @@ class ProfileDrawer extends ConsumerWidget {
                         // Close the drawer, then sign out
                         if (context.mounted) Navigator.pop(context);
                         await cacheService.clearAll();
+                        ref.invalidate(globalProgressProvider);
                         await ref.read(authRepositoryProvider).signOut();
 
                         // Use a short delay to allow GoRouter to redirect to the /login route, then show the success message on the root app context so it survives the navigation stack being cleared.

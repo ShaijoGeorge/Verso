@@ -68,39 +68,44 @@ class SettingsRepository {
 
   // ── Profile Setup ────────────────────────────────────────────────────────
 
+  String _getUserKey(String baseKey, String userId) {
+    return '${baseKey}_$userId';
+  }
+
   /// Returns true once the user has submitted the profile-setup screen.
-  Future<bool> hasCompletedProfileSetup() async {
+  Future<bool> hasCompletedProfileSetup(String userId) async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_kProfileSetupKey) ?? false;
+    return prefs.getBool(_getUserKey(_kProfileSetupKey, userId)) ?? false;
   }
 
   /// Persists gender ('male' | 'female') and birthday (ISO-8601 date string).
   Future<void> saveUserProfile({
+    required String userId,
     required String gender,
     required DateTime birthday,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kUserGenderKey, gender);
+    await prefs.setString(_getUserKey(_kUserGenderKey, userId), gender);
     // Store as a plain date string so it survives encoding/decoding
     await prefs.setString(
-      _kUserBirthdayKey,
+      _getUserKey(_kUserBirthdayKey, userId),
       '${birthday.year.toString().padLeft(4, '0')}-'
       '${birthday.month.toString().padLeft(2, '0')}-'
       '${birthday.day.toString().padLeft(2, '0')}',
     );
-    await prefs.setBool(_kProfileSetupKey, true);
+    await prefs.setBool(_getUserKey(_kProfileSetupKey, userId), true);
   }
 
   /// Returns the saved gender, or null if not yet set.
-  Future<String?> getUserGender() async {
+  Future<String?> getUserGender(String userId) async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_kUserGenderKey);
+    return prefs.getString(_getUserKey(_kUserGenderKey, userId));
   }
 
   /// Returns the saved birthday as a DateTime, or null if not yet set.
-  Future<DateTime?> getUserBirthday() async {
+  Future<DateTime?> getUserBirthday(String userId) async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_kUserBirthdayKey);
+    final raw = prefs.getString(_getUserKey(_kUserBirthdayKey, userId));
     if (raw == null) return null;
     return DateTime.tryParse(raw);
   }
