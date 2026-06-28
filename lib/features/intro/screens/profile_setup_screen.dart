@@ -157,7 +157,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
       );
 
       // 2. Save locally for instant offline access
+      final userId = Supabase.instance.client.auth.currentUser!.id;
       await SettingsRepository().saveUserProfile(
+        userId: userId,
         gender: _selectedGender!,
         birthday: _selectedBirthday!,
       );
