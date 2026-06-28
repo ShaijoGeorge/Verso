@@ -289,7 +289,10 @@ class _ProfileHeroHeader extends StatelessWidget {
                   shaderCallback: (bounds) => LinearGradient(
                     colors: [
                       primaryColor,
-                      if (isDark) AppColors.secondaryDark else AppColors.secondaryLight,
+                      if (isDark)
+                        AppColors.secondaryDark
+                      else
+                        AppColors.secondaryLight,
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -796,6 +799,7 @@ class _SignOutTile extends ConsumerWidget {
     final router = widgetRef.read(routerProvider);
 
     await cacheService.clearAll();
+    widgetRef.invalidate(globalProgressProvider);
     await widgetRef.read(authRepositoryProvider).signOut();
 
     Future.delayed(const Duration(milliseconds: 150), () {

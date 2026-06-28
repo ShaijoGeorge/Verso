@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/services/offline_cache_service.dart';
 import 'package:verso/data/local/app_database.dart';
 import 'package:verso/data/local/entities/reading_progress.dart';
+import 'package:verso/features/auth/providers/auth_providers.dart';
 import 'package:verso/features/reading/data/bible_repository.dart';
 
 part 'reading_providers.g.dart';
@@ -45,7 +46,10 @@ OfflineCacheService offlineCacheService(Ref ref) {
 Stream<List<ReadingProgress>> globalProgress(Ref ref) async* {
   final repo = ref.watch(bibleRepositoryProvider);
   final cache = ref.watch(offlineCacheServiceProvider);
-  final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+
+  // Watch the auth state so this provider rebuilds automatically on login/logout
+  final authUser = ref.watch(authUserProvider).value;
+  final userId = authUser?.id ?? '';
 
   // Emit cached data first for instant UI
   var cached = await cache.getCachedProgress();
