@@ -293,14 +293,14 @@ class _HeroProgressCard extends StatelessWidget {
                 const Gap(Spacing.sm),
                 _HeroStatRow(
                   icon: Icons.emoji_events_rounded,
-                  text: '${stats.booksCompleted} / 73 books done',
+                  text: '${stats.booksCompleted}/73 Books',
                   isLight: isLight,
                   scheme: scheme,
                 ),
                 const Gap(Spacing.xs),
                 _HeroStatRow(
                   icon: Icons.menu_book_rounded,
-                  text: '${stats.totalChaptersRead} / 1334 chapters read',
+                  text: '${stats.totalChaptersRead}/1334 Chapters',
                   isLight: isLight,
                   scheme: scheme,
                 ),
@@ -309,7 +309,7 @@ class _HeroProgressCard extends StatelessWidget {
                   _HeroStatRow(
                     icon: Icons.today_rounded,
                     text:
-                        '$todayCount chapter${todayCount == 1 ? '' : 's'} read today',
+                        '$todayCount Chapter${todayCount == 1 ? '' : 's'} Today',
                     isLight: isLight,
                     scheme: scheme,
                   ),
