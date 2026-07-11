@@ -43,117 +43,121 @@ class HomeScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-          // GREETING
-          statsAsync.when(
-            loading: () => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Shimmer.fromColors(
-                  baseColor: baseColor,
-                  highlightColor: highlightColor,
-                  child: Container(
-                    width: 150,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
+              // GREETING
+              statsAsync.when(
+                loading: () => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Shimmer.fromColors(
+                      baseColor: baseColor,
+                      highlightColor: highlightColor,
+                      child: Container(
+                        width: 150,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                     ),
-                  ),
+                    const Gap(8),
+                    Shimmer.fromColors(
+                      baseColor: baseColor,
+                      highlightColor: highlightColor,
+                      child: Container(
+                        width: 240,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const Gap(8),
-                Shimmer.fromColors(
-                  baseColor: baseColor,
-                  highlightColor: highlightColor,
-                  child: Container(
-                    width: 240,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
+                error: (err, stack) => ErrorStateWidget(
+                  error: err,
+                  onRetry: () => ref.invalidate(userStatsProvider),
+                ),
+                data: (stats) {
+                  final todayCount = todayAsync.whenData((v) => v).value ?? 0;
+                  return _GreetingSection(
+                    userName: userName,
+                    streak: stats.streak,
+                    progress: stats.totalProgress,
+                    todayCount: todayCount,
+                  );
+                },
+              ),
+              const Gap(Spacing.md),
+
+              // DAILY VERSE
+              _DailyVerseCard(verseAsync: verseAsync),
+              const Gap(Spacing.lg),
+
+              // HERO PROGRESS CARD
+              statsAsync.when(
+                loading: () => const _HeroProgressCardSkeleton(),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (stats) {
+                  final todayCount = todayAsync.whenData((v) => v).value ?? 0;
+                  return _HeroProgressCard(
+                      stats: stats, todayCount: todayCount);
+                },
+              ),
+              const Gap(Spacing.lg),
+
+              // QUICK STATS
+              statsAsync.when(
+                loading: () => const _QuickStatsRowSkeleton(),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (stats) => _QuickStatsRow(stats: stats),
+              ),
+              const Gap(Spacing.xl),
+
+              // THIS WEEK
+              if (detailedAsync.hasValue) ...[
+                VersoSectionHeader(
+                  title: 'This week',
+                  action: 'Details',
+                  onAction: () => context.go('/stats?tab=weekly'),
+                ),
+                const Gap(Spacing.md),
+                _WeeklyChart(
+                  counts: detailedAsync.value!.last7DaysCounts,
+                  dates: detailedAsync.value!.last7DaysDates,
+                ),
+                const Gap(Spacing.xl),
+              ],
+
+              // CONTINUE READING
+              if (continueAsync.hasValue && continueAsync.value != null) ...[
+                const VersoSectionHeader(title: 'Continue reading'),
+                const Gap(Spacing.md),
+                _ContinueReadingCard(info: continueAsync.value!),
+                const Gap(Spacing.xl),
+              ],
+
+              // RECENT ACTIVITY
+              if (activityAsync.hasValue &&
+                  activityAsync.value!.isNotEmpty) ...[
+                VersoSectionHeader(
+                  title: 'Recent activity',
+                  action: 'See all',
+                  onAction: () => context.go('/history'),
+                ),
+                const Gap(Spacing.md),
+                _RecentActivityList(
+                  groups: activityAsync.value!.values
+                      .expand((g) => g)
+                      .take(3)
+                      .toList(),
                 ),
               ],
-            ),
-            error: (err, stack) => ErrorStateWidget(
-              error: err,
-              onRetry: () => ref.invalidate(userStatsProvider),
-            ),
-            data: (stats) {
-              final todayCount = todayAsync.whenData((v) => v).value ?? 0;
-              return _GreetingSection(
-                userName: userName,
-                streak: stats.streak,
-                progress: stats.totalProgress,
-                todayCount: todayCount,
-              );
-            },
-          ),
-          const Gap(Spacing.md),
 
-          // DAILY VERSE
-          _DailyVerseCard(verseAsync: verseAsync),
-          const Gap(Spacing.lg),
-
-          // HERO PROGRESS CARD
-          statsAsync.when(
-            loading: () => const _HeroProgressCardSkeleton(),
-            error: (_, __) => const SizedBox.shrink(),
-            data: (stats) {
-              final todayCount = todayAsync.whenData((v) => v).value ?? 0;
-              return _HeroProgressCard(stats: stats, todayCount: todayCount);
-            },
-          ),
-          const Gap(Spacing.lg),
-
-          // QUICK STATS
-          statsAsync.when(
-            loading: () => const _QuickStatsRowSkeleton(),
-            error: (_, __) => const SizedBox.shrink(),
-            data: (stats) => _QuickStatsRow(stats: stats),
-          ),
-          const Gap(Spacing.xl),
-
-          // THIS WEEK
-          if (detailedAsync.hasValue) ...[
-            VersoSectionHeader(
-              title: 'This week',
-              action: 'Details',
-              onAction: () => context.go('/stats?tab=weekly'),
-            ),
-            const Gap(Spacing.md),
-            _WeeklyChart(
-              counts: detailedAsync.value!.last7DaysCounts,
-              dates: detailedAsync.value!.last7DaysDates,
-            ),
-            const Gap(Spacing.xl),
-          ],
-
-          // CONTINUE READING
-          if (continueAsync.hasValue && continueAsync.value != null) ...[
-            const VersoSectionHeader(title: 'Continue reading'),
-            const Gap(Spacing.md),
-            _ContinueReadingCard(info: continueAsync.value!),
-            const Gap(Spacing.xl),
-          ],
-
-          // RECENT ACTIVITY
-          if (activityAsync.hasValue && activityAsync.value!.isNotEmpty) ...[
-            VersoSectionHeader(
-              title: 'Recent activity',
-              action: 'See all',
-              onAction: () => context.go('/history'),
-            ),
-            const Gap(Spacing.md),
-            _RecentActivityList(
-              groups:
-                  activityAsync.value!.values.expand((g) => g).take(3).toList(),
-            ),
-          ],
-
-          // Extra space so content isn't hidden behind the floating nav bar
-          const Gap(100),
-        ],
+              // Extra space so content isn't hidden behind the floating nav bar
+              const Gap(100),
+            ],
           ),
         ),
       ),
@@ -392,7 +396,7 @@ class _QuickStatsRow extends StatelessWidget {
           child: _QuickStatCard(
             icon: Icons.emoji_events_rounded,
             value: '${stats.booksCompleted}',
-            label: 'Books completed',
+            label: 'Books',
             iconColor: context.appColors.books,
             bgColor: context.appColors.books
                 .withValues(alpha: isLight ? 0.08 : 0.15),
@@ -424,53 +428,57 @@ class _QuickStatCard extends StatelessWidget {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final isAmoled = context.palette.style == AppearanceStyle.amoled;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        vertical: Spacing.md,
-        horizontal: Spacing.sm,
-      ),
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        borderRadius: AppRadii.borderRadiusLG,
-        border: Border.all(
-          color: isAmoled
-              ? scheme.outline
-              : scheme.outline.withValues(alpha: isLight ? 0.5 : 0.15),
+    return AspectRatio(
+      aspectRatio: 1.0,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          vertical: Spacing.md,
+          horizontal: Spacing.sm,
         ),
-        boxShadow: AppShadows.sm,
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: AppRadii.borderRadiusSM,
+        decoration: BoxDecoration(
+          color: scheme.surface,
+          borderRadius: AppRadii.borderRadiusLG,
+          border: Border.all(
+            color: isAmoled
+                ? scheme.outline
+                : scheme.outline.withValues(alpha: isLight ? 0.5 : 0.15),
+          ),
+          boxShadow: AppShadows.sm,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: AppRadii.borderRadiusSM,
+              ),
+              child: Icon(icon, size: 20, color: iconColor),
             ),
-            child: Icon(icon, size: 20, color: iconColor),
-          ),
-          const Gap(Spacing.sm),
-          TweenAnimationBuilder<int>(
-            key: ValueKey('stat_$label'),
-            tween: IntTween(begin: 0, end: int.tryParse(value) ?? 0),
-            duration: const Duration(milliseconds: 1200),
-            curve: Curves.easeOutCubic,
-            builder: (context, animatedVal, _) {
-              return Text(
-                '$animatedVal',
-                style: textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              );
-            },
-          ),
-          Text(
-            label,
-            style: textTheme.labelSmall?.copyWith(
-              color: scheme.onSurfaceVariant,
+            const Gap(Spacing.sm),
+            TweenAnimationBuilder<int>(
+              key: ValueKey('stat_$label'),
+              tween: IntTween(begin: 0, end: int.tryParse(value) ?? 0),
+              duration: const Duration(milliseconds: 1200),
+              curve: Curves.easeOutCubic,
+              builder: (context, animatedVal, _) {
+                return Text(
+                  '$animatedVal',
+                  style: textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                );
+              },
             ),
-          ),
-        ],
+            Text(
+              label,
+              style: textTheme.labelSmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
