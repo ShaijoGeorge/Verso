@@ -199,15 +199,17 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
   for (final entry in allHistory) {
     if (entry.readAt == null) continue;
 
+    final localReadAt = entry.readAt!.toLocal();
+
     // Apply Filters
     if (filter.bookId != null && entry.bookId != filter.bookId) {
       continue;
     }
-    if (filter.startDate != null && entry.readAt!.isBefore(filter.startDate!)) {
+    if (filter.startDate != null && localReadAt.isBefore(filter.startDate!)) {
       continue;
     }
     if (filter.endDate != null &&
-        entry.readAt!.isAfter(filter.endDate!.add(const Duration(days: 1)))) {
+        localReadAt.isAfter(filter.endDate!.add(const Duration(days: 1)))) {
       continue;
     }
 
@@ -230,9 +232,9 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
     if (groups.isNotEmpty) {
       final lastGroup = groups.last;
       final timeDiff =
-          lastGroup.timestamp.difference(entry.readAt!).inMinutes.abs();
+          lastGroup.timestamp.difference(localReadAt).inMinutes.abs();
       if (lastGroup.book.id == book.id &&
-          lastGroup.timestamp.day == entry.readAt!.day &&
+          lastGroup.timestamp.day == localReadAt.day &&
           timeDiff < 2) {
         lastGroup.chapters.add(entry.chapterNumber);
         if (isFinisher) lastGroup.isFinish = true;
@@ -245,7 +247,7 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
 
     groups.add(
       ActivityGroup(
-        timestamp: entry.readAt!,
+        timestamp: localReadAt,
         book: book,
         chapters: [entry.chapterNumber],
         isFinish: isFinisher,

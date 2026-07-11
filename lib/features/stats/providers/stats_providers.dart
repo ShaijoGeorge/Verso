@@ -302,7 +302,7 @@ Future<WeeklyChartData> weeklyChartStats(Ref ref, int weeksAgo) async {
 
     final count = readHistory.where((p) {
       if (p.readAt == null) return false;
-      final pDate = p.readAt!;
+      final pDate = p.readAt!.toLocal();
       return pDate.year == date.year &&
           pDate.month == date.month &&
           pDate.day == date.day;
@@ -358,15 +358,15 @@ Future<MonthlyChartData> monthlyChartStats(Ref ref, int monthsAgo) async {
   final dailyCounts = <int, int>{};
   var totalRead = 0;
 
-  final monthHistory = readHistory.where(
-    (p) =>
-        p.readAt != null &&
-        p.readAt!.year == targetYear &&
-        p.readAt!.month == targetMonth,
-  );
+  final monthHistory = readHistory.where((p) {
+    if (p.readAt == null) return false;
+    final pDate = p.readAt!.toLocal();
+    return pDate.year == targetYear && pDate.month == targetMonth;
+  });
 
   for (final entry in monthHistory) {
-    dailyCounts[entry.readAt!.day] = (dailyCounts[entry.readAt!.day] ?? 0) + 1;
+    final pDate = entry.readAt!.toLocal();
+    dailyCounts[pDate.day] = (dailyCounts[pDate.day] ?? 0) + 1;
     totalRead++;
   }
 
@@ -406,12 +406,15 @@ Future<YearlyChartData> yearlyChartStats(Ref ref, int yearsAgo) async {
   final monthlyCounts = <int, int>{};
   var totalRead = 0;
 
-  final yearHistory = readHistory
-      .where((p) => p.readAt != null && p.readAt!.year == targetYear);
+  final yearHistory = readHistory.where((p) {
+    if (p.readAt == null) return false;
+    final pDate = p.readAt!.toLocal();
+    return pDate.year == targetYear;
+  });
 
   for (final entry in yearHistory) {
-    monthlyCounts[entry.readAt!.month] =
-        (monthlyCounts[entry.readAt!.month] ?? 0) + 1;
+    final pDate = entry.readAt!.toLocal();
+    monthlyCounts[pDate.month] = (monthlyCounts[pDate.month] ?? 0) + 1;
     totalRead++;
   }
 
