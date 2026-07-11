@@ -37,9 +37,12 @@ class HomeScreen extends ConsumerWidget {
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 700),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           // GREETING
           statsAsync.when(
             loading: () => Column(
@@ -151,6 +154,8 @@ class HomeScreen extends ConsumerWidget {
           // Extra space so content isn't hidden behind the floating nav bar
           const Gap(100),
         ],
+          ),
+        ),
       ),
     );
   }
