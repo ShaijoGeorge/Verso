@@ -102,7 +102,9 @@ class HomeScreen extends ConsumerWidget {
                 data: (stats) {
                   final todayCount = todayAsync.whenData((v) => v).value ?? 0;
                   return _HeroProgressCard(
-                      stats: stats, todayCount: todayCount);
+                    stats: stats,
+                    todayCount: todayCount,
+                  );
                 },
               ),
               const Gap(Spacing.lg),
@@ -429,7 +431,7 @@ class _QuickStatCard extends StatelessWidget {
     final isAmoled = context.palette.style == AppearanceStyle.amoled;
 
     return AspectRatio(
-      aspectRatio: 1.0,
+      aspectRatio: 1,
       child: Container(
         padding: const EdgeInsets.symmetric(
           vertical: Spacing.md,
