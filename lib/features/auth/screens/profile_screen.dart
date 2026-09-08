@@ -192,25 +192,9 @@ class _ProfileHeroHeader extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
           child: Column(
             children: [
-              // Back button row
-              Row(
-                children: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: primaryColor,
-                      size: 20,
-                    ),
-                    onPressed: () => GoRouter.of(context).pop(),
-                  ),
-                  const Spacer(),
-                ],
-              ),
-              const Gap(8),
-
               // Avatar with ring
               Container(
                 padding: const EdgeInsets.all(4),
