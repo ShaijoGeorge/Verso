@@ -15,6 +15,7 @@ import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/core/widgets/verso_avatar.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
+import 'package:verso/features/stats/providers/stats_providers.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -191,25 +192,9 @@ class _ProfileHeroHeader extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
           child: Column(
             children: [
-              // Back button row
-              Row(
-                children: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: primaryColor,
-                      size: 20,
-                    ),
-                    onPressed: () => GoRouter.of(context).pop(),
-                  ),
-                  const Spacer(),
-                ],
-              ),
-              const Gap(8),
-
               // Avatar with ring
               Container(
                 padding: const EdgeInsets.all(4),
@@ -337,25 +322,19 @@ class _ProfileStatsStrip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final progressAsync = ref.watch(globalProgressProvider);
+    final statsAsync = ref.watch(userStatsProvider);
 
-    final chaptersRead = progressAsync.whenOrNull(
-          data: (list) => list.where((p) => p.isRead).length,
+    final chaptersRead = statsAsync.whenOrNull(
+          data: (stats) => stats.totalChaptersRead,
         ) ??
         0;
 
-    final booksRead = progressAsync.whenOrNull(
-          data: (list) {
-            return list
-                .where((p) => p.isRead)
-                .map((p) => p.bookId)
-                .toSet()
-                .length;
-          },
+    final booksCompleted = statsAsync.whenOrNull(
+          data: (stats) => stats.booksCompleted,
         ) ??
         0;
 
-    final isLoading = progressAsync.isLoading;
+    final isLoading = statsAsync.isLoading;
 
     return Row(
       children: [
@@ -365,6 +344,7 @@ class _ProfileStatsStrip extends ConsumerWidget {
             iconColor:
                 isDark ? AppColors.chaptersDark : AppColors.chaptersLight,
             value: isLoading ? '–' : '$chaptersRead',
+            totalScope: isLoading ? null : '/ 1334',
             label: 'Chapters\nRead',
             isDark: isDark,
             scheme: scheme,
@@ -375,7 +355,8 @@ class _ProfileStatsStrip extends ConsumerWidget {
           child: _StatCard(
             icon: Icons.library_books_rounded,
             iconColor: isDark ? AppColors.booksDark : AppColors.booksLight,
-            value: isLoading ? '–' : '$booksRead',
+            value: isLoading ? '–' : '$booksCompleted',
+            totalScope: isLoading ? null : '/ 73',
             label: 'Books\nCompleted',
             isDark: isDark,
             scheme: scheme,
@@ -394,11 +375,13 @@ class _StatCard extends StatelessWidget {
     required this.label,
     required this.isDark,
     required this.scheme,
+    this.totalScope,
   });
 
   final IconData icon;
   final Color iconColor;
   final String value;
+  final String? totalScope;
   final String label;
   final bool isDark;
   final ColorScheme scheme;
@@ -419,29 +402,60 @@ class _StatCard extends StatelessWidget {
             child: Icon(icon, size: 20, color: iconColor),
           ),
           const Gap(12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: scheme.onSurface,
-                  height: 1,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: totalScope != null
+                      ? Text.rich(
+                          TextSpan(
+                            text: value,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: scheme.onSurface,
+                              height: 1,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: ' $totalScope',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: scheme.onSurfaceVariant
+                                      .withValues(alpha: 0.8),
+                                  height: 1,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Text(
+                          value,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: scheme.onSurface,
+                            height: 1,
+                          ),
+                        ),
                 ),
-              ),
-              const Gap(3),
-              Text(
-                label,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: scheme.onSurfaceVariant,
-                  height: 1.3,
+                const Gap(3),
+                Text(
+                  label,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: scheme.onSurfaceVariant,
+                    height: 1.3,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -800,6 +814,7 @@ class _SignOutTile extends ConsumerWidget {
 
     await cacheService.clearAll();
     widgetRef.invalidate(globalProgressProvider);
+    widgetRef.invalidate(userStatsProvider);
     await widgetRef.read(authRepositoryProvider).signOut();
 
     Future.delayed(const Duration(milliseconds: 150), () {
