@@ -271,56 +271,45 @@ class _ProfileHeroHeader extends StatelessWidget {
               // "Reading since" badge
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+                  horizontal: 14,
+                  vertical: 7,
                 ),
                 decoration: BoxDecoration(
-                  color: scheme.surface.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(AppRadii.full),
-                  border: Border.all(
-                    color: primaryColor.withValues(alpha: 0.2),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: primaryColor.withValues(alpha: 0.15),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: ShaderMask(
-                  blendMode: BlendMode.srcIn,
-                  shaderCallback: (bounds) => LinearGradient(
+                  gradient: LinearGradient(
                     colors: [
-                      primaryColor,
-                      if (isDark)
-                        AppColors.secondaryDark
-                      else
-                        AppColors.secondaryLight,
+                      primaryColor.withValues(alpha: isDark ? 0.15 : 0.10),
+                      (isDark
+                              ? AppColors.secondaryDark
+                              : AppColors.secondaryLight)
+                          .withValues(alpha: isDark ? 0.10 : 0.08),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                  ).createShader(bounds),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.auto_stories_rounded,
-                        size: 15,
-                        color: Colors.white,
-                      ),
-                      const Gap(6),
-                      Text(
-                        'READING SINCE ${readingSince.toUpperCase()}',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ],
                   ),
+                  borderRadius: BorderRadius.circular(AppRadii.full),
+                  border: Border.all(
+                    color: primaryColor.withValues(alpha: isDark ? 0.25 : 0.18),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.calendar_month_rounded,
+                      size: 14,
+                      color: primaryColor,
+                    ),
+                    const Gap(6),
+                    Text(
+                      'Reading since $readingSince',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: scheme.onSurfaceVariant,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
