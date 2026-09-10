@@ -224,14 +224,33 @@ class _ProfileHeroHeader extends StatelessWidget {
 
               const Gap(20),
 
-              // Name
-              Text(
-                name,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: scheme.onSurface,
-                  letterSpacing: -0.3,
+              // Name with edit icon
+              GestureDetector(
+                onTap: () => showModalBottomSheet<void>(
+                  context: context,
+                  isScrollControlled: true,
+                  useSafeArea: true,
+                  builder: (_) => _EditNameSheet(currentName: name),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      name,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: scheme.onSurface,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const Gap(8),
+                    Icon(
+                      Icons.edit_rounded,
+                      size: 18,
+                      color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    ),
+                  ],
                 ),
               ),
 
@@ -252,56 +271,45 @@ class _ProfileHeroHeader extends StatelessWidget {
               // "Reading since" badge
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+                  horizontal: 14,
+                  vertical: 7,
                 ),
                 decoration: BoxDecoration(
-                  color: scheme.surface.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(AppRadii.full),
-                  border: Border.all(
-                    color: primaryColor.withValues(alpha: 0.2),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: primaryColor.withValues(alpha: 0.15),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: ShaderMask(
-                  blendMode: BlendMode.srcIn,
-                  shaderCallback: (bounds) => LinearGradient(
+                  gradient: LinearGradient(
                     colors: [
-                      primaryColor,
-                      if (isDark)
-                        AppColors.secondaryDark
-                      else
-                        AppColors.secondaryLight,
+                      primaryColor.withValues(alpha: isDark ? 0.15 : 0.10),
+                      (isDark
+                              ? AppColors.secondaryDark
+                              : AppColors.secondaryLight)
+                          .withValues(alpha: isDark ? 0.10 : 0.08),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                  ).createShader(bounds),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.auto_stories_rounded,
-                        size: 15,
-                        color: Colors.white,
-                      ),
-                      const Gap(6),
-                      Text(
-                        'READING SINCE ${readingSince.toUpperCase()}',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ],
                   ),
+                  borderRadius: BorderRadius.circular(AppRadii.full),
+                  border: Border.all(
+                    color: primaryColor.withValues(alpha: isDark ? 0.25 : 0.18),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.calendar_month_rounded,
+                      size: 14,
+                      color: primaryColor,
+                    ),
+                    const Gap(6),
+                    Text(
+                      'Reading since $readingSince',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: scheme.onSurfaceVariant,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -1126,6 +1134,132 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Text('Update Password'),
+            ),
+            const Gap(16),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// --- 3. EDIT NAME SHEET (Bottom Sheet) ---
+class _EditNameSheet extends ConsumerStatefulWidget {
+  const _EditNameSheet({required this.currentName});
+
+  final String currentName;
+
+  @override
+  ConsumerState<_EditNameSheet> createState() => _EditNameSheetState();
+}
+
+class _EditNameSheetState extends ConsumerState<_EditNameSheet> {
+  late final TextEditingController _nameController;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(
+      text: widget.currentName == 'Reader' ? '' : widget.currentName,
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _update() async {
+    final name = _nameController.text.trim();
+
+    if (name.isEmpty) {
+      VersoSnackbar.error(context, message: 'Name cannot be empty');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      await repo.updateUserMetadata({'full_name': name});
+
+      if (mounted) {
+        Navigator.pop(context);
+        VersoSnackbar.success(
+          context,
+          message: 'Name updated successfully!',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        VersoSnackbar.error(context, message: AppErrorHandler.getMessage(e));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomPadding),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Drag Handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant
+                      .withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const Gap(24),
+
+            Text(
+              'Edit Name',
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const Gap(24),
+
+            TextField(
+              controller: _nameController,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                hintText: 'Full Name',
+                prefixIcon: Icon(Icons.person_outline_rounded),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const Gap(32),
+            FilledButton(
+              onPressed: _isLoading ? null : _update,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Update Name'),
             ),
             const Gap(16),
           ],
