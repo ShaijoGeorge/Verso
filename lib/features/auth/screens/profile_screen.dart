@@ -224,14 +224,33 @@ class _ProfileHeroHeader extends StatelessWidget {
 
               const Gap(20),
 
-              // Name
-              Text(
-                name,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: scheme.onSurface,
-                  letterSpacing: -0.3,
+              // Name with edit icon
+              GestureDetector(
+                onTap: () => showModalBottomSheet<void>(
+                  context: context,
+                  isScrollControlled: true,
+                  useSafeArea: true,
+                  builder: (_) => _EditNameSheet(currentName: name),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      name,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: scheme.onSurface,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const Gap(8),
+                    Icon(
+                      Icons.edit_rounded,
+                      size: 18,
+                      color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    ),
+                  ],
                 ),
               ),
 
@@ -1126,6 +1145,132 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Text('Update Password'),
+            ),
+            const Gap(16),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// --- 3. EDIT NAME SHEET (Bottom Sheet) ---
+class _EditNameSheet extends ConsumerStatefulWidget {
+  const _EditNameSheet({required this.currentName});
+
+  final String currentName;
+
+  @override
+  ConsumerState<_EditNameSheet> createState() => _EditNameSheetState();
+}
+
+class _EditNameSheetState extends ConsumerState<_EditNameSheet> {
+  late final TextEditingController _nameController;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(
+      text: widget.currentName == 'Reader' ? '' : widget.currentName,
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _update() async {
+    final name = _nameController.text.trim();
+
+    if (name.isEmpty) {
+      VersoSnackbar.error(context, message: 'Name cannot be empty');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      await repo.updateUserMetadata({'full_name': name});
+
+      if (mounted) {
+        Navigator.pop(context);
+        VersoSnackbar.success(
+          context,
+          message: 'Name updated successfully!',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        VersoSnackbar.error(context, message: AppErrorHandler.getMessage(e));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomPadding),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Drag Handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant
+                      .withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const Gap(24),
+
+            Text(
+              'Edit Name',
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const Gap(24),
+
+            TextField(
+              controller: _nameController,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                hintText: 'Full Name',
+                prefixIcon: Icon(Icons.person_outline_rounded),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const Gap(32),
+            FilledButton(
+              onPressed: _isLoading ? null : _update,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Update Name'),
             ),
             const Gap(16),
           ],
