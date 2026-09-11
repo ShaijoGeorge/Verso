@@ -238,33 +238,38 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               ),
                             ),
                             const Gap(12),
-                            SegmentedButton<AppThemeMode>(
-                              segments: const [
-                                ButtonSegment(
-                                  value: AppThemeMode.system,
-                                  icon: Icon(Icons.brightness_auto_outlined),
-                                  label: Text('System'),
-                                ),
-                                ButtonSegment(
-                                  value: AppThemeMode.light,
-                                  icon: Icon(Icons.light_mode_outlined),
-                                  label: Text('Light'),
-                                ),
-                                ButtonSegment(
-                                  value: AppThemeMode.dark,
-                                  icon: Icon(Icons.dark_mode_outlined),
-                                  label: Text('Dark'),
-                                ),
-                              ],
-                              selected: {settings.themeMode},
-                              onSelectionChanged: (s) => ref
-                                  .read(currentSettingsProvider.notifier)
-                                  .setThemeMode(s.first),
-                              style: ButtonStyle(
-                                textStyle: WidgetStatePropertyAll(
-                                  GoogleFonts.plusJakartaSans(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: SegmentedButton<AppThemeMode>(
+                                showSelectedIcon: false,
+                                segments: const [
+                                  ButtonSegment(
+                                    value: AppThemeMode.system,
+                                    icon: Icon(Icons.brightness_auto_outlined),
+                                    label: Text('System'),
+                                  ),
+                                  ButtonSegment(
+                                    value: AppThemeMode.light,
+                                    icon: Icon(Icons.light_mode_outlined),
+                                    label: Text('Light'),
+                                  ),
+                                  ButtonSegment(
+                                    value: AppThemeMode.dark,
+                                    icon: Icon(Icons.dark_mode_outlined),
+                                    label: Text('Dark'),
+                                  ),
+                                ],
+                                selected: {settings.themeMode},
+                                onSelectionChanged: (s) => ref
+                                    .read(currentSettingsProvider.notifier)
+                                    .setThemeMode(s.first),
+                                style: ButtonStyle(
+                                  textStyle: WidgetStatePropertyAll(
+                                    GoogleFonts.plusJakartaSans(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -283,6 +288,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               .read(currentSettingsProvider.notifier)
                               .setUseAmoledForDark(v),
                         ),
+                    ],
+                  ),
+                  const Gap(24),
+
+                  // --- TEXT SIZE SECTION ---
+                  _SettingsSectionCard(
+                    title: 'Text Size',
+                    children: [
+                      _FontSizeSettingsTile(
+                        currentScale: settings.fontScaleFactor,
+                        onChanged: (scale) => ref
+                            .read(currentSettingsProvider.notifier)
+                            .setFontScaleFactor(scale),
+                      ),
                     ],
                   ),
                   const Gap(24),
@@ -604,35 +623,38 @@ class _SettingsSwitchTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return SwitchListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      title: Text(
-        title,
-        style: GoogleFonts.plusJakartaSans(
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-          color: scheme.onSurface,
+    return Material(
+      color: Colors.transparent,
+      child: SwitchListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        title: Text(
+          title,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: scheme.onSurface,
+          ),
         ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: GoogleFonts.plusJakartaSans(
-          fontSize: 13,
-          fontWeight: FontWeight.w400,
-          color: scheme.onSurfaceVariant,
+        subtitle: Text(
+          subtitle,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 13,
+            fontWeight: FontWeight.w400,
+            color: scheme.onSurfaceVariant,
+          ),
         ),
-      ),
-      secondary: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: iconColor.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(AppRadii.sm),
+        secondary: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(AppRadii.sm),
+          ),
+          child: Icon(icon, size: 18, color: iconColor),
         ),
-        child: Icon(icon, size: 18, color: iconColor),
+        value: value,
+        onChanged: onChanged,
       ),
-      value: value,
-      onChanged: onChanged,
     );
   }
 }
@@ -844,6 +866,210 @@ class _TimeChip extends StatelessWidget {
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _FontSizeSettingsTile extends StatelessWidget {
+  const _FontSizeSettingsTile({
+    required this.currentScale,
+    required this.onChanged,
+  });
+
+  final double currentScale;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activePreset = AppFontSize.fromScale(currentScale);
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header Row
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3B82F6)
+                      .withValues(alpha: isDark ? 0.2 : 0.1),
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                ),
+                child: const Icon(
+                  Icons.format_size_rounded,
+                  size: 20,
+                  color: Color(0xFF3B82F6),
+                ),
+              ),
+              const Gap(14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'In-App Font Size',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                    const Gap(2),
+                    Text(
+                      '${activePreset.label} (${activePreset.percentage})',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Gap(16),
+
+          // Live Preview Box
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHighest
+                  .withValues(alpha: isDark ? 0.35 : 0.45),
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              border: Border.all(
+                color: scheme.outline.withValues(alpha: isDark ? 0.15 : 0.2),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        'LIVE PREVIEW',
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
+                          color: scheme.primary,
+                        ),
+                      ),
+                    ),
+                    const Gap(8),
+                    Text(
+                      'Psalm 119:105',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+                const Gap(10),
+                Text(
+                  'Your word is a lamp to my feet and a light to my path.',
+                  style: GoogleFonts.dmSerifDisplay(
+                    fontSize: 18 * currentScale,
+                    height: 1.35,
+                    color: scheme.onSurface,
+                  ),
+                ),
+                const Gap(6),
+                Text(
+                  'Read daily to build your streak and stay consistent.',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13 * currentScale,
+                    height: 1.45,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Gap(16),
+
+          // Preset Selection Buttons
+          Row(
+            children: AppFontSize.values.map((preset) {
+              final isSelected = (preset.scale - currentScale).abs() < 0.01;
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: InkWell(
+                    onTap: () => onChanged(preset.scale),
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? scheme.primary
+                            : scheme.surfaceContainerHighest
+                                .withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(AppRadii.sm),
+                        border: Border.all(
+                          color: isSelected
+                              ? scheme.primary
+                              : scheme.outline.withValues(alpha: 0.15),
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            preset.label,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? scheme.onPrimary
+                                  : scheme.onSurface,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const Gap(2),
+                          Text(
+                            preset.percentage,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: isSelected
+                                  ? scheme.onPrimary.withValues(alpha: 0.85)
+                                  : scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const Gap(10),
+          Text(
+            'In-app font size applies across all books and screens, independent of phone settings.',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

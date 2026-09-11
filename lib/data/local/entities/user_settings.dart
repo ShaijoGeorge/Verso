@@ -1,9 +1,28 @@
-enum AppThemeMode { system, light, dark }
+﻿enum AppThemeMode { system, light, dark }
 
 enum AppearanceStyle { light, dark, amoled }
 
 extension AppearanceStyleX on AppearanceStyle {
   bool get isLight => this == AppearanceStyle.light;
+}
+
+enum AppFontSize {
+  small(0.85, 'Small', '85%'),
+  standard(1, 'Standard', '100%'),
+  large(1.15, 'Large', '115%'),
+  extraLarge(1.30, 'Extra Large', '130%');
+
+  const AppFontSize(this.scale, this.label, this.percentage);
+  final double scale;
+  final String label;
+  final String percentage;
+
+  static AppFontSize fromScale(double scale) {
+    return AppFontSize.values.firstWhere(
+      (e) => (e.scale - scale).abs() < 0.01,
+      orElse: () => AppFontSize.standard,
+    );
+  }
 }
 
 class UserSettings {
@@ -21,6 +40,7 @@ class UserSettings {
     this.reminderHour = 7,
     this.reminderMinute = 0,
     this.themeProfileId = 'current',
+    this.fontScaleFactor = 1,
   });
 
   final AppThemeMode themeMode;
@@ -36,6 +56,7 @@ class UserSettings {
   final int reminderHour;
   final int reminderMinute;
   final String themeProfileId;
+  final double fontScaleFactor;
 
   UserSettings copyWith({
     AppThemeMode? themeMode,
@@ -51,6 +72,7 @@ class UserSettings {
     int? reminderHour,
     int? reminderMinute,
     String? themeProfileId,
+    double? fontScaleFactor,
   }) =>
       UserSettings(
         themeMode: themeMode ?? this.themeMode,
@@ -66,5 +88,6 @@ class UserSettings {
         reminderHour: reminderHour ?? this.reminderHour,
         reminderMinute: reminderMinute ?? this.reminderMinute,
         themeProfileId: themeProfileId ?? this.themeProfileId,
+        fontScaleFactor: fontScaleFactor ?? this.fontScaleFactor,
       );
 }
