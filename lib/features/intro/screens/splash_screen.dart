@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -70,7 +70,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
           // 2. Bottom Info (Credits + Version)
           Positioned(
-            bottom: 30,
+            bottom: MediaQuery.paddingOf(context).bottom + 20,
             left: 0,
             right: 0,
             child: Column(

@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
@@ -348,6 +348,13 @@ class _OnboardingPageView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = screenHeight < 700;
+    final topGap = isCompact ? 36.0 : (screenHeight * 0.08).clamp(48.0, 84.0);
+    final bottomGap =
+        isCompact ? 68.0 : (screenHeight * 0.10).clamp(72.0, 100.0);
+    final titleFontSize = isCompact ? 30.0 : 38.0;
+    final subtitleFontSize = isCompact ? 14.0 : 16.0;
+
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -365,11 +372,11 @@ class _OnboardingPageView extends StatelessWidget {
         bottom: false,
         child: Column(
           children: [
-            const Gap(80),
+            Gap(topGap),
 
             // Illustration area
             Expanded(
-              flex: 5,
+              flex: isCompact ? 4 : 5,
               child: _IllustrationArea(
                 page: page,
                 animationController: animationController,
@@ -381,37 +388,41 @@ class _OnboardingPageView extends StatelessWidget {
               flex: 4,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: Spacing.xl),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Gap(Spacing.lg),
-                    Text(
-                      page.title,
-                      style: GoogleFonts.dmSerifDisplay(
-                        fontSize: 40,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.white,
-                        height: 1.15,
+                child: SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Gap(isCompact ? Spacing.sm : Spacing.md),
+                      Text(
+                        page.title,
+                        style: GoogleFonts.dmSerifDisplay(
+                          fontSize: titleFontSize,
+                          fontWeight: FontWeight.w400,
+                          color: Colors.white,
+                          height: 1.15,
+                        ),
                       ),
-                    ),
-                    const Gap(Spacing.md),
-                    Text(
-                      page.subtitle,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.white.withValues(alpha: 0.65),
-                        height: 1.6,
-                        letterSpacing: 0.2,
+                      Gap(isCompact ? Spacing.xs : Spacing.md),
+                      Text(
+                        page.subtitle,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: subtitleFontSize,
+                          fontWeight: FontWeight.w400,
+                          color: Colors.white.withValues(alpha: 0.65),
+                          height: 1.5,
+                          letterSpacing: 0.2,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
 
             // Space for bottom controls
-            const Gap(100),
+            Gap(bottomGap),
           ],
         ),
       ),

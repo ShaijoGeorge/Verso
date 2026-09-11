@@ -218,109 +218,130 @@ class _HeroProgressCard extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(Spacing.lg),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isLight
-              ? [
-                  scheme.primary,
-                  scheme.primary.withValues(alpha: 0.85),
-                ]
-              : [
-                  scheme.primaryContainer,
-                  scheme.primaryContainer.withValues(alpha: 0.7),
-                ],
-        ),
-        borderRadius: AppRadii.borderRadiusXL,
-        boxShadow: AppShadows.lg,
-      ),
-      child: Row(
-        children: [
-          // Progress circle
-          TweenAnimationBuilder<double>(
-            tween: Tween<double>(begin: 0, end: stats.totalProgress),
-            duration: const Duration(milliseconds: 1500),
-            curve: Curves.easeOutCubic,
-            builder: (context, animatedProgress, _) {
-              return VersoCircularProgress(
-                progress: animatedProgress,
-                size: 130,
-                strokeWidth: 10,
-                color: isLight ? Colors.white : scheme.primary,
-                trackColor: isLight
-                    ? Colors.white.withValues(alpha: 0.2)
-                    : scheme.primary.withValues(alpha: 0.2),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 360;
+        final circleSize = isNarrow ? 102.0 : 124.0;
+        final strokeWidth = isNarrow ? 8.0 : 10.0;
+
+        return Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(isNarrow ? Spacing.md : Spacing.lg),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isLight
+                  ? [
+                      scheme.primary,
+                      scheme.primary.withValues(alpha: 0.85),
+                    ]
+                  : [
+                      scheme.primaryContainer,
+                      scheme.primaryContainer.withValues(alpha: 0.7),
+                    ],
+            ),
+            borderRadius: AppRadii.borderRadiusXL,
+            boxShadow: AppShadows.lg,
+          ),
+          child: Row(
+            children: [
+              // Progress circle
+              TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0, end: stats.totalProgress),
+                duration: const Duration(milliseconds: 1500),
+                curve: Curves.easeOutCubic,
+                builder: (context, animatedProgress, _) {
+                  return VersoCircularProgress(
+                    progress: animatedProgress,
+                    size: circleSize,
+                    strokeWidth: strokeWidth,
+                    color: isLight ? Colors.white : scheme.primary,
+                    trackColor: isLight
+                        ? Colors.white.withValues(alpha: 0.2)
+                        : scheme.primary.withValues(alpha: 0.2),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            '${animatedProgress.toStringAsFixed(1)}%',
+                            style: (isNarrow
+                                    ? textTheme.titleMedium
+                                    : textTheme.titleLarge)
+                                ?.copyWith(
+                              color: isLight
+                                  ? Colors.white
+                                  : scheme.onPrimaryContainer,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          'complete',
+                          style: textTheme.labelSmall?.copyWith(
+                            color: isLight
+                                ? Colors.white.withValues(alpha: 0.8)
+                                : scheme.onPrimaryContainer
+                                    .withValues(alpha: 0.7),
+                            fontSize: isNarrow ? 10 : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              Gap(isNarrow ? Spacing.md : Spacing.lg),
+
+              // Right side info
+              Expanded(
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${animatedProgress.toStringAsFixed(1)}%',
-                      style: textTheme.titleLarge?.copyWith(
+                      'Bible journey',
+                      style: (isNarrow
+                              ? textTheme.titleSmall
+                              : textTheme.titleMedium)
+                          ?.copyWith(
                         color:
                             isLight ? Colors.white : scheme.onPrimaryContainer,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Text(
-                      'complete',
-                      style: textTheme.labelSmall?.copyWith(
-                        color: isLight
-                            ? Colors.white.withValues(alpha: 0.8)
-                            : scheme.onPrimaryContainer.withValues(alpha: 0.7),
-                      ),
+                    const Gap(Spacing.sm),
+                    _HeroStatRow(
+                      icon: Icons.emoji_events_rounded,
+                      text: '${stats.booksCompleted}/73 Books',
+                      isLight: isLight,
+                      scheme: scheme,
                     ),
+                    const Gap(Spacing.xs),
+                    _HeroStatRow(
+                      icon: Icons.menu_book_rounded,
+                      text: '${stats.totalChaptersRead}/1334 Chapters',
+                      isLight: isLight,
+                      scheme: scheme,
+                    ),
+                    if (todayCount > 0) ...[
+                      const Gap(Spacing.xs),
+                      _HeroStatRow(
+                        icon: Icons.today_rounded,
+                        text:
+                            '$todayCount Chapter${todayCount == 1 ? '' : 's'} Today',
+                        isLight: isLight,
+                        scheme: scheme,
+                      ),
+                    ],
                   ],
                 ),
-              );
-            },
+              ),
+            ],
           ),
-          const Gap(Spacing.lg),
-
-          // Right side info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Bible journey',
-                  style: textTheme.titleMedium?.copyWith(
-                    color: isLight ? Colors.white : scheme.onPrimaryContainer,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Gap(Spacing.sm),
-                _HeroStatRow(
-                  icon: Icons.emoji_events_rounded,
-                  text: '${stats.booksCompleted}/73 Books',
-                  isLight: isLight,
-                  scheme: scheme,
-                ),
-                const Gap(Spacing.xs),
-                _HeroStatRow(
-                  icon: Icons.menu_book_rounded,
-                  text: '${stats.totalChaptersRead}/1334 Chapters',
-                  isLight: isLight,
-                  scheme: scheme,
-                ),
-                if (todayCount > 0) ...[
-                  const Gap(Spacing.xs),
-                  _HeroStatRow(
-                    icon: Icons.today_rounded,
-                    text:
-                        '$todayCount Chapter${todayCount == 1 ? '' : 's'} Today',
-                    isLight: isLight,
-                    scheme: scheme,
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -378,7 +399,7 @@ class _QuickStatsRow extends StatelessWidget {
             label: 'Day streak',
             iconColor: isLight ? AppColors.streakLight : AppColors.streakDark,
             bgColor: isLight
-                ? AppColors.streakLight.withValues(alpha: 0.08)
+                ? AppColors.streakLight.withValues(alpha: 0.1)
                 : AppColors.streakDark.withValues(alpha: 0.15),
           ),
         ),
@@ -388,9 +409,11 @@ class _QuickStatsRow extends StatelessWidget {
             icon: Icons.auto_stories_rounded,
             value: '${stats.totalChaptersRead}',
             label: 'Chapters',
-            iconColor: context.appColors.chapters,
-            bgColor: context.appColors.chapters
-                .withValues(alpha: isLight ? 0.08 : 0.15),
+            iconColor:
+                isLight ? AppColors.chaptersLight : AppColors.chaptersDark,
+            bgColor: isLight
+                ? AppColors.chaptersLight.withValues(alpha: 0.1)
+                : AppColors.chaptersDark.withValues(alpha: 0.15),
           ),
         ),
         const Gap(Spacing.sm),
@@ -399,9 +422,10 @@ class _QuickStatsRow extends StatelessWidget {
             icon: Icons.emoji_events_rounded,
             value: '${stats.booksCompleted}',
             label: 'Books',
-            iconColor: context.appColors.books,
-            bgColor: context.appColors.books
-                .withValues(alpha: isLight ? 0.08 : 0.15),
+            iconColor: isLight ? AppColors.booksLight : AppColors.booksDark,
+            bgColor: isLight
+                ? AppColors.booksLight.withValues(alpha: 0.1)
+                : AppColors.booksDark.withValues(alpha: 0.15),
           ),
         ),
       ],
@@ -430,57 +454,62 @@ class _QuickStatCard extends StatelessWidget {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final isAmoled = context.palette.style == AppearanceStyle.amoled;
 
-    return AspectRatio(
-      aspectRatio: 1,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          vertical: Spacing.md,
-          horizontal: Spacing.sm,
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        vertical: Spacing.md,
+        horizontal: Spacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: AppRadii.borderRadiusLG,
+        border: Border.all(
+          color: isAmoled
+              ? scheme.outline
+              : scheme.outline.withValues(alpha: isLight ? 0.5 : 0.15),
         ),
-        decoration: BoxDecoration(
-          color: scheme.surface,
-          borderRadius: AppRadii.borderRadiusLG,
-          border: Border.all(
-            color: isAmoled
-                ? scheme.outline
-                : scheme.outline.withValues(alpha: isLight ? 0.5 : 0.15),
-          ),
-          boxShadow: AppShadows.sm,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: AppRadii.borderRadiusSM,
-              ),
-              child: Icon(icon, size: 20, color: iconColor),
+        boxShadow: AppShadows.sm,
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: AppRadii.borderRadiusSM,
             ),
-            const Gap(Spacing.sm),
-            TweenAnimationBuilder<int>(
-              key: ValueKey('stat_$label'),
-              tween: IntTween(begin: 0, end: int.tryParse(value) ?? 0),
-              duration: const Duration(milliseconds: 1200),
-              curve: Curves.easeOutCubic,
-              builder: (context, animatedVal, _) {
-                return Text(
+            child: Icon(icon, size: 20, color: iconColor),
+          ),
+          const Gap(Spacing.sm),
+          TweenAnimationBuilder<int>(
+            key: ValueKey('stat_$label'),
+            tween: IntTween(begin: 0, end: int.tryParse(value) ?? 0),
+            duration: const Duration(milliseconds: 1200),
+            curve: Curves.easeOutCubic,
+            builder: (context, animatedVal, _) {
+              return FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
                   '$animatedVal',
                   style: textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
-                );
-              },
-            ),
-            Text(
+                ),
+              );
+            },
+          ),
+          const Gap(2),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
               label,
               style: textTheme.labelSmall?.copyWith(
                 color: scheme.onSurfaceVariant,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
