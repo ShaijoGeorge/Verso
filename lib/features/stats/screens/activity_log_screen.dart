@@ -653,6 +653,7 @@ class _StandardCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return VersoCard(
       padding: const EdgeInsets.all(16),
@@ -682,7 +683,10 @@ class _StandardCard extends StatelessWidget {
             children: [
               _Tag(
                 text: group.timeOfDay,
-                color: colorScheme.surfaceContainerHighest,
+                color: isDark
+                    ? colorScheme.onSurface.withValues(alpha: 0.12)
+                    : colorScheme.surfaceContainerHighest,
+                textColor: colorScheme.onSurfaceVariant,
               ),
               if (isBulk)
                 _Tag(
@@ -856,7 +860,9 @@ class _CompletionCard extends StatelessWidget {
                   children: [
                     _Tag(
                       text: group.timeOfDay,
-                      color: Colors.amber.shade100.withValues(alpha: 0.5),
+                      color: isDark
+                          ? Colors.amber.shade900.withValues(alpha: 0.4)
+                          : Colors.amber.shade100.withValues(alpha: 0.5),
                       textColor: isDark
                           ? Colors.amber.shade300
                           : Colors.amber.shade800,
@@ -867,7 +873,9 @@ class _CompletionCard extends StatelessWidget {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.amber.shade100,
+                        color: isDark
+                            ? Colors.amber.shade900.withValues(alpha: 0.4)
+                            : Colors.amber.shade100,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Row(
@@ -876,7 +884,9 @@ class _CompletionCard extends StatelessWidget {
                           Icon(
                             Icons.star_rounded,
                             size: 12,
-                            color: Colors.amber.shade800,
+                            color: isDark
+                                ? Colors.amber.shade300
+                                : Colors.amber.shade800,
                           ),
                           const Gap(4),
                           Text(
@@ -884,7 +894,9 @@ class _CompletionCard extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: Colors.amber.shade900,
+                              color: isDark
+                                  ? Colors.amber.shade300
+                                  : Colors.amber.shade900,
                             ),
                           ),
                         ],
