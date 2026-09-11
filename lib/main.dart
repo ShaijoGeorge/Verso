@@ -117,6 +117,8 @@ class _BibliaAppState extends ConsumerState<BibliaApp>
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
     final resolved = ref.watch(resolvedThemeProvider(_systemBrightness));
+    final settingsAsync = ref.watch(currentSettingsProvider);
+    final fontScaleFactor = settingsAsync.value?.fontScaleFactor ?? 1.0;
 
     return MaterialApp.router(
       title: 'Verso',
@@ -127,6 +129,17 @@ class _BibliaAppState extends ConsumerState<BibliaApp>
 
       // Connect GoRouter
       routerConfig: router,
+
+      // Apply in-app font size and completely ignore device/OS font scaling
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: TextScaler.linear(fontScaleFactor),
+          ),
+          child: child!,
+        );
+      },
     );
   }
 }
