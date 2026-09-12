@@ -11,6 +11,9 @@ dependencies:
   connectivity_plus: ^6.1.4
   drift: ^2.22.1
   drift_flutter: ^0.2.4
+  firebase_analytics: ^12.5.0
+  firebase_core: ^4.14.0
+  firebase_crashlytics: ^5.3.0
   fl_chart: ^1.1.1
   flutter:
     sdk: flutter
