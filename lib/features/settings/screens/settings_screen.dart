@@ -6,6 +6,7 @@ import 'package:verso/core/design/design.dart';
 import 'package:verso/core/providers/package_info_provider.dart';
 import 'package:verso/core/utils/app_error_handler.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
+import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
 import 'package:verso/features/settings/screens/debug_cache_screen.dart';
@@ -113,18 +114,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   ) async {
     return showModalBottomSheet<AppearanceStyle>(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) {
-        final scheme = Theme.of(context).colorScheme;
-        return SafeArea(
+      builder: (ctx) {
+        final scheme = Theme.of(ctx).colorScheme;
+        final bottomPadding = MediaQuery.paddingOf(ctx).bottom;
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 4),
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
                 child: Text(
                   title,
                   style: GoogleFonts.plusJakartaSans(
@@ -153,9 +169,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           color: scheme.primary,
                         )
                       : null,
-                  onTap: () => Navigator.pop(context, style),
+                  onTap: () => Navigator.pop(ctx, style),
                 ),
-              const Gap(16),
+              Gap(20 + bottomPadding),
             ],
           ),
         );
@@ -174,6 +190,342 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         AppearanceStyle.dark => Icons.dark_mode_outlined,
         AppearanceStyle.amoled => Icons.brightness_1_outlined,
       };
+
+  String _canonLabel(CanonType canon) => switch (canon) {
+        CanonType.catholic => 'Catholic (73 Books)',
+        CanonType.protestant => 'Protestant (66 Books)',
+        CanonType.orthodox => 'Eastern Orthodox (78 Books)',
+      };
+
+  String _canonSubtitle(CanonType canon) => switch (canon) {
+        CanonType.catholic =>
+          'Includes Deuterocanonicals (Tobit, Judith, Wisdom, etc.)',
+        CanonType.protestant =>
+          'Standard 66-book canon (39 Old Testament, 27 New)',
+        CanonType.orthodox => 'Includes 1 & 2 Esdras, 3 Maccabees, Psalm 151',
+      };
+
+  int _canonBookCount(CanonType canon) => switch (canon) {
+        CanonType.catholic => 73,
+        CanonType.protestant => 66,
+        CanonType.orthodox => 78,
+      };
+
+  int _canonChapterCount(CanonType canon) => switch (canon) {
+        CanonType.catholic => 1334,
+        CanonType.protestant => 1189,
+        CanonType.orthodox => 1515,
+      };
+
+  Future<void> _pickCanon(UserSettings settings) async {
+    final currentCanon = CanonType.values.firstWhere(
+      (e) => e.name == settings.canonType,
+      orElse: () => CanonType.catholic,
+    );
+
+    final picked = await showModalBottomSheet<CanonType>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        final scheme = Theme.of(ctx).colorScheme;
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        final bottomPadding = MediaQuery.paddingOf(ctx).bottom;
+        final warningBg = isDark
+            ? const Color(0xFF452B00).withValues(alpha: 0.6)
+            : const Color(0xFFFFF7ED);
+        final warningBorder = isDark
+            ? const Color(0xFFB45309).withValues(alpha: 0.5)
+            : const Color(0xFFFDBA74);
+        final warningText =
+            isDark ? const Color(0xFFFDE68A) : const Color(0xFF9A3412);
+        final warningIcon =
+            isDark ? const Color(0xFFFBBF24) : const Color(0xFFEA580C);
+
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Drag handle
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 4),
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                child: Text(
+                  'Select Bible Tradition',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSurface,
+                  ),
+                ),
+              ),
+              // Prominent warning banner right when clicking canon
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: warningBg,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: warningBorder),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: warningIcon,
+                        size: 22,
+                      ),
+                      const Gap(10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Tradition Warning',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: warningText,
+                              ),
+                            ),
+                            const Gap(3),
+                            Text(
+                              'Switching canons alters visible books and resets completion denominators. Your reading history is safely preserved and will never be deleted.',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                height: 1.4,
+                                color: warningText,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const Gap(4),
+              for (final canon in CanonType.values)
+                ListTile(
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: currentCanon == canon
+                          ? scheme.primary.withValues(alpha: 0.12)
+                          : scheme.surfaceContainerHighest
+                              .withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.auto_stories_rounded,
+                      color: currentCanon == canon
+                          ? scheme.primary
+                          : scheme.onSurfaceVariant,
+                      size: 20,
+                    ),
+                  ),
+                  title: Text(
+                    _canonLabel(canon),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: currentCanon == canon
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                  subtitle: Text(
+                    _canonSubtitle(canon),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+                    ),
+                  ),
+                  trailing: currentCanon == canon
+                      ? Icon(
+                          Icons.check_circle_rounded,
+                          color: scheme.primary,
+                        )
+                      : null,
+                  onTap: () => Navigator.pop(ctx, canon),
+                ),
+              Gap(24 + bottomPadding),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (picked != null && picked != currentCanon && mounted) {
+      final confirm = await _showCanonConfirmationDialog(
+        currentCanon: currentCanon,
+        newCanon: picked,
+      );
+      if ((confirm ?? false) && mounted) {
+        await ref
+            .read(currentSettingsProvider.notifier)
+            .updateCanonType(picked);
+        if (mounted) {
+          VersoSnackbar.success(
+            context,
+            message: 'Bible tradition updated to ${_canonLabel(picked)}',
+          );
+        }
+      }
+    }
+  }
+
+  Future<bool?> _showCanonConfirmationDialog({
+    required CanonType currentCanon,
+    required CanonType newCanon,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final warningColor =
+        isDark ? const Color(0xFFFBBF24) : const Color(0xFFEA580C);
+
+    return showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: scheme.surface,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: warningColor.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.warning_amber_rounded,
+                color: warningColor,
+                size: 24,
+              ),
+            ),
+            const Gap(12),
+            Expanded(
+              child: Text(
+                'Change Tradition?',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Switch from ${_canonLabel(currentCanon)} to ${_canonLabel(newCanon)}?',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: scheme.onSurface,
+              ),
+            ),
+            const Gap(14),
+            _buildCanonDialogBullet(
+              icon: Icons.menu_book_rounded,
+              text:
+                  'Book count changes from ${_canonBookCount(currentCanon)} to ${_canonBookCount(newCanon)} books (${_canonChapterCount(newCanon)} chapters).',
+              scheme: scheme,
+            ),
+            const Gap(10),
+            _buildCanonDialogBullet(
+              icon: Icons.percent_rounded,
+              text:
+                  'Overall completion percentages and charts will recalibrate to the new canon.',
+              scheme: scheme,
+            ),
+            const Gap(10),
+            _buildCanonDialogBullet(
+              icon: Icons.verified_user_outlined,
+              text:
+                  'Existing reading progress is safely preserved in your database and never deleted.',
+              scheme: scheme,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w600,
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: scheme.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            child: Text(
+              'Switch Canon',
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCanonDialogBullet({
+    required IconData icon,
+    required String text,
+    required ColorScheme scheme,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: scheme.primary),
+        const Gap(10),
+        Expanded(
+          child: Text(
+            text,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              height: 1.35,
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -517,6 +869,106 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                     ],
                   ),
+                  const Gap(24),
+
+                  // --- BIBLE CANON SECTION ---
+                  _SettingsSectionCard(
+                    title: 'Bible Tradition',
+                    children: [
+                      _SettingsActionTile(
+                        title: 'Bible Canon',
+                        subtitle: _canonLabel(settings.canon),
+                        icon: Icons.auto_stories_rounded,
+                        iconColor: const Color(0xFF8B5CF6),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: scheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                switch (settings.canon) {
+                                  CanonType.catholic => 'Catholic',
+                                  CanonType.protestant => 'Protestant',
+                                  CanonType.orthodox => 'Orthodox',
+                                },
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: scheme.primary,
+                                ),
+                              ),
+                            ),
+                            const Gap(6),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              color: scheme.onSurfaceVariant
+                                  .withValues(alpha: 0.6),
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                        onTap: () => _pickCanon(settings),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? const Color(0xFF452B00)
+                                        .withValues(alpha: 0.35)
+                                    : const Color(0xFFFFFBEB),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? const Color(0xFFB45309)
+                                      .withValues(alpha: 0.35)
+                                  : const Color(0xFFFDE68A),
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.info_outline_rounded,
+                                size: 16,
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? const Color(0xFFFBBF24)
+                                    : const Color(0xFFD97706),
+                              ),
+                              const Gap(8),
+                              Expanded(
+                                child: Text(
+                                  'Tap above to change your tradition. Visible books (66, 73, or 78) and stats adjust dynamically, while your reading progress is always preserved.',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11,
+                                    height: 1.35,
+                                    color: Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? const Color(0xFFFDE68A)
+                                        : const Color(0xFF92400E),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                   const Gap(32),
 
                   // --- ABOUT SECTION ---
@@ -691,10 +1143,12 @@ class _SettingsActionTile extends StatelessWidget {
     required this.icon,
     required this.iconColor,
     required this.onTap,
+    this.subtitle,
     this.trailing,
   });
 
   final String title;
+  final String? subtitle;
   final IconData icon;
   final Color iconColor;
   final Widget? trailing;
@@ -722,13 +1176,29 @@ class _SettingsActionTile extends StatelessWidget {
               ),
               const Gap(14),
               Expanded(
-                child: Text(
-                  title,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: scheme.onSurface,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                    if (subtitle != null) ...[
+                      const Gap(2),
+                      Text(
+                        subtitle!,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               if (trailing != null) trailing!,
