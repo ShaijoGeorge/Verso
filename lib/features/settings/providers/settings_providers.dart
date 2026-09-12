@@ -1,4 +1,5 @@
-﻿import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
 import 'package:verso/features/settings/data/settings_repository.dart';
 
@@ -106,4 +107,19 @@ class CurrentSettings extends _$CurrentSettings {
     await ref.read(settingsRepositoryProvider).setFontScaleFactor(factor);
     ref.invalidateSelf(); // Refresh UI
   }
+
+  Future<void> setCanonType(String canonType) async {
+    final current = _current;
+    if (current == null) return;
+    state = AsyncData(current.copyWith(canonType: canonType));
+    await ref.read(settingsRepositoryProvider).setCanonType(canonType);
+    ref.invalidateSelf(); // Refresh UI
+  }
+
+  Future<void> updateCanonType(CanonType canon) async {
+    await setCanonType(canon.name);
+  }
 }
+
+/// Alias for compatibility
+final CurrentSettingsProvider userSettingsProvider = currentSettingsProvider;
