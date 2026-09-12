@@ -1,3 +1,6 @@
+import 'dart:ui';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -7,13 +10,42 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/constants.dart';
 import 'package:verso/core/providers/package_info_provider.dart';
 import 'package:verso/core/router.dart';
+import 'package:verso/core/utils/firebase_crash_reporter.dart';
 import 'package:verso/core/utils/verso_error_observer.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
 import 'package:verso/features/settings/providers/theme_resolver.dart';
 import 'package:verso/features/settings/services/notification_service.dart';
+import 'package:verso/firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase & Crashlytics
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  final crashReporter = FirebaseCrashReporter();
+  await crashReporter.init();
+
+  // Pass all uncaught "fatal" errors from the framework to Crashlytics.
+  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+
+  // Pass all uncaught asynchronous errors that aren't handled by the Flutter framework to Crashlytics.
+  PlatformDispatcher.instance.onError = (error, stack) {
+    final isNetworkError = error.toString().contains('SocketException') ||
+        error.toString().contains('AuthRetryableFetchException');
+
+    crashReporter.recordError(
+      error,
+      stack,
+      fatal: !isNetworkError,
+      reason: isNetworkError
+          ? 'Network connectivity issue'
+          : 'Unhandled fatal exception',
+    );
+    return true;
+  };
 
   // 1. Load the .env file
   await dotenv.load();
@@ -38,7 +70,7 @@ void main() async {
       overrides: [
         packageInfoProvider.overrideWithValue(packageInfo),
       ],
-      observers: [VersoErrorObserver()],
+      observers: [VersoErrorObserver(crashReporter)],
       child: const BibliaApp(),
     ),
   );
