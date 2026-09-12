@@ -238,26 +238,46 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               ),
                             ),
                             const Gap(12),
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
+                            SizedBox(
+                              width: double.infinity,
                               child: SegmentedButton<AppThemeMode>(
                                 showSelectedIcon: false,
                                 segments: const [
                                   ButtonSegment(
                                     value: AppThemeMode.system,
-                                    icon: Icon(Icons.brightness_auto_outlined),
-                                    label: Text('System'),
+                                    icon: Icon(
+                                      Icons.brightness_auto_outlined,
+                                      size: 18,
+                                    ),
+                                    label: Text(
+                                      'System',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                   ButtonSegment(
                                     value: AppThemeMode.light,
-                                    icon: Icon(Icons.light_mode_outlined),
-                                    label: Text('Light'),
+                                    icon: Icon(
+                                      Icons.light_mode_outlined,
+                                      size: 18,
+                                    ),
+                                    label: Text(
+                                      'Light',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                   ButtonSegment(
                                     value: AppThemeMode.dark,
-                                    icon: Icon(Icons.dark_mode_outlined),
-                                    label: Text('Dark'),
+                                    icon: Icon(
+                                      Icons.dark_mode_outlined,
+                                      size: 18,
+                                    ),
+                                    label: Text(
+                                      'Dark',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                 ],
                                 selected: {settings.themeMode},
@@ -265,6 +285,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     .read(currentSettingsProvider.notifier)
                                     .setThemeMode(s.first),
                                 style: ButtonStyle(
+                                  visualDensity: VisualDensity.compact,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                  padding: const WidgetStatePropertyAll(
+                                    EdgeInsets.symmetric(horizontal: 4),
+                                  ),
                                   textStyle: WidgetStatePropertyAll(
                                     GoogleFonts.plusJakartaSans(
                                       fontSize: 13,
