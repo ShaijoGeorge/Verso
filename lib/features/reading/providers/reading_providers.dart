@@ -32,6 +32,9 @@ AppDatabase appDatabase(Ref ref) {
   return db;
 }
 
+/// Alias for compatibility
+final AppDatabaseProvider localDatabaseProvider = appDatabaseProvider;
+
 @Riverpod(keepAlive: true)
 OfflineCacheService offlineCacheService(Ref ref) {
   final db = ref.watch(appDatabaseProvider);

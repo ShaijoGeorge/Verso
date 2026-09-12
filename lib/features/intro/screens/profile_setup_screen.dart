@@ -10,6 +10,7 @@ import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/core/widgets/verso_avatar.dart';
 import 'package:verso/data/bible_data.dart';
+import 'package:verso/features/reading/providers/reading_providers.dart';
 import 'package:verso/features/settings/data/settings_repository.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
 
@@ -160,6 +161,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen>
           },
         ),
       );
+      await ref
+          .read(settingsRepositoryProvider)
+          .syncCanonToCloud(_selectedCanon.name);
 
       // 2. Save locally for instant offline access
       final userId = Supabase.instance.client.auth.currentUser!.id;
@@ -168,9 +172,17 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen>
         gender: _selectedGender!,
         birthday: _selectedBirthday!,
       );
+
+      // 3. Save to Local SQLite (Drift)
+      await ref
+          .read(localDatabaseProvider)
+          .updateLocalCanon(_selectedCanon.name);
+
+      // 4. Update UI state & preferences
       await ref
           .read(currentSettingsProvider.notifier)
           .updateCanonType(_selectedCanon);
+      ref.invalidate(userSettingsProvider);
 
       if (mounted) context.go('/home');
     } finally {
@@ -251,7 +263,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen>
 
                         // Bible Tradition / Canon
                         _buildSectionLabel(
-                            'Which Bible tradition do you follow?'),
+                          'Which Bible tradition do you follow?',
+                        ),
                         const Gap(Spacing.xs),
                         Align(
                           alignment: Alignment.centerLeft,

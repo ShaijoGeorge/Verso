@@ -1,4 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
 import 'package:verso/features/settings/data/settings_repository.dart';
@@ -16,7 +17,19 @@ class CurrentSettings extends _$CurrentSettings {
   @override
   Future<UserSettings> build() async {
     final repo = ref.watch(settingsRepositoryProvider);
-    return repo.getSettings();
+    var settings = await repo.getSettings();
+
+    // Check if cloud metadata has a canon preference (e.g. fresh install/login)
+    final user = Supabase.instance.client.auth.currentUser;
+    final cloudCanon = user?.userMetadata?['canon_type'] as String?;
+    if (cloudCanon != null &&
+        cloudCanon.isNotEmpty &&
+        cloudCanon != settings.canonType) {
+      await repo.setCanonType(cloudCanon);
+      settings = settings.copyWith(canonType: cloudCanon);
+    }
+
+    return settings;
   }
 
   UserSettings? get _current => switch (state) {
@@ -117,7 +130,9 @@ class CurrentSettings extends _$CurrentSettings {
   }
 
   Future<void> updateCanonType(CanonType canon) async {
-    await setCanonType(canon.name);
+    final canonString = canon.name;
+    await setCanonType(canonString);
+    await ref.read(settingsRepositoryProvider).syncCanonToCloud(canonString);
   }
 }
 

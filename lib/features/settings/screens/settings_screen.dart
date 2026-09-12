@@ -8,6 +8,7 @@ import 'package:verso/core/utils/app_error_handler.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
+import 'package:verso/features/reading/providers/reading_providers.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
 import 'package:verso/features/settings/screens/debug_cache_screen.dart';
 import 'package:verso/features/settings/services/notification_service.dart';
@@ -383,9 +384,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         newCanon: picked,
       );
       if ((confirm ?? false) && mounted) {
-        await ref
-            .read(currentSettingsProvider.notifier)
-            .updateCanonType(picked);
+        await _saveUserCanon(picked);
         if (mounted) {
           VersoSnackbar.success(
             context,
@@ -394,6 +393,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         }
       }
     }
+  }
+
+  Future<void> _saveUserCanon(CanonType selectedCanon) async {
+    final canonString = selectedCanon.name;
+
+    // 1. Save to Local SQLite (Drift)
+    await ref.read(localDatabaseProvider).updateLocalCanon(canonString);
+
+    // 2. Sync to Supabase
+    await ref.read(settingsRepositoryProvider).syncCanonToCloud(canonString);
+
+    // 3. Update UI State & Local Preferences
+    await ref
+        .read(currentSettingsProvider.notifier)
+        .updateCanonType(selectedCanon);
+    ref.invalidate(userSettingsProvider);
   }
 
   Future<bool?> _showCanonConfirmationDialog({
