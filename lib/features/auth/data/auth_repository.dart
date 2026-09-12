@@ -93,6 +93,26 @@ class AuthRepository {
     }
   }
 
+  /// Syncs the user's selected Bible canon ('catholic', 'protestant', 'orthodox')
+  /// to Supabase cloud. Updates user_metadata and attempts updating 'profiles'
+  /// table if one exists.
+  Future<void> syncCanonToCloud(String canonType) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+
+    // 1. Sync to Supabase Auth user_metadata (default for Verso)
+    await updateUserMetadata({'canon_type': canonType});
+
+    // 2. Also attempt updating 'profiles' table if it exists in Supabase
+    try {
+      await _supabase
+          .from('profiles')
+          .update({'canon_type': canonType}).eq('id', user.id);
+    } catch (_) {
+      // Ignore if profiles table does not exist
+    }
+  }
+
   // Verify user identity before sensitive changes ---
   Future<void> reauthenticate(String currentPassword) async {
     final email = _supabase.auth.currentUser?.email;

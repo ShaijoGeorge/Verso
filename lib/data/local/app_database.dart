@@ -65,6 +65,21 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
+  Future<void> updateLocalCanon(String canonType) async {
+    await into(userSettingsTable).insertOnConflictUpdate(
+      UserSettingsTableCompanion(
+        id: const Value(1),
+        canonType: Value(canonType),
+      ),
+    );
+  }
+
+  Future<String?> getLocalCanon() async {
+    final row = await (select(userSettingsTable)..where((t) => t.id.equals(1)))
+        .getSingleOrNull();
+    return row?.canonType;
+  }
+
   static QueryExecutor _openConnection() {
     return driftDatabase(name: 'verso_db');
   }

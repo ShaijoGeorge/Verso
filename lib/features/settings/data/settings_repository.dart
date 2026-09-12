@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
 
 class SettingsRepository {
@@ -169,6 +170,29 @@ class SettingsRepository {
 
   Future<void> updateCanonSetting(String canonString) =>
       setCanonType(canonString);
+
+  /// Syncs the user's selected Bible canon to Supabase cloud.
+  /// Updates user_metadata (default for Verso) and attempts updating
+  /// 'profiles' table if configured in Supabase.
+  Future<void> syncCanonToCloud(String canonType) async {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+    if (user == null) return;
+
+    // 1. Sync to Supabase Auth user_metadata
+    try {
+      await client.auth.updateUser(
+        UserAttributes(data: {'canon_type': canonType}),
+      );
+    } catch (_) {}
+
+    // 2. Also attempt updating 'profiles' table if it exists in Supabase
+    try {
+      await client
+          .from('profiles')
+          .update({'canon_type': canonType}).eq('id', user.id);
+    } catch (_) {}
+  }
 
   static AppThemeMode _parseThemeMode(String? value) {
     return switch (value) {
