@@ -6,7 +6,8 @@ class FirebaseCrashReporter implements CrashReporter {
   @override
   Future<void> init() async {
     // Disable Crashlytics in debug mode to avoid cluttering your Firebase dashboard.
-    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(!kDebugMode);
+    await FirebaseCrashlytics.instance
+        .setCrashlyticsCollectionEnabled(!kDebugMode);
   }
 
   @override
@@ -21,7 +22,8 @@ class FirebaseCrashReporter implements CrashReporter {
       for (final entry in extra.entries) {
         // Custom keys allow you to attach extra metadata to Crashlytics reports.
         if (entry.value != null) {
-          FirebaseCrashlytics.instance.setCustomKey(entry.key, entry.value as Object);
+          FirebaseCrashlytics.instance
+              .setCustomKey(entry.key, entry.value as Object);
         }
       }
     }
@@ -36,7 +38,8 @@ class FirebaseCrashReporter implements CrashReporter {
 
   @override
   void logBreadcrumb(String message, {String? category}) {
-    FirebaseCrashlytics.instance.log(category != null ? '[$category] $message' : message);
+    FirebaseCrashlytics.instance
+        .log(category != null ? '[$category] $message' : message);
   }
 
   @override
