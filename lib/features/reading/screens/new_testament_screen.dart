@@ -13,12 +13,18 @@ class NewTestamentScreen extends ConsumerWidget {
     // Watch the trigger!
     final refreshTrigger = ref.watch(biblePageTriggerProvider);
 
+    // Watch the dynamic active canon list
+    final allBooks = ref.watch(activeCanonBooksProvider);
+    final books = allBooks
+        .where((book) => book.testament == Testament.newTestament)
+        .toList();
+
     return Scaffold(
       body: BookGrid(
         // MAGIC KEY: Forces the Grid to "reset" its memory when you arrive.
         key: ValueKey('nt_grid_$refreshTrigger'),
 
-        books: newTestamentBooks, // Ensure this list is imported
+        books: books,
         onBookTap: (book) {
           context.push('/book/${book.id}');
         },

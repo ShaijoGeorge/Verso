@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:verso/data/local/entities/user_settings.dart';
 
 part 'app_database.g.dart';
 
@@ -36,12 +37,33 @@ class OfflineWriteQueue extends Table {
 // ---------------------------------------------------------------------------
 // Database definition
 // ---------------------------------------------------------------------------
-@DriftDatabase(tables: [CachedProgress, OfflineWriteQueue])
+@DriftDatabase(tables: [CachedProgress, OfflineWriteQueue, UserSettingsTable])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  AppDatabase([QueryExecutor? e]) : super(e ?? _openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  $UserSettingsTableTable get userSettings => userSettingsTable;
+
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onCreate: (m) async {
+        await m.createAll();
+      },
+      onUpgrade: (m, from, to) async {
+        // Safe migration: Add the new column to existing user databases
+        if (from < 2) {
+          try {
+            await m.addColumn(userSettings, userSettings.canonType);
+          } catch (_) {
+            await m.createTable(userSettings);
+          }
+        }
+      },
+    );
+  }
 
   static QueryExecutor _openConnection() {
     return driftDatabase(name: 'verso_db');

@@ -1,10 +1,12 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/services/offline_cache_service.dart';
+import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/app_database.dart';
 import 'package:verso/data/local/entities/reading_progress.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
 import 'package:verso/features/reading/data/bible_repository.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
 
 part 'reading_providers.g.dart';
 
@@ -122,4 +124,22 @@ Stream<List<ReadingProgress>> bookProgress(Ref ref, int bookId) {
     loading: () => const Stream.empty(),
     error: (_, __) => const Stream.empty(),
   );
+}
+
+@riverpod
+List<BibleBook> activeCanonBooks(Ref ref) {
+  // 1. Watch your user settings provider
+  final settingsAsync = ref.watch(userSettingsProvider);
+
+  // 2. Extract the canon string safely
+  final canonString = settingsAsync.value?.canonType ?? 'catholic';
+
+  // 3. Convert string to enum
+  final canonType = CanonType.values.firstWhere(
+    (e) => e.name == canonString,
+    orElse: () => CanonType.catholic,
+  );
+
+  // 4. Return the correct blueprint
+  return BibleData.getBooksForCanon(canonType);
 }

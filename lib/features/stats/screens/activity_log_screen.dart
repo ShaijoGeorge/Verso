@@ -153,7 +153,7 @@ class _FilterBar extends StatelessWidget {
               error: (_, __) => _buildPlaceholder(colorScheme),
               data: (books) {
                 final selectedBook = filter.bookId != null
-                    ? kBibleBooks.firstWhere((b) => b.id == filter.bookId)
+                    ? BibleData.findBookById(filter.bookId!)
                     : null;
 
                 return GestureDetector(

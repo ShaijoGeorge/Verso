@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/data/bible_data.dart';
@@ -41,8 +42,10 @@ Future<ContinueReadingInfo?> continueReading(Ref ref) async {
   }
 
   // Find the most recently read book that is NOT fully completed
+  final books = ref.watch(activeCanonBooksProvider);
   for (final p in readHistory) {
-    final book = kBibleBooks.firstWhere((b) => b.id == p.bookId);
+    final book = books.firstWhereOrNull((b) => b.id == p.bookId);
+    if (book == null) continue;
     final readCount = readChaptersByBook[p.bookId]?.length ?? 0;
     if (readCount < book.chapters) {
       return ContinueReadingInfo(

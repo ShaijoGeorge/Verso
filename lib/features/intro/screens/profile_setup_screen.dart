@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,7 +9,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/core/widgets/verso_avatar.dart';
+import 'package:verso/data/bible_data.dart';
 import 'package:verso/features/settings/data/settings_repository.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
 
 /// Shown after successful login/registration if the user's profile is incomplete.
 /// Collects gender and birthday, persists them to Supabase and locally,
@@ -16,18 +19,19 @@ import 'package:verso/features/settings/data/settings_repository.dart';
 ///
 /// The router gate automatically sends users here if they are logged in
 /// but their Supabase user_metadata is missing gender or birthday.
-class ProfileSetupScreen extends StatefulWidget {
+class ProfileSetupScreen extends ConsumerStatefulWidget {
   const ProfileSetupScreen({super.key});
 
   @override
-  State<ProfileSetupScreen> createState() => _ProfileSetupScreenState();
+  ConsumerState<ProfileSetupScreen> createState() => _ProfileSetupScreenState();
 }
 
-class _ProfileSetupScreenState extends State<ProfileSetupScreen>
+class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen>
     with TickerProviderStateMixin {
   // ── State ──────────────────────────────────────────────────────────────────
   String? _selectedGender; // 'male' or 'female'
   DateTime? _selectedBirthday;
+  CanonType _selectedCanon = CanonType.catholic;
   bool _isSaving = false;
 
   // ── Animation Controllers ──────────────────────────────────────────────────
@@ -152,6 +156,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
             'birthday': '${_selectedBirthday!.year.toString().padLeft(4, '0')}-'
                 '${_selectedBirthday!.month.toString().padLeft(2, '0')}-'
                 '${_selectedBirthday!.day.toString().padLeft(2, '0')}',
+            'canon_type': _selectedCanon.name,
           },
         ),
       );
@@ -163,6 +168,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
         gender: _selectedGender!,
         birthday: _selectedBirthday!,
       );
+      await ref
+          .read(currentSettingsProvider.notifier)
+          .updateCanonType(_selectedCanon);
 
       if (mounted) context.go('/home');
     } finally {
@@ -239,6 +247,24 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
                         _buildSectionLabel('When is your birthday?'),
                         const Gap(Spacing.md),
                         _buildBirthdayCard(),
+                        Gap(MediaQuery.of(context).size.height * 0.035),
+
+                        // Bible Tradition / Canon
+                        _buildSectionLabel(
+                            'Which Bible tradition do you follow?'),
+                        const Gap(Spacing.xs),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Sets the correct books and chapters for your reading tracker.',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              color: Colors.white.withValues(alpha: 0.55),
+                            ),
+                          ),
+                        ),
+                        const Gap(Spacing.md),
+                        _buildCanonCards(),
                         Gap(MediaQuery.of(context).size.height * 0.05),
 
                         // Continue Button
@@ -481,6 +507,113 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
               Icons.chevron_right_rounded,
               color: Colors.white.withValues(alpha: 0.3),
               size: 22,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Canon Selection ────────────────────────────────────────────────────────
+  Widget _buildCanonCards() {
+    return Column(
+      children: [
+        _buildCanonOption(
+          title: 'Catholic',
+          subtitle: '73 Books (Includes Deuterocanonicals)',
+          value: CanonType.catholic,
+        ),
+        _buildCanonOption(
+          title: 'Protestant',
+          subtitle: '66 Books',
+          value: CanonType.protestant,
+        ),
+        _buildCanonOption(
+          title: 'Eastern Orthodox',
+          subtitle: '78 Books',
+          value: CanonType.orthodox,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCanonOption({
+    required String title,
+    required String subtitle,
+    required CanonType value,
+  }) {
+    final isSelected = _selectedCanon == value;
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedCanon = value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        margin: const EdgeInsets.only(bottom: Spacing.sm),
+        padding: const EdgeInsets.symmetric(
+          horizontal: Spacing.lg,
+          vertical: 14,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? _accentColor.withValues(alpha: 0.14)
+              : Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? _accentColor.withValues(alpha: 0.6)
+                : Colors.white.withValues(alpha: 0.1),
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected
+                      ? _accentColor
+                      : Colors.white.withValues(alpha: 0.3),
+                  width: 2,
+                ),
+                color: isSelected ? _accentColor : Colors.transparent,
+              ),
+              child: isSelected
+                  ? const Icon(
+                      Icons.check,
+                      size: 14,
+                      color: Colors.black,
+                    )
+                  : null,
+            ),
+            const Gap(Spacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const Gap(2),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.5),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

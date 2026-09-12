@@ -1,4 +1,7 @@
-﻿enum AppThemeMode { system, light, dark }
+import 'package:drift/drift.dart';
+import 'package:verso/data/bible_data.dart';
+
+enum AppThemeMode { system, light, dark }
 
 enum AppearanceStyle { light, dark, amoled }
 
@@ -41,6 +44,7 @@ class UserSettings {
     this.reminderMinute = 0,
     this.themeProfileId = 'current',
     this.fontScaleFactor = 1,
+    this.canonType = 'catholic',
   });
 
   final AppThemeMode themeMode;
@@ -58,6 +62,16 @@ class UserSettings {
   final String themeProfileId;
   final double fontScaleFactor;
 
+  /// The active Bible canon type ('catholic', 'protestant', 'orthodox').
+  /// Defaults to 'catholic' for legacy users.
+  final String canonType;
+
+  CanonType get canon => switch (canonType) {
+        'protestant' => CanonType.protestant,
+        'orthodox' => CanonType.orthodox,
+        _ => CanonType.catholic,
+      };
+
   UserSettings copyWith({
     AppThemeMode? themeMode,
     bool? useAmoledForDark,
@@ -73,6 +87,7 @@ class UserSettings {
     int? reminderMinute,
     String? themeProfileId,
     double? fontScaleFactor,
+    String? canonType,
   }) =>
       UserSettings(
         themeMode: themeMode ?? this.themeMode,
@@ -89,5 +104,20 @@ class UserSettings {
         reminderMinute: reminderMinute ?? this.reminderMinute,
         themeProfileId: themeProfileId ?? this.themeProfileId,
         fontScaleFactor: fontScaleFactor ?? this.fontScaleFactor,
+        canonType: canonType ?? this.canonType,
       );
+}
+
+// ---------------------------------------------------------------------------
+// Drift Table Definition
+// ---------------------------------------------------------------------------
+@DataClassName('UserSetting')
+class UserSettingsTable extends Table {
+  @override
+  String get tableName => 'user_settings';
+
+  IntColumn get id => integer().autoIncrement()();
+
+  // Add the canon type string, defaulting to catholic for legacy users
+  TextColumn get canonType => text().withDefault(const Constant('catholic'))();
 }

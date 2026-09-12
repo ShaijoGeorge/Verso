@@ -276,7 +276,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) {
           final bookId = int.parse(state.pathParameters['bookId']!);
-          final book = kBibleBooks.firstWhere((b) => b.id == bookId);
+          final book =
+              BibleData.findBookById(bookId) ?? BibleData.catholicCanon.first;
           return AppPageTransitions.slideFromRight(
             key: state.pageKey,
             child: ChaptersScreen(book: book),

@@ -345,6 +345,21 @@ class _ProfileStatsStrip extends ConsumerWidget {
         ) ??
         0;
 
+    final activeBooks = ref.watch(activeCanonBooksProvider);
+    final dynamicTotalChapters =
+        activeBooks.fold<int>(0, (sum, b) => sum + b.chapters);
+    final dynamicTotalBooks = activeBooks.length;
+
+    final totalChapters = statsAsync.whenOrNull(
+          data: (stats) => stats.totalChaptersInCanon,
+        ) ??
+        dynamicTotalChapters;
+
+    final totalBooks = statsAsync.whenOrNull(
+          data: (stats) => stats.totalBooksInCanon,
+        ) ??
+        dynamicTotalBooks;
+
     final isLoading = statsAsync.isLoading;
 
     return Row(
@@ -355,7 +370,7 @@ class _ProfileStatsStrip extends ConsumerWidget {
             iconColor:
                 isDark ? AppColors.chaptersDark : AppColors.chaptersLight,
             value: isLoading ? '–' : '$chaptersRead',
-            totalScope: isLoading ? null : '/ 1334',
+            totalScope: isLoading ? null : '/ $totalChapters',
             label: 'Chapters\nRead',
             isDark: isDark,
             scheme: scheme,
@@ -367,7 +382,7 @@ class _ProfileStatsStrip extends ConsumerWidget {
             icon: Icons.library_books_rounded,
             iconColor: isDark ? AppColors.booksDark : AppColors.booksLight,
             value: isLoading ? '–' : '$booksCompleted',
-            totalScope: isLoading ? null : '/ 73',
+            totalScope: isLoading ? null : '/ $totalBooks',
             label: 'Books\nCompleted',
             isDark: isDark,
             scheme: scheme,

@@ -52,7 +52,7 @@ final class ContinueReadingProvider extends $FunctionalProvider<
   }
 }
 
-String _$continueReadingHash() => r'5d1340f17735ae98b6d6ee449d98b2d8fa823843';
+String _$continueReadingHash() => r'625a24844218b2555a4bd22fadd15309af41f77e';
 
 /// Number of chapters read today.
 
@@ -90,7 +90,7 @@ final class TodayChaptersProvider
   }
 }
 
-String _$todayChaptersHash() => r'306f69f7c2c13a9b125048e71bb945f2516f07a9';
+String _$todayChaptersHash() => r'5dfa6c5014ebd51cf4cd97f31059799a709ecace';
 
 /// Returns the user's first name from Supabase auth metadata.
 
