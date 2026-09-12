@@ -312,10 +312,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
                               if (!_isSignUp) ...[
                                 const Gap(Spacing.sm),
-                                // Row holds both "Remember me" and "Forgot password?" side by side
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                // Responsive Wrap holds both "Remember me" and "Forgot password?"
+                                Wrap(
+                                  alignment: WrapAlignment.spaceBetween,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  spacing: 8,
+                                  runSpacing: 4,
                                   children: [
                                     // Remember Me checkbox
                                     Row(

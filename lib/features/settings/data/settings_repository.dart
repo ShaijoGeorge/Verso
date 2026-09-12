@@ -1,4 +1,4 @@
-import 'package:shared_preferences/shared_preferences.dart';
+﻿import 'package:shared_preferences/shared_preferences.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
 
 class SettingsRepository {
@@ -21,6 +21,7 @@ class SettingsRepository {
   static const _kUserGenderKey = 'user_gender';
   static const _kUserBirthdayKey = 'user_birthday';
   static const _kThemeProfileKey = 'theme_profile_id';
+  static const _kFontScaleFactorKey = 'in_app_font_scale_factor';
   // Legacy key - migrated on first read
   static const _kLegacyThemeKey = 'is_dark_mode';
 
@@ -51,6 +52,7 @@ class SettingsRepository {
       reminderHour: prefs.getInt(_kReminderHourKey) ?? 7,
       reminderMinute: prefs.getInt(_kReminderMinuteKey) ?? 0,
       themeProfileId: prefs.getString(_kThemeProfileKey) ?? 'current',
+      fontScaleFactor: prefs.getDouble(_kFontScaleFactorKey) ?? 1.0,
     );
   }
 
@@ -151,6 +153,11 @@ class SettingsRepository {
     await prefs.setBool(_kReminderEnabledKey, isEnabled);
     await prefs.setInt(_kReminderHourKey, hour);
     await prefs.setInt(_kReminderMinuteKey, minute);
+  }
+
+  Future<void> setFontScaleFactor(double factor) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_kFontScaleFactorKey, factor);
   }
 
   static AppThemeMode _parseThemeMode(String? value) {

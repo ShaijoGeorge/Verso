@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:verso/core/design/profiles/current_profile.dart';
 import 'package:verso/core/design/profiles/verso_palette.dart';
 import 'package:verso/core/design/tokens/colors.dart';
 
@@ -15,7 +16,8 @@ extension ThemeContextX on BuildContext {
   ColorScheme get colors => theme.colorScheme;
   TextTheme get textTheme => theme.textTheme;
   bool get isDark => theme.brightness == Brightness.dark;
-  VersoPalette get palette => theme.extension<VersoPalette>()!;
+  VersoPalette get palette =>
+      theme.extension<VersoPalette>() ?? currentProfile.light;
 }
 
 /// Semantic colors that aren't part of [ColorScheme] (success, charts, streaks).

@@ -1,4 +1,4 @@
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+﻿import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
 import 'package:verso/features/settings/data/settings_repository.dart';
 
@@ -96,6 +96,14 @@ class CurrentSettings extends _$CurrentSettings {
           hour,
           minute,
         );
+    ref.invalidateSelf(); // Refresh UI
+  }
+
+  Future<void> setFontScaleFactor(double factor) async {
+    final current = _current;
+    if (current == null) return;
+    state = AsyncData(current.copyWith(fontScaleFactor: factor));
+    await ref.read(settingsRepositoryProvider).setFontScaleFactor(factor);
     ref.invalidateSelf(); // Refresh UI
   }
 }
