@@ -23,11 +23,15 @@ class UserStats {
     required this.totalChaptersRead,
     required this.booksCompleted,
     required this.totalProgress,
+    required this.totalBooksInCanon,
+    required this.totalChaptersInCanon,
   });
   final int streak;
   final int totalChaptersRead;
   final int booksCompleted;
   final double totalProgress;
+  final int totalBooksInCanon;
+  final int totalChaptersInCanon;
 }
 
 int _calculateStreak(List<ReadingProgress> history) {
@@ -77,34 +81,47 @@ Future<UserStats> userStats(Ref ref) async {
   // Watch the global stream's latest data
   final history = await ref.watch(globalProgressProvider.future);
 
-  final readHistory = history.where((p) => p.isRead).toList();
-  final totalRead = readHistory.length;
+  // 1. Get the current active canon
+  final activeBooks = ref.watch(activeCanonBooksProvider);
+  final activeBookIds = activeBooks.map((b) => b.id).toSet();
+
+  // 2. Calculate dynamic totals
+  final totalBooksInCanon = activeBooks.length;
+  final totalChaptersInCanon =
+      activeBooks.fold<int>(0, (sum, book) => sum + book.chapters);
+
+  // Filter read history strictly to active canon books
+  final activeReadHistory = history
+      .where((p) => p.isRead && activeBookIds.contains(p.bookId))
+      .toList();
+  final totalRead = activeReadHistory.length;
   final streak = _calculateStreak(history);
 
   // Calculate Books Completed
   var completedBooksCount = 0;
   final readChaptersByBook = <int, Set<int>>{};
-  for (final progress in readHistory) {
+  for (final progress in activeReadHistory) {
     readChaptersByBook.putIfAbsent(progress.bookId, () => <int>{});
     readChaptersByBook[progress.bookId]!.add(progress.chapterNumber);
   }
 
-  for (final book in kBibleBooks) {
+  for (final book in activeBooks) {
     final readCount = readChaptersByBook[book.id]?.length ?? 0;
     if (readCount >= book.chapters) {
       completedBooksCount++;
     }
   }
 
-  const totalChaptersInBible = 1334;
   final progress =
-      totalChaptersInBible > 0 ? (totalRead / totalChaptersInBible) * 100 : 0.0;
+      totalChaptersInCanon > 0 ? (totalRead / totalChaptersInCanon) * 100 : 0.0;
 
   return UserStats(
     streak: streak,
     totalChaptersRead: totalRead,
     booksCompleted: completedBooksCount,
     totalProgress: progress,
+    totalBooksInCanon: totalBooksInCanon,
+    totalChaptersInCanon: totalChaptersInCanon,
   );
 }
 
@@ -125,6 +142,12 @@ class DetailedStats {
     required this.averageChaptersPerDay,
     required this.streak,
     required this.bookCompletionMap,
+    required this.totalOTChapters,
+    required this.totalNTChapters,
+    required this.totalBibleChapters,
+    required this.totalOTBooks,
+    required this.totalNTBooks,
+    required this.totalBooks,
   });
   final int otRead;
   final int ntRead;
@@ -144,20 +167,43 @@ class DetailedStats {
 
   /// Per-book completion: bookId → fraction (0.0 to 1.0)
   final Map<int, double> bookCompletionMap;
+
+  final int totalOTChapters;
+  final int totalNTChapters;
+  final int totalBibleChapters;
+  final int totalOTBooks;
+  final int totalNTBooks;
+  final int totalBooks;
 }
 
 @riverpod
 Future<DetailedStats> detailedStats(Ref ref) async {
   final history = await ref.watch(globalProgressProvider.future);
 
-  const totalOT = 1074;
-  const totalNT = 260;
-  const totalBible = 1334;
+  // 1. Get the current active canon
+  final activeBooks = ref.watch(activeCanonBooksProvider);
+  final activeBookIds = activeBooks.map((b) => b.id).toSet();
 
-  final readHistory = history.where((p) => p.isRead).toList();
+  final otBooks =
+      activeBooks.where((b) => b.testament == Testament.old).toList();
+  final ntBooks =
+      activeBooks.where((b) => b.testament == Testament.newTestament).toList();
+  final otBookIds = otBooks.map((b) => b.id).toSet();
+  final ntBookIds = ntBooks.map((b) => b.id).toSet();
 
-  final otRead = readHistory.where((p) => p.bookId <= 39).length;
-  final ntRead = readHistory.where((p) => p.bookId >= 40).length;
+  final totalOT = otBooks.fold<int>(0, (sum, b) => sum + b.chapters);
+  final totalNT = ntBooks.fold<int>(0, (sum, b) => sum + b.chapters);
+  final totalBible = totalOT + totalNT;
+  final totalOTBooks = otBooks.length;
+  final totalNTBooks = ntBooks.length;
+  final totalBooks = activeBooks.length;
+
+  final readHistory = history
+      .where((p) => p.isRead && activeBookIds.contains(p.bookId))
+      .toList();
+
+  final otRead = readHistory.where((p) => otBookIds.contains(p.bookId)).length;
+  final ntRead = readHistory.where((p) => ntBookIds.contains(p.bookId)).length;
   final totalRead = readHistory.length;
 
   // Calculate Books Completed for OT/NT
@@ -169,7 +215,7 @@ Future<DetailedStats> detailedStats(Ref ref) async {
     readChaptersByBook[progress.bookId]!.add(progress.chapterNumber);
   }
 
-  for (final book in kBibleBooks) {
+  for (final book in activeBooks) {
     final readCount = readChaptersByBook[book.id]?.length ?? 0;
     if (readCount >= book.chapters) {
       if (book.testament == Testament.old) {
@@ -180,9 +226,9 @@ Future<DetailedStats> detailedStats(Ref ref) async {
     }
   }
 
-  // Per-book completion fractions for the 73-book grid
+  // Per-book completion fractions for the active canon grid
   final bookCompletionMap = <int, double>{};
-  for (final book in kBibleBooks) {
+  for (final book in activeBooks) {
     final readCount = readChaptersByBook[book.id]?.length ?? 0;
     bookCompletionMap[book.id] =
         book.chapters > 0 ? readCount / book.chapters : 0.0;
@@ -248,9 +294,9 @@ Future<DetailedStats> detailedStats(Ref ref) async {
     totalRead: totalRead,
     otBooksCompleted: otBooksCompleted,
     ntBooksCompleted: ntBooksCompleted,
-    otProgress: otRead / totalOT,
-    ntProgress: ntRead / totalNT,
-    totalProgress: totalRead / totalBible,
+    otProgress: totalOT > 0 ? otRead / totalOT : 0.0,
+    ntProgress: totalNT > 0 ? ntRead / totalNT : 0.0,
+    totalProgress: totalBible > 0 ? totalRead / totalBible : 0.0,
     last7DaysDates: last7DaysDates,
     last7DaysCounts: last7DaysCounts,
     currentMonthDailyCounts: currentMonthDailyCounts,
@@ -258,6 +304,12 @@ Future<DetailedStats> detailedStats(Ref ref) async {
     averageChaptersPerDay: dailyRate,
     streak: _calculateStreak(history),
     bookCompletionMap: bookCompletionMap,
+    totalOTChapters: totalOT,
+    totalNTChapters: totalNT,
+    totalBibleChapters: totalBible,
+    totalOTBooks: totalOTBooks,
+    totalNTBooks: totalNTBooks,
+    totalBooks: totalBooks,
   );
 }
 
@@ -286,7 +338,11 @@ class WeeklyOffset extends _$WeeklyOffset {
 @riverpod
 Future<WeeklyChartData> weeklyChartStats(Ref ref, int weeksAgo) async {
   final history = await ref.watch(globalProgressProvider.future);
-  final readHistory = history.where((p) => p.isRead).toList();
+  final activeBooks = ref.watch(activeCanonBooksProvider);
+  final activeBookIds = activeBooks.map((b) => b.id).toSet();
+  final readHistory = history
+      .where((p) => p.isRead && activeBookIds.contains(p.bookId))
+      .toList();
 
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
@@ -341,7 +397,11 @@ class MonthlyOffset extends _$MonthlyOffset {
 @riverpod
 Future<MonthlyChartData> monthlyChartStats(Ref ref, int monthsAgo) async {
   final history = await ref.watch(globalProgressProvider.future);
-  final readHistory = history.where((p) => p.isRead).toList();
+  final activeBooks = ref.watch(activeCanonBooksProvider);
+  final activeBookIds = activeBooks.map((b) => b.id).toSet();
+  final readHistory = history
+      .where((p) => p.isRead && activeBookIds.contains(p.bookId))
+      .toList();
 
   final now = DateTime.now();
 
@@ -398,7 +458,11 @@ class YearlyOffset extends _$YearlyOffset {
 @riverpod
 Future<YearlyChartData> yearlyChartStats(Ref ref, int yearsAgo) async {
   final history = await ref.watch(globalProgressProvider.future);
-  final readHistory = history.where((p) => p.isRead).toList();
+  final activeBooks = ref.watch(activeCanonBooksProvider);
+  final activeBookIds = activeBooks.map((b) => b.id).toSet();
+  final readHistory = history
+      .where((p) => p.isRead && activeBookIds.contains(p.bookId))
+      .toList();
 
   final now = DateTime.now();
   final targetYear = now.year - yearsAgo;

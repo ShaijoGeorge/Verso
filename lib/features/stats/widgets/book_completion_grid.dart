@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/data/bible_data.dart';
+import 'package:verso/features/reading/providers/reading_providers.dart';
 
-/// A compact mosaic grid showing all 73 Bible books.
+/// A compact mosaic grid showing books for the active canon.
 /// Each cell's color intensity represents the completion fraction.
 /// Tapping a cell shows a tooltip with the book name and progress.
-class BookCompletionGrid extends StatelessWidget {
+class BookCompletionGrid extends ConsumerWidget {
   const BookCompletionGrid({required this.bookCompletionMap, super.key});
   final Map<int, double> bookCompletionMap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isLight = Theme.of(context).brightness == Brightness.light;
+    final books = ref.watch(activeCanonBooksProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -32,7 +35,7 @@ class BookCompletionGrid extends StatelessWidget {
             return Wrap(
               spacing: 4,
               runSpacing: 4,
-              children: kBibleBooks.map((book) {
+              children: books.map((book) {
                 final fraction = bookCompletionMap[book.id] ?? 0.0;
                 return _BookCell(
                   book: book,

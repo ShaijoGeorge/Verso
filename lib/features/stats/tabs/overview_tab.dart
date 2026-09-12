@@ -26,7 +26,7 @@ class OverviewTab extends StatelessWidget {
           _SummaryCards(stats: stats),
           const Gap(28),
 
-          // 73-Book Completion Grid
+          // Dynamic Book Completion Grid
           Text(
             'Book Completion',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -79,9 +79,9 @@ class _TestamentRings extends StatelessWidget {
               label: 'Old Testament',
               progress: stats.otProgress,
               chaptersRead: stats.otRead,
-              totalChapters: 1074,
+              totalChapters: stats.totalOTChapters,
               booksCompleted: stats.otBooksCompleted,
-              totalBooks: 46,
+              totalBooks: stats.totalOTBooks,
               color: context.appColors.otColor,
             ),
           ),
@@ -96,9 +96,9 @@ class _TestamentRings extends StatelessWidget {
               label: 'New Testament',
               progress: stats.ntProgress,
               chaptersRead: stats.ntRead,
-              totalChapters: 260,
+              totalChapters: stats.totalNTChapters,
               booksCompleted: stats.ntBooksCompleted,
-              totalBooks: 27,
+              totalBooks: stats.totalNTBooks,
               color: context.appColors.ntColor,
             ),
           ),
@@ -216,7 +216,7 @@ class _SummaryCards extends StatelessWidget {
                 iconColor: context.appColors.chapters,
                 label: 'Chapters Read',
                 value: '${stats.totalRead}',
-                subtitle: 'of 1,334 total',
+                subtitle: 'of ${stats.totalBibleChapters} total',
               ),
             ),
           ],
@@ -230,7 +230,7 @@ class _SummaryCards extends StatelessWidget {
                 iconColor: context.appColors.books,
                 label: 'Books Done',
                 value: '${stats.otBooksCompleted + stats.ntBooksCompleted}',
-                subtitle: 'of 73 books',
+                subtitle: 'of ${stats.totalBooks} books',
               ),
             ),
             const Gap(12),
