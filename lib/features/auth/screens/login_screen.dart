@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/design/components/verso_auth_gradient.dart';
 import 'package:verso/core/design/components/verso_gradient_button.dart';
 import 'package:verso/core/design/components/verso_header_icon.dart';
@@ -14,6 +15,8 @@ import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/core/utils/app_error_handler.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
+import 'package:verso/features/reading/providers/reading_providers.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -136,6 +139,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           // User opted out - clear any previously saved email
           await prefs.remove(_rememberedEmailKey);
         }
+
+        // ── Data Restoration on Login ─────────────────────────────────────────
+        final user = Supabase.instance.client.auth.currentUser;
+        var remoteCanon = user?.userMetadata?['canon_type'] as String?;
+
+        // Fallback: check remote 'profiles' table if configured in Supabase
+        if (remoteCanon == null && user != null) {
+          try {
+            final userData = await Supabase.instance.client
+                .from('profiles')
+                .select('canon_type')
+                .eq('id', user.id)
+                .maybeSingle();
+            remoteCanon = userData?['canon_type'] as String?;
+          } catch (_) {
+            // Optional profiles table fallback
+          }
+        }
+
+        final canonToRestore = remoteCanon ?? 'catholic';
+
+        // 1. Save the fetched canon to local Drift DB before routing to the home screen
+        await ref.read(localDatabaseProvider).updateLocalCanon(canonToRestore);
+
+        // 2. Save to SharedPreferences and refresh Riverpod settings
+        await ref
+            .read(currentSettingsProvider.notifier)
+            .setCanonType(canonToRestore);
+        ref.invalidate(userSettingsProvider);
 
         // Router handles navigation via auth state change
       }
