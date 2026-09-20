@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:verso/core/design/components/verso_card.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
 import 'package:verso/core/design/extensions.dart';
@@ -124,6 +126,24 @@ class ProfileScreen extends ConsumerWidget {
                         iconColor: const Color(0xFF6B7280),
                         label: 'Settings',
                         onTap: () => GoRouter.of(context).push('/settings'),
+                      ),
+                      _SettingsItem(
+                        icon: Icons.share_outlined,
+                        iconColor: const Color(0xFF10B981),
+                        label: 'Share Verso with a friend',
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          SharePlus.instance.share(
+                            ShareParams(
+                              text:
+                                  "Hey! I've been using Verso to read the Bible "
+                                  "and track my daily progress. It's been a "
+                                  'game changer for my Bible reading habit.\n\n'
+                                  'Join me on the journey: '
+                                  'https://play.google.com/store/apps/details?id=com.shaijo.verso', // Placeholder link
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),

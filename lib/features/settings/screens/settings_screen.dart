@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:verso/core/design/design.dart';
 import 'package:verso/core/providers/package_info_provider.dart';
 import 'package:verso/core/utils/app_error_handler.dart';
@@ -981,6 +982,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             ],
                           ),
                         ),
+                      ),
+                    ],
+                  ),
+                  const Gap(24),
+
+                  // --- SHARE & SUPPORT SECTION ---
+                  _SettingsSectionCard(
+                    title: 'Share & Support',
+                    children: [
+                      _SettingsActionTile(
+                        title: 'Share Verso with a friend',
+                        subtitle: 'Spread the word',
+                        icon: Icons.share_outlined,
+                        iconColor: const Color(0xFF10B981),
+                        onTap: () {
+                          SharePlus.instance.share(
+                            ShareParams(
+                              text:
+                                  "Hey! I've been using Verso to read the Bible "
+                                  "and track my daily progress. It's been a "
+                                  'game changer for my Bible reading habit.\n\n'
+                                  'Join me on the journey: '
+                                  'https://play.google.com/store/apps/details?id=com.shaijo.verso', // Placeholder link
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
