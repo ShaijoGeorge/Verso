@@ -9,6 +9,7 @@ import 'package:verso/core/transitions/app_page_transitions.dart';
 import 'package:verso/core/widgets/main_wrapper.dart';
 import 'package:verso/core/widgets/not_found_screen.dart';
 import 'package:verso/data/bible_data.dart';
+import 'package:verso/features/about/screens/our_mission_screen.dart';
 import 'package:verso/features/auth/screens/forgot_password_screen.dart';
 import 'package:verso/features/auth/screens/login_screen.dart';
 import 'package:verso/features/auth/screens/profile_screen.dart';
@@ -292,6 +293,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => AppPageTransitions.slideFromBottom(
           key: state.pageKey,
           child: const SettingsScreen(),
+        ),
+      ),
+
+      // Our Mission Route
+      GoRoute(
+        path: '/our-mission',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.slideFromBottom(
+          key: state.pageKey,
+          child: const OurMissionScreen(),
         ),
       ),
 

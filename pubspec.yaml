@@ -32,6 +32,7 @@ dependencies:
   shimmer: ^3.0.0
   supabase_flutter: ^2.3.0
   timezone: ^0.11.0
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   analyzer: ^8.4.1
@@ -47,8 +48,9 @@ flutter:
   uses-material-design: true
   assets:
     - .env
-    - assets/app_logo.png
+    - assets/
     - assets/avatars/
+    - assets/developer/
 flutter_launcher_icons:
   android: "ic_launcher"
   ios: true
