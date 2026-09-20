@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:verso/core/design/tokens/colors.dart';
+import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 
 /// A gradient rounded-square icon used as the header on auth screens.
@@ -20,7 +20,7 @@ class VersoHeaderIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = context.palette;
 
     return Container(
       width: size,
@@ -29,15 +29,12 @@ class VersoHeaderIcon extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: isDark
-              ? [AppColors.primaryDark, AppColors.primaryAccentDark]
-              : [AppColors.primaryLight, AppColors.primaryAccentLight],
+          colors: [palette.primary, palette.primaryHover],
         ),
         borderRadius: AppRadii.borderRadiusXL,
         boxShadow: [
           BoxShadow(
-            color: (isDark ? AppColors.primaryDark : AppColors.primaryLight)
-                .withValues(alpha: 0.3),
+            color: palette.primary.withValues(alpha: 0.3),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),

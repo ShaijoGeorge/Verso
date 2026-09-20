@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:verso/core/design/components/verso_card.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
+import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
@@ -167,9 +168,8 @@ class _ProfileHeroHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor =
-        isDark ? AppColors.primaryDark : AppColors.primaryLight;
-
+    final palette = context.palette;
+    final primaryColor = palette.primary;
     final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
 
     return Container(
@@ -178,15 +178,10 @@ class _ProfileHeroHeader extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: isDark
-              ? [
-                  AppColors.primaryContainerDark.withValues(alpha: 0.9),
-                  scaffoldBg,
-                ]
-              : [
-                  AppColors.primaryContainerLight,
-                  scaffoldBg,
-                ],
+          colors: [
+            palette.accentSoft.withValues(alpha: isDark ? 0.9 : 1.0),
+            scaffoldBg,
+          ],
         ),
       ),
       child: SafeArea(
@@ -203,10 +198,7 @@ class _ProfileHeroHeader extends StatelessWidget {
                   gradient: LinearGradient(
                     colors: [
                       primaryColor,
-                      if (isDark)
-                        AppColors.secondaryDark
-                      else
-                        AppColors.secondaryLight,
+                      palette.secondary,
                     ],
                   ),
                 ),
@@ -214,9 +206,7 @@ class _ProfileHeroHeader extends StatelessWidget {
                   padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isDark
-                        ? AppColors.primaryContainerDark
-                        : AppColors.primaryContainerLight,
+                    color: palette.accentSoft,
                   ),
                   child: const VersoAvatar(size: 104, borderWidth: 0),
                 ),
@@ -281,10 +271,7 @@ class _ProfileHeroHeader extends StatelessWidget {
                   gradient: LinearGradient(
                     colors: [
                       primaryColor.withValues(alpha: isDark ? 0.15 : 0.10),
-                      (isDark
-                              ? AppColors.secondaryDark
-                              : AppColors.secondaryLight)
-                          .withValues(alpha: isDark ? 0.10 : 0.08),
+                      palette.secondary.withValues(alpha: isDark ? 0.10 : 0.08),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -631,7 +618,7 @@ class _SignOutTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext ctx, WidgetRef widgetRef) {
-    final errorColor = isDark ? AppColors.errorDark : AppColors.errorLight;
+    final errorColor = ctx.palette.danger;
 
     return VersoCard(
       padding: EdgeInsets.zero,
@@ -688,7 +675,7 @@ class _SignOutTile extends ConsumerWidget {
 
     if (!ctx.mounted) return;
 
-    final errorColor = isDark ? AppColors.errorDark : AppColors.errorLight;
+    final errorColor = ctx.palette.danger;
 
     final confirmed = await showDialog<bool>(
       context: ctx,

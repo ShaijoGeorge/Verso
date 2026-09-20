@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:verso/core/design/tokens/colors.dart';
+import 'package:verso/core/design/extensions.dart';
 
 /// The shared gradient background used on all auth screens.
 ///
@@ -11,22 +11,16 @@ import 'package:verso/core/design/tokens/colors.dart';
 /// ```
 abstract final class VersoAuthGradient {
   static LinearGradient of(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = context.palette;
 
     return LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: isDark
-          ? [
-              AppColors.primaryContainerDark,
-              AppColors.backgroundDark,
-              AppColors.backgroundDark,
-            ]
-          : [
-              AppColors.primaryContainerLight,
-              AppColors.backgroundLight,
-              AppColors.backgroundLight,
-            ],
+      colors: [
+        palette.accentSoft,
+        palette.bg,
+        palette.bg,
+      ],
       stops: const [0.0, 0.4, 1.0],
     );
   }
