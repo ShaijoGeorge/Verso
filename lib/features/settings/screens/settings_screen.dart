@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:verso/core/design/design.dart';
@@ -992,6 +993,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     title: 'Share & Support',
                     children: [
                       _SettingsActionTile(
+                        title: 'Our Mission',
+                        subtitle:
+                            'Why we built Verso & a note from the creator',
+                        icon: Icons.favorite_outline_rounded,
+                        iconColor: const Color(0xFFEC4899),
+                        onTap: () {
+                          GoRouter.of(context).push('/our-mission');
+                        },
+                      ),
+                      _SettingsActionTile(
                         title: 'Share Verso with a friend',
                         subtitle: 'Spread the word',
                         icon: Icons.share_outlined,
@@ -1035,13 +1046,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             ),
                           ),
                           const Gap(4),
-                          Text(
-                            'Made by Shaijo George',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.w400,
-                              fontSize: 12,
-                              color: scheme.onSurfaceVariant
-                                  .withValues(alpha: 0.5),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: () =>
+                                GoRouter.of(context).push('/our-mission'),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              child: Text(
+                                'Made by Shaijo George',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 12,
+                                  color: scheme.onSurfaceVariant
+                                      .withValues(alpha: 0.7),
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: scheme.onSurfaceVariant
+                                      .withValues(alpha: 0.3),
+                                ),
+                              ),
                             ),
                           ),
                         ],
