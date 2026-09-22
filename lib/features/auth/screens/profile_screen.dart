@@ -12,11 +12,13 @@ import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
+import 'package:verso/core/providers/connectivity_provider.dart';
 import 'package:verso/core/router.dart';
 import 'package:verso/core/utils/app_error_handler.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/core/widgets/verso_avatar.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
+import 'package:verso/features/auth/services/account_switch_service.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 
@@ -151,6 +153,16 @@ class ProfileScreen extends ConsumerWidget {
               ),
 
               const SliverToBoxAdapter(child: Gap(24)),
+
+              // Switch Account
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _SwitchAccountTile(scheme: scheme, isDark: isDark),
+                ),
+              ),
+
+              const SliverToBoxAdapter(child: Gap(12)),
 
               // Sign Out
               SliverToBoxAdapter(
@@ -621,6 +633,276 @@ class _SettingsRow extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// -- Switch Account --
+
+class _SwitchAccountTile extends ConsumerStatefulWidget {
+  const _SwitchAccountTile({
+    required this.scheme,
+    required this.isDark,
+  });
+
+  final ColorScheme scheme;
+  final bool isDark;
+
+  @override
+  ConsumerState<_SwitchAccountTile> createState() => _SwitchAccountTileState();
+}
+
+class _SwitchAccountTileState extends ConsumerState<_SwitchAccountTile> {
+  bool _isSwitching = false;
+
+  @override
+  Widget build(BuildContext context) {
+    const switchColor = Color(0xFF3B82F6); // Matching blue from Account section
+
+    return VersoCard(
+      padding: EdgeInsets.zero,
+      color: switchColor.withValues(alpha: 0.06),
+      border: Border.all(color: switchColor.withValues(alpha: 0.2)),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          onTap: _isSwitching ? null : () => _handleSwitchAccount(context),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: switchColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
+                  ),
+                  child: _isSwitching
+                      ? const Padding(
+                          padding: EdgeInsets.all(8),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: switchColor,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.swap_horiz_rounded,
+                          size: 18,
+                          color: switchColor,
+                        ),
+                ),
+                const Gap(14),
+                Text(
+                  'Switch Account',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: switchColor,
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: switchColor.withValues(alpha: 0.5),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleSwitchAccount(BuildContext ctx) async {
+    HapticFeedback.lightImpact();
+
+    // 1. Check connectivity before even showing the dialog
+    final isOnline = ref.read(connectivityProvider);
+    if (!isOnline) {
+      if (ctx.mounted) {
+        VersoSnackbar.show(
+          ctx,
+          message: 'Connect to the internet to switch accounts',
+        );
+      }
+      return;
+    }
+
+    // 2. Show confirmation dialog
+    if (!ctx.mounted) return;
+    final confirmed = await _showSwitchDialog(ctx);
+    if (confirmed != true) return;
+
+    // 3. Execute the switch
+    setState(() => _isSwitching = true);
+
+    final router = ref.read(routerProvider);
+    final result = await ref.read(accountSwitchServiceProvider).switchAccount();
+
+    if (!mounted) return;
+    setState(() => _isSwitching = false);
+
+    switch (result) {
+      case SwitchSuccess():
+        Future.delayed(const Duration(milliseconds: 150), () {
+          final rootContext = router.routerDelegate.navigatorKey.currentContext;
+          if (rootContext != null && rootContext.mounted) {
+            VersoSnackbar.success(
+              rootContext,
+              message: 'Signed out — sign in with another account',
+            );
+          }
+        });
+
+      case SwitchOffline():
+        if (ctx.mounted) {
+          VersoSnackbar.show(
+            ctx,
+            message: 'Connect to the internet to switch accounts',
+          );
+        }
+
+      case SwitchFlushFailed(:final pendingCount):
+        if (ctx.mounted) {
+          VersoSnackbar.show(
+            ctx,
+            message: '$pendingCount records could not sync. Try again later.',
+          );
+        }
+
+      case SwitchError(:final message):
+        if (ctx.mounted) {
+          VersoSnackbar.error(
+            ctx,
+            message: 'Switch failed: $message',
+          );
+        }
+    }
+  }
+
+  Future<bool?> _showSwitchDialog(BuildContext ctx) {
+    const switchColor = Color(0xFF3B82F6);
+
+    return showDialog<bool>(
+      context: ctx,
+      barrierColor: Colors.black54,
+      builder: (dialogContext) {
+        final dialogScheme = Theme.of(dialogContext).colorScheme;
+
+        return Dialog(
+          backgroundColor: dialogScheme.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: AppRadii.borderRadiusXL,
+          ),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              Spacing.lg,
+              Spacing.xl,
+              Spacing.lg,
+              Spacing.lg,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon circle
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: switchColor.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.swap_horiz_rounded,
+                    color: switchColor,
+                    size: 26,
+                  ),
+                ),
+
+                const Gap(Spacing.md),
+
+                // Title
+                Text(
+                  'Switch Account?',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                    color: dialogScheme.onSurface,
+                  ),
+                ),
+
+                const Gap(Spacing.xs),
+
+                // Description
+                Text(
+                  'Your reading progress will be synced before '
+                  'switching. You can sign in with a different account.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: dialogScheme.onSurfaceVariant,
+                    height: 1.5,
+                  ),
+                ),
+
+                const Gap(Spacing.lg),
+
+                // Switch button (primary, full-width)
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(dialogContext, true),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: switchColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadii.borderRadiusMD,
+                      ),
+                    ),
+                    child: Text(
+                      'Switch Account',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const Gap(Spacing.sm),
+
+                // Cancel button (ghost, full-width)
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(dialogContext, false),
+                    style: TextButton.styleFrom(
+                      foregroundColor: dialogScheme.onSurfaceVariant,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadii.borderRadiusMD,
+                      ),
+                    ),
+                    child: Text(
+                      'Cancel',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

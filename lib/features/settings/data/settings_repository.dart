@@ -27,10 +27,77 @@ class SettingsRepository {
   // Legacy key - migrated on first read
   static const _kLegacyThemeKey = 'is_dark_mode';
 
-  Future<UserSettings> getSettings() async {
-    final prefs = await SharedPreferences.getInstance();
+  // Key for tracking the last active user so the login screen can show
+  // a sensible theme instead of jarring defaults.
+  static const _kLastActiveUserIdKey = 'last_active_user_id';
 
-    // One-time migration from v1 boolean to v2 string
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  /// Returns a user-scoped SharedPreferences key.
+  /// e.g. 'theme_mode' + 'abc-123' → 'theme_mode_abc-123'
+  String _userKey(String baseKey, String userId) => '${baseKey}_$userId';
+
+  /// Returns the userId to scope settings with.
+  /// Priority: explicit userId → current Supabase user → null (global fallback).
+  String? _resolveUserId(String? explicitUserId) {
+    if (explicitUserId != null && explicitUserId.isNotEmpty) {
+      return explicitUserId;
+    }
+    // Try current session
+    final currentId = Supabase.instance.client.auth.currentUser?.id;
+    if (currentId != null && currentId.isNotEmpty) return currentId;
+    return null;
+  }
+
+  /// Reads from user-scoped key first; falls back to global key.
+  /// This provides seamless migration: old global settings are picked up
+  /// until the first write creates a user-scoped copy.
+  T? _readScoped<T>(
+    SharedPreferences prefs,
+    String baseKey,
+    String? userId,
+    T? Function(String key) reader,
+  ) {
+    if (userId != null) {
+      final scoped = reader(_userKey(baseKey, userId));
+      if (scoped != null) return scoped;
+    }
+    // Fallback to global key (legacy or login-screen scenario)
+    return reader(baseKey);
+  }
+
+  /// Writes to user-scoped key. Also writes to the global key so the
+  /// login screen (no user context) always reflects the last-used value.
+  Future<void> _writeScoped(
+    SharedPreferences prefs,
+    String baseKey,
+    String? userId,
+    Future<void> Function(String key) writer,
+  ) async {
+    if (userId != null) {
+      await writer(_userKey(baseKey, userId));
+    }
+    // Always keep the global key updated as a fallback
+    await writer(baseKey);
+  }
+
+  // ── Core Read ────────────────────────────────────────────────────────────
+
+  /// Loads settings, scoped to [userId] when available.
+  ///
+  /// On first call for a given user, the global (legacy) values act as
+  /// defaults because [_readScoped] falls through to the global key.
+  /// Once any setting is saved, the user-scoped key takes precedence.
+  Future<UserSettings> getSettings({String? userId}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final uid = _resolveUserId(userId);
+
+    // Record this user as the last active user
+    if (uid != null) {
+      await prefs.setString(_kLastActiveUserIdKey, uid);
+    }
+
+    // One-time migration from v1 boolean to v2 string (global only)
     if (!prefs.containsKey(_kThemeModeKey) &&
         prefs.containsKey(_kLegacyThemeKey)) {
       final wasDark = prefs.getBool(_kLegacyThemeKey) ?? false;
@@ -39,33 +106,52 @@ class SettingsRepository {
     }
 
     return UserSettings(
-      themeMode: _parseThemeMode(prefs.getString(_kThemeModeKey)),
-      useAmoledForDark: prefs.getBool(_kUseAmoledKey) ?? false,
-      scheduleEnabled: prefs.getBool(_kScheduleEnabledKey) ?? false,
-      dayStyle:
-          _parseStyle(prefs.getString(_kDayStyleKey)) ?? AppearanceStyle.light,
-      nightStyle:
-          _parseStyle(prefs.getString(_kNightStyleKey)) ?? AppearanceStyle.dark,
-      dayStartHour: prefs.getInt(_kDayStartHourKey) ?? 6,
-      dayStartMinute: prefs.getInt(_kDayStartMinuteKey) ?? 30,
-      nightStartHour: prefs.getInt(_kNightStartHourKey) ?? 22,
-      nightStartMinute: prefs.getInt(_kNightStartMinuteKey) ?? 0,
-      isReminderEnabled: prefs.getBool(_kReminderEnabledKey) ?? false,
-      reminderHour: prefs.getInt(_kReminderHourKey) ?? 7,
-      reminderMinute: prefs.getInt(_kReminderMinuteKey) ?? 0,
-      themeProfileId: prefs.getString(_kThemeProfileKey) ?? 'current',
-      fontScaleFactor: prefs.getDouble(_kFontScaleFactorKey) ?? 1.0,
-      canonType: prefs.getString(_kCanonTypeKey) ?? 'catholic',
+      themeMode: _parseThemeMode(
+        _readScoped(prefs, _kThemeModeKey, uid, prefs.getString),
+      ),
+      useAmoledForDark:
+          _readScoped(prefs, _kUseAmoledKey, uid, prefs.getBool) ?? false,
+      scheduleEnabled:
+          _readScoped(prefs, _kScheduleEnabledKey, uid, prefs.getBool) ?? false,
+      dayStyle: _parseStyle(
+            _readScoped(prefs, _kDayStyleKey, uid, prefs.getString),
+          ) ??
+          AppearanceStyle.light,
+      nightStyle: _parseStyle(
+            _readScoped(prefs, _kNightStyleKey, uid, prefs.getString),
+          ) ??
+          AppearanceStyle.dark,
+      dayStartHour:
+          _readScoped(prefs, _kDayStartHourKey, uid, prefs.getInt) ?? 6,
+      dayStartMinute:
+          _readScoped(prefs, _kDayStartMinuteKey, uid, prefs.getInt) ?? 30,
+      nightStartHour:
+          _readScoped(prefs, _kNightStartHourKey, uid, prefs.getInt) ?? 22,
+      nightStartMinute:
+          _readScoped(prefs, _kNightStartMinuteKey, uid, prefs.getInt) ?? 0,
+      isReminderEnabled:
+          _readScoped(prefs, _kReminderEnabledKey, uid, prefs.getBool) ?? false,
+      reminderHour:
+          _readScoped(prefs, _kReminderHourKey, uid, prefs.getInt) ?? 7,
+      reminderMinute:
+          _readScoped(prefs, _kReminderMinuteKey, uid, prefs.getInt) ?? 0,
+      themeProfileId:
+          _readScoped(prefs, _kThemeProfileKey, uid, prefs.getString) ??
+              'current',
+      fontScaleFactor:
+          _readScoped(prefs, _kFontScaleFactorKey, uid, prefs.getDouble) ?? 1.0,
+      canonType: _readScoped(prefs, _kCanonTypeKey, uid, prefs.getString) ??
+          'catholic',
     );
   }
 
-  // Check if onboarding is complete
+  // ── Onboarding (device-level, not user-scoped) ───────────────────────────
+
   Future<bool> hasSeenOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_kOnboardingKey) ?? false;
   }
 
-  // Mark onboarding as complete
   Future<void> completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kOnboardingKey, true);
@@ -73,14 +159,10 @@ class SettingsRepository {
 
   // ── Profile Setup ────────────────────────────────────────────────────────
 
-  String _getUserKey(String baseKey, String userId) {
-    return '${baseKey}_$userId';
-  }
-
   /// Returns true once the user has submitted the profile-setup screen.
   Future<bool> hasCompletedProfileSetup(String userId) async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_getUserKey(_kProfileSetupKey, userId)) ?? false;
+    return prefs.getBool(_userKey(_kProfileSetupKey, userId)) ?? false;
   }
 
   /// Persists gender ('male' | 'female') and birthday (ISO-8601 date string).
@@ -90,41 +172,53 @@ class SettingsRepository {
     required DateTime birthday,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_getUserKey(_kUserGenderKey, userId), gender);
+    await prefs.setString(_userKey(_kUserGenderKey, userId), gender);
     // Store as a plain date string so it survives encoding/decoding
     await prefs.setString(
-      _getUserKey(_kUserBirthdayKey, userId),
+      _userKey(_kUserBirthdayKey, userId),
       '${birthday.year.toString().padLeft(4, '0')}-'
       '${birthday.month.toString().padLeft(2, '0')}-'
       '${birthday.day.toString().padLeft(2, '0')}',
     );
-    await prefs.setBool(_getUserKey(_kProfileSetupKey, userId), true);
+    await prefs.setBool(_userKey(_kProfileSetupKey, userId), true);
   }
 
   /// Returns the saved gender, or null if not yet set.
   Future<String?> getUserGender(String userId) async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_getUserKey(_kUserGenderKey, userId));
+    return prefs.getString(_userKey(_kUserGenderKey, userId));
   }
 
   /// Returns the saved birthday as a DateTime, or null if not yet set.
   Future<DateTime?> getUserBirthday(String userId) async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_getUserKey(_kUserBirthdayKey, userId));
+    final raw = prefs.getString(_userKey(_kUserBirthdayKey, userId));
     if (raw == null) return null;
     return DateTime.tryParse(raw);
   }
 
   // ── Theme ─────────────────────────────────────────────────────────────────
 
-  Future<void> setThemeMode(AppThemeMode mode) async {
+  Future<void> setThemeMode(AppThemeMode mode, {String? userId}) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kThemeModeKey, mode.name);
+    final uid = _resolveUserId(userId);
+    await _writeScoped(
+      prefs,
+      _kThemeModeKey,
+      uid,
+      (key) => prefs.setString(key, mode.name),
+    );
   }
 
-  Future<void> setUseAmoledForDark(bool value) async {
+  Future<void> setUseAmoledForDark(bool value, {String? userId}) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_kUseAmoledKey, value);
+    final uid = _resolveUserId(userId);
+    await _writeScoped(
+      prefs,
+      _kUseAmoledKey,
+      uid,
+      (key) => prefs.setBool(key, value),
+    );
   }
 
   Future<void> setSchedule({
@@ -135,37 +229,113 @@ class SettingsRepository {
     required int dayStartMinute,
     required int nightStartHour,
     required int nightStartMinute,
+    String? userId,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_kScheduleEnabledKey, enabled);
-    await prefs.setString(_kDayStyleKey, dayStyle.name);
-    await prefs.setString(_kNightStyleKey, nightStyle.name);
-    await prefs.setInt(_kDayStartHourKey, dayStartHour);
-    await prefs.setInt(_kDayStartMinuteKey, dayStartMinute);
-    await prefs.setInt(_kNightStartHourKey, nightStartHour);
-    await prefs.setInt(_kNightStartMinuteKey, nightStartMinute);
+    final uid = _resolveUserId(userId);
+    await _writeScoped(
+      prefs,
+      _kScheduleEnabledKey,
+      uid,
+      (k) => prefs.setBool(k, enabled),
+    );
+    await _writeScoped(
+      prefs,
+      _kDayStyleKey,
+      uid,
+      (k) => prefs.setString(k, dayStyle.name),
+    );
+    await _writeScoped(
+      prefs,
+      _kNightStyleKey,
+      uid,
+      (k) => prefs.setString(k, nightStyle.name),
+    );
+    await _writeScoped(
+      prefs,
+      _kDayStartHourKey,
+      uid,
+      (k) => prefs.setInt(k, dayStartHour),
+    );
+    await _writeScoped(
+      prefs,
+      _kDayStartMinuteKey,
+      uid,
+      (k) => prefs.setInt(k, dayStartMinute),
+    );
+    await _writeScoped(
+      prefs,
+      _kNightStartHourKey,
+      uid,
+      (k) => prefs.setInt(k, nightStartHour),
+    );
+    await _writeScoped(
+      prefs,
+      _kNightStartMinuteKey,
+      uid,
+      (k) => prefs.setInt(k, nightStartMinute),
+    );
   }
 
-  Future<void> setThemeProfileId(String id) async {
+  Future<void> setThemeProfileId(String id, {String? userId}) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kThemeProfileKey, id);
+    final uid = _resolveUserId(userId);
+    await _writeScoped(
+      prefs,
+      _kThemeProfileKey,
+      uid,
+      (key) => prefs.setString(key, id),
+    );
   }
 
-  Future<void> updateReminder(bool isEnabled, int hour, int minute) async {
+  Future<void> updateReminder(
+    bool isEnabled,
+    int hour,
+    int minute, {
+    String? userId,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_kReminderEnabledKey, isEnabled);
-    await prefs.setInt(_kReminderHourKey, hour);
-    await prefs.setInt(_kReminderMinuteKey, minute);
+    final uid = _resolveUserId(userId);
+    await _writeScoped(
+      prefs,
+      _kReminderEnabledKey,
+      uid,
+      (k) => prefs.setBool(k, isEnabled),
+    );
+    await _writeScoped(
+      prefs,
+      _kReminderHourKey,
+      uid,
+      (k) => prefs.setInt(k, hour),
+    );
+    await _writeScoped(
+      prefs,
+      _kReminderMinuteKey,
+      uid,
+      (k) => prefs.setInt(k, minute),
+    );
   }
 
-  Future<void> setFontScaleFactor(double factor) async {
+  Future<void> setFontScaleFactor(double factor, {String? userId}) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble(_kFontScaleFactorKey, factor);
+    final uid = _resolveUserId(userId);
+    await _writeScoped(
+      prefs,
+      _kFontScaleFactorKey,
+      uid,
+      (key) => prefs.setDouble(key, factor),
+    );
   }
 
-  Future<void> setCanonType(String canonType) async {
+  Future<void> setCanonType(String canonType, {String? userId}) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kCanonTypeKey, canonType);
+    final uid = _resolveUserId(userId);
+    await _writeScoped(
+      prefs,
+      _kCanonTypeKey,
+      uid,
+      (key) => prefs.setString(key, canonType),
+    );
   }
 
   Future<void> updateCanonSetting(String canonString) =>
