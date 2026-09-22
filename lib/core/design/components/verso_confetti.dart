@@ -91,14 +91,17 @@ class _ConfettiOverlayWidgetState extends State<_ConfettiOverlayWidget>
   }
 
   _Particle _generateParticle() {
-    final shape = _ParticleShape.values[_random.nextInt(_ParticleShape.values.length)];
+    final shape =
+        _ParticleShape.values[_random.nextInt(_ParticleShape.values.length)];
     final color = _palette[_random.nextInt(_palette.length)];
     final size = _random.nextDouble() * 7 + 5; // 5 to 12
 
     // Launch from top center with horizontal fan-out
-    final startXPercent = 0.5 + (_random.nextDouble() - 0.5) * 0.7; // 15% to 85% width
+    final startXPercent =
+        0.5 + (_random.nextDouble() - 0.5) * 0.7; // 15% to 85% width
     final initialVx = (_random.nextDouble() - 0.5) * 380; // -190 to +190 px/s
-    final initialVy = _random.nextDouble() * 260 + 120; // 120 to 380 px/s downward
+    final initialVy =
+        _random.nextDouble() * 260 + 120; // 120 to 380 px/s downward
     final gravity = _random.nextDouble() * 200 + 450; // 450 to 650 px/s^2
 
     final rotationSpeed = (_random.nextDouble() - 0.5) * 12; // rad/s
@@ -154,7 +157,8 @@ class _ConfettiOverlayWidgetState extends State<_ConfettiOverlayWidget>
             right: 0,
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: _StreakCelebrationBadge(
                   controller: _controller,
                   streak: widget.streak,
@@ -236,7 +240,8 @@ class _StreakCelebrationBadge extends StatelessWidget {
           animation: controller,
           builder: (ctx, _) {
             final t = controller.value;
-            final countT = Curves.easeOutCubic.transform((t / 0.35).clamp(0, 1));
+            final countT =
+                Curves.easeOutCubic.transform((t / 0.35).clamp(0, 1));
             final currentDisplay =
                 (startVal + (streak - startVal) * countT).round();
 
@@ -263,7 +268,8 @@ class _StreakCelebrationBadge extends StatelessWidget {
                       offset: const Offset(0, 8),
                     ),
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.08),
+                      color:
+                          Colors.black.withValues(alpha: isDark ? 0.5 : 0.08),
                       blurRadius: 16,
                       offset: const Offset(0, 4),
                     ),
@@ -289,7 +295,8 @@ class _StreakCelebrationBadge extends StatelessWidget {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFFF9100).withValues(alpha: 0.5),
+                            color:
+                                const Color(0xFFFF9100).withValues(alpha: 0.5),
                             blurRadius: 12,
                             offset: const Offset(0, 3),
                           ),
@@ -319,7 +326,9 @@ class _StreakCelebrationBadge extends StatelessWidget {
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 28,
                                 fontWeight: FontWeight.w900,
-                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0F172A),
                                 decoration: TextDecoration.none,
                                 height: 1,
                               ),
@@ -444,7 +453,8 @@ class _ConfettiPainter extends CustomPainter {
       switch (p.shape) {
         case _ParticleShape.rectangle:
           // Ribbon flutter effect by scaling X with sin
-          final flutterScale = sin(t * p.flutterFreq * 1.5).abs().clamp(0.2, 1.0);
+          final flutterScale =
+              sin(t * p.flutterFreq * 1.5).abs().clamp(0.2, 1.0);
           canvas.scale(flutterScale, 1);
           canvas.drawRRect(
             RRect.fromRectAndRadius(

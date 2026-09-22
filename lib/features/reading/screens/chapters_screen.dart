@@ -113,13 +113,12 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
                   isRead: isRead,
                   readAt: readAt,
                   onTap: (newStatus) async {
-                    final newStreak = await ref
-                        .read(readingServiceProvider)
-                        .toggleChapter(
-                          widget.book.id,
-                          chapterNum,
-                          newStatus,
-                        );
+                    final newStreak =
+                        await ref.read(readingServiceProvider).toggleChapter(
+                              widget.book.id,
+                              chapterNum,
+                              newStatus,
+                            );
                     if (newStreak != null && context.mounted) {
                       VersoConfetti.show(context, streak: newStreak);
                     }

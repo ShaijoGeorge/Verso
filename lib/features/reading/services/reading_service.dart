@@ -91,8 +91,7 @@ class ReadingService {
     if (uid.isEmpty) return null;
 
     final now = DateTime.now();
-    final todayString =
-        '${now.year.toString().padLeft(4, '0')}-'
+    final todayString = '${now.year.toString().padLeft(4, '0')}-'
         '${now.month.toString().padLeft(2, '0')}-'
         '${now.day.toString().padLeft(2, '0')}';
 
