@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:verso/core/design/components/verso_circular_progress.dart';
+import 'package:verso/core/design/components/verso_confetti.dart';
 import 'package:verso/core/design/components/verso_progress_bar.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
 import 'package:verso/core/design/extensions.dart';
@@ -111,12 +112,16 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
                   chapterNum: chapterNum,
                   isRead: isRead,
                   readAt: readAt,
-                  onTap: (newStatus) {
-                    ref.read(readingServiceProvider).toggleChapter(
-                          widget.book.id,
-                          chapterNum,
-                          newStatus,
-                        );
+                  onTap: (newStatus) async {
+                    final newStreak =
+                        await ref.read(readingServiceProvider).toggleChapter(
+                              widget.book.id,
+                              chapterNum,
+                              newStatus,
+                            );
+                    if (newStreak != null && context.mounted) {
+                      VersoConfetti.show(context, streak: newStreak);
+                    }
                   },
                 );
               },
@@ -153,11 +158,15 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
     if (confirm ?? false) {
       setState(() => _isMarkingRead = true);
       try {
-        await ref
+        final newStreak = await ref
             .read(readingServiceProvider)
             .markBookAsRead(widget.book.id, widget.book.chapters);
         if (mounted) {
-          VersoSnackbar.success(context, message: 'Marked as read!');
+          if (newStreak != null) {
+            VersoConfetti.show(context, streak: newStreak);
+          } else {
+            VersoSnackbar.success(context, message: 'Marked as read!');
+          }
         }
       } catch (e) {
         if (mounted) {

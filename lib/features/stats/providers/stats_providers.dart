@@ -34,7 +34,7 @@ class UserStats {
   final int totalChaptersInCanon;
 }
 
-int _calculateStreak(List<ReadingProgress> history) {
+int calculateStreak(List<ReadingProgress> history) {
   if (history.isEmpty) return 0;
 
   final now = DateTime.now();
@@ -95,7 +95,7 @@ Future<UserStats> userStats(Ref ref) async {
       .where((p) => p.isRead && activeBookIds.contains(p.bookId))
       .toList();
   final totalRead = activeReadHistory.length;
-  final streak = _calculateStreak(history);
+  final streak = calculateStreak(history);
 
   // Calculate Books Completed
   var completedBooksCount = 0;
@@ -302,7 +302,7 @@ Future<DetailedStats> detailedStats(Ref ref) async {
     currentMonthDailyCounts: currentMonthDailyCounts,
     currentYearMonthlyCounts: currentYearMonthlyCounts,
     averageChaptersPerDay: dailyRate,
-    streak: _calculateStreak(history),
+    streak: calculateStreak(history),
     bookCompletionMap: bookCompletionMap,
     totalOTChapters: totalOT,
     totalNTChapters: totalNT,
