@@ -12,6 +12,7 @@ import 'package:verso/core/providers/package_info_provider.dart';
 import 'package:verso/core/router.dart';
 import 'package:verso/core/utils/firebase_crash_reporter.dart';
 import 'package:verso/core/utils/verso_error_observer.dart';
+import 'package:verso/features/reading/services/reading_service.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
 import 'package:verso/features/settings/providers/theme_resolver.dart';
 import 'package:verso/features/settings/services/notification_service.dart';
@@ -127,6 +128,8 @@ class _BibliaAppState extends ConsumerState<BibliaApp>
     if (state == AppLifecycleState.resumed) {
       // Re-evaluate schedule boundaries when returning from background.
       ref.invalidate(scheduleTickStreamProvider);
+      // Reconcile cross-device reading progress on resume.
+      ref.read(readingServiceProvider).syncOnResume();
     }
   }
 
