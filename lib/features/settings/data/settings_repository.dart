@@ -30,6 +30,8 @@ class SettingsRepository {
   // Key for tracking the last active user so the login screen can show
   // a sensible theme instead of jarring defaults.
   static const _kLastActiveUserIdKey = 'last_active_user_id';
+  // Tracks the last local calendar date (YYYY-MM-DD) a daily read was celebrated
+  static const _kLastCelebratedReadDateKey = 'last_celebrated_read_date';
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -195,6 +197,27 @@ class SettingsRepository {
     final raw = prefs.getString(_userKey(_kUserBirthdayKey, userId));
     if (raw == null) return null;
     return DateTime.tryParse(raw);
+  }
+
+  // ── Daily First-Read Celebration ─────────────────────────────────────────
+
+  /// Returns the last local date string (YYYY-MM-DD) on which the user received
+  /// a first-read celebration.
+  Future<String?> getLastCelebratedReadDate(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_userKey(_kLastCelebratedReadDateKey, userId));
+  }
+
+  /// Sets the last local date string (YYYY-MM-DD) on which the user celebrated.
+  Future<void> setLastCelebratedReadDate(
+    String userId,
+    String dateString,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _userKey(_kLastCelebratedReadDateKey, userId),
+      dateString,
+    );
   }
 
   // ── Theme ─────────────────────────────────────────────────────────────────

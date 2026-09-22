@@ -4,8 +4,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/providers/connectivity_provider.dart';
 import 'package:verso/core/services/offline_cache_service.dart';
+import 'package:verso/data/local/entities/reading_progress.dart';
 import 'package:verso/features/reading/data/bible_repository.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 
 part 'reading_service.g.dart';
@@ -29,7 +31,9 @@ class ReadingService {
   String get _currentUserId =>
       Supabase.instance.client.auth.currentUser?.id ?? '';
 
-  Future<void> toggleChapter(int bookId, int chapterNumber, bool isRead) async {
+  Future<int?> toggleChapter(int bookId, int chapterNumber, bool isRead) async {
+    final streak = isRead ? await _checkAndMarkFirstReadToday() : null;
+
     // 1. ALWAYS queue the action (chronologically ordered source of truth)
     await _cache.enqueueWrite({
       'type': 'toggle',
@@ -52,9 +56,13 @@ class ReadingService {
 
     // 4. Trigger background sync if online
     _triggerSync();
+
+    return streak;
   }
 
-  Future<void> markBookAsRead(int bookId, int totalChapters) async {
+  Future<int?> markBookAsRead(int bookId, int totalChapters) async {
+    final streak = await _checkAndMarkFirstReadToday();
+
     await _cache.enqueueWrite({
       'type': 'mark_book',
       'book_id': bookId,
@@ -70,6 +78,62 @@ class ReadingService {
     // Mark-all is a single action, refresh immediately
     _invalidateProviders();
     _triggerSync();
+
+    return streak;
+  }
+
+  /// Determines if this is the user's first read of today.
+  ///
+  /// Returns the updated streak number (>= 1) if this action is the first read today,
+  /// or `null` if the user has already read or celebrated today.
+  Future<int?> _checkAndMarkFirstReadToday() async {
+    final uid = _currentUserId;
+    if (uid.isEmpty) return null;
+
+    final now = DateTime.now();
+    final todayString =
+        '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
+
+    final settingsRepo = _ref.read(settingsRepositoryProvider);
+    final lastCelebrated = await settingsRepo.getLastCelebratedReadDate(uid);
+
+    // 1. If today was already celebrated on this device, don't celebrate again
+    if (lastCelebrated == todayString) {
+      return null;
+    }
+
+    // 2. Check if user already has read records for today in local cache
+    final cached = await _cache.getCachedProgress();
+    final todayDate = DateTime(now.year, now.month, now.day);
+
+    final alreadyReadToday = cached.any((p) {
+      if (!p.isRead || p.readAt == null || p.userId != uid) return false;
+      final local = p.readAt!.toLocal();
+      final readDate = DateTime(local.year, local.month, local.day);
+      return readDate == todayDate;
+    });
+
+    if (alreadyReadToday) {
+      // User already read today (e.g. synced before opening); sync date marker
+      await settingsRepo.setLastCelebratedReadDate(uid, todayString);
+      return null;
+    }
+
+    // 3. Genuine first read of the day!
+    // Compute the new streak count including today's read
+    final simulatedTodayRecord = ReadingProgress(
+      userId: uid,
+      bookId: 0,
+      chapterNumber: 0,
+      isRead: true,
+      readAt: now,
+    );
+    final updatedStreak = calculateStreak([...cached, simulatedTodayRecord]);
+
+    await settingsRepo.setLastCelebratedReadDate(uid, todayString);
+    return updatedStreak > 0 ? updatedStreak : 1;
   }
 
   void _scheduleRefresh() {
