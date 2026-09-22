@@ -77,7 +77,7 @@ final class CurrentSettingsProvider
   CurrentSettings create() => CurrentSettings();
 }
 
-String _$currentSettingsHash() => r'adbf4a6ec7b18c409360c9def3532f26c6a0dffc';
+String _$currentSettingsHash() => r'addd6211efde3c82d2441d03fc390f5d1ad9322a';
 
 abstract class _$CurrentSettings extends $AsyncNotifier<UserSettings> {
   FutureOr<UserSettings> build();
