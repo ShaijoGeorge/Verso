@@ -934,13 +934,15 @@ class _SignOutTile extends ConsumerWidget {
       await widgetRef
           .read(savedAccountsServiceProvider)
           .removeAccount(currentUserId);
+      await cacheService.clearUserCache(currentUserId);
     }
 
-    await cacheService.clearAll();
+    await cacheService.clearWriteQueue();
     widgetRef.invalidate(globalProgressProvider);
     widgetRef.invalidate(userStatsProvider);
     widgetRef.invalidate(detailedStatsProvider);
     widgetRef.invalidate(currentSettingsProvider);
+    widgetRef.invalidate(userSettingsProvider);
     widgetRef.invalidate(activityLogProvider);
     widgetRef.invalidate(todayChaptersProvider);
     widgetRef.invalidate(continueReadingProvider);
