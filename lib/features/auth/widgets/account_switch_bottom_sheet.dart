@@ -269,13 +269,35 @@ class _AccountSwitchBottomSheetState
         );
 
       case SwitchSessionExpired():
+        // Sign out current user locally so GoRouter allows navigating to /login
+        // without bouncing back to /home, while preserving their session in SavedAccounts.
+        final prepResult = await switchService.prepareForAddAccount();
+        if (!mounted) return;
+        if (prepResult is SwitchFlushFailed) {
+          VersoSnackbar.show(
+            context,
+            message:
+                '${prepResult.pendingCount} records could not sync. Try again later.',
+          );
+          return;
+        }
+
         Navigator.of(context).pop();
-        VersoSnackbar.show(
-          context,
-          message:
-              'Session expired for ${account.displayName}. Please sign in again.',
-        );
-        ref.read(routerProvider).go('/login');
+        ref.read(routerProvider).go('/login', extra: account.email);
+        Future.delayed(const Duration(milliseconds: 150), () {
+          final rootContext = ref
+              .read(routerProvider)
+              .routerDelegate
+              .navigatorKey
+              .currentContext;
+          if (rootContext != null && rootContext.mounted) {
+            VersoSnackbar.show(
+              rootContext,
+              message:
+                  'Session expired for ${account.displayName}. Please sign in again.',
+            );
+          }
+        });
 
       case SwitchError(:final message):
         VersoSnackbar.error(
@@ -333,11 +355,20 @@ class _AccountSwitchBottomSheetState
     switch (result) {
       case SwitchSuccess():
         Navigator.of(context).pop();
-        VersoSnackbar.show(
-          context,
-          message: 'Sign in to add an account to this device',
-        );
         ref.read(routerProvider).go('/login');
+        Future.delayed(const Duration(milliseconds: 150), () {
+          final rootContext = ref
+              .read(routerProvider)
+              .routerDelegate
+              .navigatorKey
+              .currentContext;
+          if (rootContext != null && rootContext.mounted) {
+            VersoSnackbar.show(
+              rootContext,
+              message: 'Sign in to add an account to this device',
+            );
+          }
+        });
 
       case SwitchOffline():
         VersoSnackbar.show(

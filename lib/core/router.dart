@@ -141,10 +141,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/login',
-        pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
-          key: state.pageKey,
-          child: const LoginScreen(),
-        ),
+        pageBuilder: (context, state) {
+          final extra = state.extra;
+          return AppPageTransitions.fadeThrough(
+            key: state.pageKey,
+            child: LoginScreen(
+              initialEmail: extra is String ? extra : null,
+            ),
+          );
+        },
       ),
       GoRoute(
         path: '/forgot-password',

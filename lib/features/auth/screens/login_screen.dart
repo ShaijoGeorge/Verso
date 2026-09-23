@@ -28,7 +28,9 @@ import 'package:verso/features/stats/providers/activity_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.initialEmail});
+
+  final String? initialEmail;
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -81,8 +83,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
     _animController.forward();
 
-    // Load any previously remembered email right after the widget initialises
-    _loadRememberedEmail();
+    // Pre-fill email from route args if provided, otherwise load remembered email
+    if (widget.initialEmail != null && widget.initialEmail!.isNotEmpty) {
+      _emailController.text = widget.initialEmail!;
+      _rememberMe = true;
+    } else {
+      _loadRememberedEmail();
+    }
+  }
+
+  @override
+  void didUpdateWidget(LoginScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialEmail != null &&
+        widget.initialEmail!.isNotEmpty &&
+        widget.initialEmail != oldWidget.initialEmail) {
+      _emailController.text = widget.initialEmail!;
+      _rememberMe = true;
+    }
   }
 
   // Read the saved email from disk and pre-fills the field + checkbox
