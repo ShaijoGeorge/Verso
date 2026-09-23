@@ -45,6 +45,7 @@ class UserSettings {
     this.themeProfileId = 'current',
     this.fontScaleFactor = 1,
     this.canonType = 'catholic',
+    this.bibleLanguage = 'en',
   });
 
   final AppThemeMode themeMode;
@@ -65,6 +66,9 @@ class UserSettings {
   /// The active Bible canon type ('catholic', 'protestant', 'orthodox').
   /// Defaults to 'catholic' for legacy users.
   final String canonType;
+
+  /// The active Bible language ('en', 'ml'). Defaults to 'en'.
+  final String bibleLanguage;
 
   CanonType get canon => switch (canonType) {
         'protestant' => CanonType.protestant,
@@ -88,6 +92,7 @@ class UserSettings {
     String? themeProfileId,
     double? fontScaleFactor,
     String? canonType,
+    String? bibleLanguage,
   }) =>
       UserSettings(
         themeMode: themeMode ?? this.themeMode,
@@ -105,6 +110,7 @@ class UserSettings {
         themeProfileId: themeProfileId ?? this.themeProfileId,
         fontScaleFactor: fontScaleFactor ?? this.fontScaleFactor,
         canonType: canonType ?? this.canonType,
+        bibleLanguage: bibleLanguage ?? this.bibleLanguage,
       );
 }
 

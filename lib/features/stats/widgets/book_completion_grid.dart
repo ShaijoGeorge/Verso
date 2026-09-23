@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/colors.dart';
+import 'package:verso/data/bible_book_names.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
 
 /// A compact mosaic grid showing books for the active canon.
 /// Each cell's color intensity represents the completion fraction.
@@ -51,7 +53,7 @@ class BookCompletionGrid extends ConsumerWidget {
   }
 }
 
-class _BookCell extends StatelessWidget {
+class _BookCell extends ConsumerWidget {
   const _BookCell({
     required this.book,
     required this.fraction,
@@ -86,11 +88,18 @@ class _BookCell extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final pct = (fraction * 100).toInt();
+    final settings = switch (ref.watch(currentSettingsProvider)) {
+      AsyncData(:final value) => value,
+      _ => null,
+    };
+    final bibleLanguage = settings?.bibleLanguage ?? 'en';
+    final canon = settings?.canon ?? CanonType.catholic;
+    final bookName = book.getLocalizedName(bibleLanguage, canon);
 
     return Tooltip(
-      message: '${book.name}: $pct% complete',
+      message: '$bookName: $pct% complete',
       preferBelow: false,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 600),
