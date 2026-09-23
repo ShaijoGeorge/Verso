@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
 import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/radii.dart';
@@ -12,6 +13,8 @@ import 'package:verso/core/providers/package_info_provider.dart';
 import 'package:verso/core/router.dart';
 import 'package:verso/core/widgets/verso_avatar.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
+import 'package:verso/features/auth/services/saved_accounts_service.dart';
+import 'package:verso/features/auth/widgets/account_switch_bottom_sheet.dart';
 import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
@@ -83,6 +86,16 @@ class ProfileDrawer extends ConsumerWidget {
                       HapticFeedback.lightImpact();
                       Navigator.pop(context);
                       GoRouter.of(context).push('/settings');
+                    },
+                  ),
+                  _DrawerMenuItem(
+                    icon: Icons.swap_horiz_rounded,
+                    label: 'Switch Account',
+                    subtitle: 'Fast account switcher',
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.pop(context);
+                      AccountSwitchBottomSheet.show(context);
                     },
                   ),
 
@@ -311,6 +324,13 @@ class ProfileDrawer extends ConsumerWidget {
 
                         // Close the drawer, then sign out
                         if (context.mounted) Navigator.pop(context);
+                        final currentUserId =
+                            Supabase.instance.client.auth.currentUser?.id;
+                        if (currentUserId != null && currentUserId.isNotEmpty) {
+                          await ref
+                              .read(savedAccountsServiceProvider)
+                              .removeAccount(currentUserId);
+                        }
                         await cacheService.clearAll();
                         ref.invalidate(globalProgressProvider);
                         ref.invalidate(userStatsProvider);

@@ -135,7 +135,7 @@ final class UserNameProvider extends $FunctionalProvider<String, String, String>
   }
 }
 
-String _$userNameHash() => r'368b25efe2692f4c23e975c656b647bc14eb75d3';
+String _$userNameHash() => r'c1b41df890507314d22dc5cfa5ae12ed4800b9aa';
 
 @ProviderFor(verseRepository)
 final verseRepositoryProvider = VerseRepositoryProvider._();

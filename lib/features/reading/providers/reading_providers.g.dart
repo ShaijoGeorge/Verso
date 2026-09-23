@@ -216,7 +216,7 @@ final class GlobalProgressProvider extends $FunctionalProvider<
   }
 }
 
-String _$globalProgressHash() => r'1031d2fa4474af5f36fa4403b316a75e02c53297';
+String _$globalProgressHash() => r'07e7badf72eb08d7e3a3721fedef1609b496de64';
 
 @ProviderFor(bookReadCount)
 final bookReadCountProvider = BookReadCountFamily._();

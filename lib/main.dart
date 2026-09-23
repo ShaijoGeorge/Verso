@@ -12,6 +12,7 @@ import 'package:verso/core/providers/package_info_provider.dart';
 import 'package:verso/core/router.dart';
 import 'package:verso/core/utils/firebase_crash_reporter.dart';
 import 'package:verso/core/utils/verso_error_observer.dart';
+import 'package:verso/features/auth/services/saved_accounts_service.dart';
 import 'package:verso/features/reading/services/reading_service.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
 import 'package:verso/features/settings/providers/theme_resolver.dart';
@@ -95,12 +96,18 @@ class _BibliaAppState extends ConsumerState<BibliaApp>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    // Listen for the "Password Recovery" event
+    // Listen for Auth Events
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       final event = data.event;
       if (event == AuthChangeEvent.passwordRecovery) {
         // If we detect a recovery link was clicked, force navigation to Update Password
         ref.read(routerProvider).go('/update-password');
+      }
+
+      // Keep saved accounts list synchronized with latest tokens and profiles
+      final session = data.session;
+      if (session != null) {
+        ref.read(savedAccountsServiceProvider).syncCurrentSession(session);
       }
     });
 
