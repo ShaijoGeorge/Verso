@@ -220,6 +220,145 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         CanonType.orthodox => 1515,
       };
 
+  String _bibleLanguageLabel(String langCode) => switch (langCode) {
+        'ml' => 'മലയാളം (Malayalam)',
+        _ => 'English',
+      };
+
+  Future<void> _pickBibleLanguage(UserSettings settings) async {
+    final currentLang = settings.bibleLanguage;
+
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        final scheme = Theme.of(ctx).colorScheme;
+        final bottomPadding = MediaQuery.paddingOf(ctx).bottom;
+
+        final languages = [
+          (
+            'en',
+            'English',
+            'Standard English book names (Genesis, Matthew...)',
+          ),
+          (
+            'ml',
+            'മലയാളം (Malayalam)',
+            'Kerala Malayalam book names (ഉല്പത്തി, മത്തായി...)',
+          ),
+        ];
+
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 4),
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                child: Text(
+                  'Select Bible Language',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSurface,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                child: Text(
+                  'Choose the language for Bible book names, categories, and chapter navigation.',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              for (final lang in languages)
+                ListTile(
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: currentLang == lang.$1
+                          ? scheme.primary.withValues(alpha: 0.15)
+                          : scheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      lang.$1.toUpperCase(),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: currentLang == lang.$1
+                            ? scheme.primary
+                            : scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  title: Text(
+                    lang.$2,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: currentLang == lang.$1
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                  subtitle: Text(
+                    lang.$3,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+                    ),
+                  ),
+                  trailing: currentLang == lang.$1
+                      ? Icon(
+                          Icons.check_circle_rounded,
+                          color: scheme.primary,
+                        )
+                      : null,
+                  onTap: () => Navigator.pop(ctx, lang.$1),
+                ),
+              Gap(24 + bottomPadding),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (picked != null && picked != currentLang && mounted) {
+      await ref.read(currentSettingsProvider.notifier).setBibleLanguage(picked);
+      if (mounted) {
+        VersoSnackbar.success(
+          context,
+          message: 'Bible language set to ${_bibleLanguageLabel(picked)}',
+        );
+      }
+    }
+  }
+
   Future<void> _pickCanon(UserSettings settings) async {
     final currentCanon = CanonType.values.firstWhere(
       (e) => e.name == settings.canonType,
@@ -932,6 +1071,45 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ],
                         ),
                         onTap: () => _pickCanon(settings),
+                      ),
+                      _SettingsActionTile(
+                        title: 'Bible Language',
+                        subtitle: _bibleLanguageLabel(settings.bibleLanguage),
+                        icon: Icons.translate_rounded,
+                        iconColor: const Color(0xFF0EA5E9),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: scheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                settings.bibleLanguage == 'ml'
+                                    ? 'മലയാളം'
+                                    : 'English',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: scheme.primary,
+                                ),
+                              ),
+                            ),
+                            const Gap(6),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              color: scheme.onSurfaceVariant
+                                  .withValues(alpha: 0.6),
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                        onTap: () => _pickBibleLanguage(settings),
                       ),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),

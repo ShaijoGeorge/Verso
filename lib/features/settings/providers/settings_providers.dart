@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/data/bible_data.dart';
@@ -27,6 +28,14 @@ class CurrentSettings extends _$CurrentSettings {
         cloudCanon != settings.canonType) {
       await repo.setCanonType(cloudCanon);
       settings = settings.copyWith(canonType: cloudCanon);
+    }
+
+    final cloudBibleLang = user?.userMetadata?['bible_language'] as String?;
+    if (cloudBibleLang != null &&
+        cloudBibleLang.isNotEmpty &&
+        cloudBibleLang != settings.bibleLanguage) {
+      await repo.setBibleLanguage(cloudBibleLang);
+      settings = settings.copyWith(bibleLanguage: cloudBibleLang);
     }
 
     return settings;
@@ -134,7 +143,27 @@ class CurrentSettings extends _$CurrentSettings {
     await setCanonType(canonString);
     await ref.read(settingsRepositoryProvider).syncCanonToCloud(canonString);
   }
+
+  Future<void> setBibleLanguage(String langCode) async {
+    final current = _current;
+    if (current == null) return;
+    state = AsyncData(current.copyWith(bibleLanguage: langCode));
+    await ref.read(settingsRepositoryProvider).setBibleLanguage(langCode);
+    await ref
+        .read(settingsRepositoryProvider)
+        .syncBibleLanguageToCloud(langCode);
+    ref.invalidateSelf(); // Refresh UI
+  }
 }
 
 /// Alias for compatibility
 final CurrentSettingsProvider userSettingsProvider = currentSettingsProvider;
+
+/// Provider that exposes the active Bible language ('en', 'ml')
+final Provider<String> activeBibleLanguageProvider = Provider<String>((ref) {
+  final settingsAsync = ref.watch(currentSettingsProvider);
+  return switch (settingsAsync) {
+    AsyncData(:final value) => value.bibleLanguage,
+    _ => 'en',
+  };
+});

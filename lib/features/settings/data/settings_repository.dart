@@ -24,6 +24,7 @@ class SettingsRepository {
   static const _kThemeProfileKey = 'theme_profile_id';
   static const _kFontScaleFactorKey = 'in_app_font_scale_factor';
   static const _kCanonTypeKey = 'canon_type';
+  static const _kBibleLanguageKey = 'bible_language';
   // Legacy key - migrated on first read
   static const _kLegacyThemeKey = 'is_dark_mode';
 
@@ -144,6 +145,8 @@ class SettingsRepository {
           _readScoped(prefs, _kFontScaleFactorKey, uid, prefs.getDouble) ?? 1.0,
       canonType: _readScoped(prefs, _kCanonTypeKey, uid, prefs.getString) ??
           'catholic',
+      bibleLanguage:
+          _readScoped(prefs, _kBibleLanguageKey, uid, prefs.getString) ?? 'en',
     );
   }
 
@@ -364,6 +367,17 @@ class SettingsRepository {
   Future<void> updateCanonSetting(String canonString) =>
       setCanonType(canonString);
 
+  Future<void> setBibleLanguage(String langCode, {String? userId}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final uid = _resolveUserId(userId);
+    await _writeScoped(
+      prefs,
+      _kBibleLanguageKey,
+      uid,
+      (key) => prefs.setString(key, langCode),
+    );
+  }
+
   /// Syncs the user's selected Bible canon to Supabase cloud.
   /// Updates user_metadata (default for Verso) and attempts updating
   /// 'profiles' table if configured in Supabase.
@@ -384,6 +398,25 @@ class SettingsRepository {
       await client
           .from('profiles')
           .update({'canon_type': canonType}).eq('id', user.id);
+    } catch (_) {}
+  }
+
+  /// Syncs the user's selected Bible language to Supabase cloud.
+  Future<void> syncBibleLanguageToCloud(String langCode) async {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      await client.auth.updateUser(
+        UserAttributes(data: {'bible_language': langCode}),
+      );
+    } catch (_) {}
+
+    try {
+      await client
+          .from('profiles')
+          .update({'bible_language': langCode}).eq('id', user.id);
     } catch (_) {}
   }
 
