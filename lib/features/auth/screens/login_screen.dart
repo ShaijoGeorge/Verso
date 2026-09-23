@@ -16,7 +16,10 @@ import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/core/utils/app_error_handler.dart';
+import 'package:verso/features/auth/models/saved_account.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
+import 'package:verso/features/auth/services/account_switch_service.dart';
+import 'package:verso/features/auth/services/saved_accounts_service.dart';
 import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 import 'package:verso/features/reading/services/reading_service.dart';
@@ -187,6 +190,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         // 4. Trigger cloud sync to pull latest reading progress for this account
         unawaited(ref.read(readingServiceProvider).syncOnResume());
 
+        // 5. Sync session to saved accounts list
+        final currentSession = Supabase.instance.client.auth.currentSession;
+        if (currentSession != null) {
+          await ref
+              .read(savedAccountsServiceProvider)
+              .syncCurrentSession(currentSession);
+          await ref.read(savedAccountsListProvider.notifier).refresh();
+        }
+
         // Router handles navigation via auth state change
       }
     } catch (e) {
@@ -204,10 +216,52 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     _animController.forward();
   }
 
+  Future<void> _quickSignIn(SavedAccount account) async {
+    setState(() => _isLoading = true);
+    try {
+      final switchService = ref.read(accountSwitchServiceProvider);
+      final result = await switchService.switchToAccount(account);
+      if (!mounted) return;
+
+      switch (result) {
+        case SwitchSuccess():
+          VersoSnackbar.success(
+            context,
+            message: 'Signed in as ${account.displayName}',
+          );
+        case SwitchOffline():
+          VersoSnackbar.show(
+            context,
+            message: 'Connect to the internet to sign in',
+          );
+        case SwitchSessionExpired():
+          VersoSnackbar.show(
+            context,
+            message:
+                'Session expired for ${account.displayName}. Please enter your password.',
+          );
+          setState(() {
+            _emailController.text = account.email;
+          });
+        case SwitchFlushFailed():
+          VersoSnackbar.error(
+            context,
+            message: 'Could not sync pending changes',
+          );
+        case SwitchError(:final message):
+          VersoSnackbar.error(context, message: 'Could not sign in: $message');
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = Theme.of(context).colorScheme;
+    final savedAccountsAsync = ref.watch(savedAccountsListProvider);
+    final savedAccounts = savedAccountsAsync.value ?? [];
 
     return Scaffold(
       body: Container(
@@ -297,6 +351,66 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 ),
                               ),
                               const Gap(Spacing.lg),
+
+                              // Quick Sign In with saved accounts
+                              if (!_isSignUp && savedAccounts.isNotEmpty) ...[
+                                Text(
+                                  'Saved Accounts',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: colorScheme.onSurfaceVariant,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                                const Gap(Spacing.xs),
+                                ...savedAccounts.map((account) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: _QuickAccountTile(
+                                      account: account,
+                                      isLoading: _isLoading,
+                                      onTap: () => _quickSignIn(account),
+                                      onRemove: () => ref
+                                          .read(
+                                            savedAccountsListProvider.notifier,
+                                          )
+                                          .removeAccount(account.userId),
+                                    ),
+                                  );
+                                }),
+                                const Gap(Spacing.xs),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Divider(
+                                        color: colorScheme.outline
+                                            .withValues(alpha: 0.2),
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                      ),
+                                      child: Text(
+                                        'or sign in with password',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 12,
+                                          color: colorScheme.onSurfaceVariant
+                                              .withValues(alpha: 0.7),
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Divider(
+                                        color: colorScheme.outline
+                                            .withValues(alpha: 0.2),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Gap(Spacing.md),
+                              ],
 
                               // Name Field (Sign Up only)
                               AnimatedSize(
@@ -479,6 +593,111 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   ),
                 ),
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickAccountTile extends StatelessWidget {
+  const _QuickAccountTile({
+    required this.account,
+    required this.isLoading,
+    required this.onTap,
+    required this.onRemove,
+  });
+
+  final SavedAccount account;
+  final bool isLoading;
+  final VoidCallback onTap;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final initial = account.displayName.isNotEmpty
+        ? account.displayName[0].toUpperCase()
+        : '?';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.25),
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          onTap: isLoading ? null : onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: scheme.primary.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    initial,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: scheme.primary,
+                    ),
+                  ),
+                ),
+                const Gap(10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        account.displayName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.onSurface,
+                        ),
+                      ),
+                      Text(
+                        account.email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.close_rounded,
+                    size: 16,
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  ),
+                  tooltip: 'Forget account',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: onRemove,
+                ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 13,
+                  color: scheme.primary,
+                ),
+              ],
             ),
           ),
         ),
