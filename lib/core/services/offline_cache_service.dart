@@ -8,16 +8,29 @@ class OfflineCacheService {
 
   // --- Read Cache ---
 
-  Future<List<ReadingProgress>> getCachedProgress() async {
-    final rows = await _db.select(_db.cachedProgress).get();
+  Future<List<ReadingProgress>> getCachedProgress([String? userId]) async {
+    final query = _db.select(_db.cachedProgress);
+    if (userId != null && userId.isNotEmpty) {
+      query.where((t) => t.userId.equals(userId));
+    }
+    final rows = await query.get();
     return rows.map(_rowToProgress).toList();
   }
 
-  Future<void> cacheProgress(List<ReadingProgress> progress) async {
-    // Replace the entire cache inside a single transaction so the
+  Future<void> cacheProgress(
+    List<ReadingProgress> progress, {
+    String? userId,
+  }) async {
+    // Replace the user's cache inside a single transaction so the
     // table is never in a half-written state.
     await _db.transaction(() async {
-      await _db.delete(_db.cachedProgress).go();
+      if (userId != null && userId.isNotEmpty) {
+        await (_db.delete(_db.cachedProgress)
+              ..where((t) => t.userId.equals(userId)))
+            .go();
+      } else {
+        await _db.delete(_db.cachedProgress).go();
+      }
       await _db.batch((batch) {
         batch.insertAll(
           _db.cachedProgress,
@@ -120,6 +133,14 @@ class OfflineCacheService {
     });
   }
 
+  /// Clear cached progress for a specific user.
+  Future<void> clearUserCache(String userId) async {
+    if (userId.isEmpty) return;
+    await (_db.delete(_db.cachedProgress)
+          ..where((t) => t.userId.equals(userId)))
+        .go();
+  }
+
   /// Apply a toggle operation to the cached progress optimistically.
   Future<void> applyCachedToggle(
     String userId,
@@ -139,10 +160,11 @@ class OfflineCacheService {
             ),
           );
     } else {
-      // Remove the chapter entry (marking as unread)
+      // Remove the chapter entry for this specific user (marking as unread)
       await (_db.delete(_db.cachedProgress)
             ..where(
               (t) =>
+                  t.userId.equals(userId) &
                   t.bookId.equals(bookId) &
                   t.chapterNumber.equals(chapterNumber),
             ))
