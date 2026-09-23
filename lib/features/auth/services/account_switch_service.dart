@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/providers/connectivity_provider.dart';
@@ -99,6 +101,9 @@ class AccountSwitchService {
       // 6. Refresh the saved accounts list state
       await _ref.read(savedAccountsListProvider.notifier).refresh();
 
+      // 7. Sync reading data for new account
+      unawaited(_ref.read(readingServiceProvider).syncOnResume());
+
       return SwitchSuccess(targetAccount);
     } catch (e) {
       return SwitchError(e.toString());
@@ -131,11 +136,16 @@ class AccountSwitchService {
             .syncCurrentSession(currentSession);
       }
 
-      // 3. Sign out locally to navigate to login screen
-      await _ref.read(authRepositoryProvider).signOut();
+      // 3. Sign out locally to navigate to login screen without revoking tokens on the server
+      await _ref
+          .read(authRepositoryProvider)
+          .signOut(scope: SignOutScope.local);
 
       // 4. Invalidate providers
       _invalidateUserProviders();
+
+      // 5. Refresh the saved accounts list state
+      await _ref.read(savedAccountsListProvider.notifier).refresh();
 
       return SwitchSuccess();
     } catch (e) {
