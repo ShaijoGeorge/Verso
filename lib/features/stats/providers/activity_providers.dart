@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/providers/connectivity_provider.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/reading_progress.dart';
+import 'package:verso/features/auth/providers/auth_providers.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 
 part 'activity_providers.g.dart';
@@ -112,9 +113,12 @@ Future<List<ReadingProgress>> _fetchOfflineFirstHistory(Ref ref) async {
   final repo = ref.watch(bibleRepositoryProvider);
   final isConnected = ref.watch(connectivityProvider);
   final cacheService = ref.watch(offlineCacheServiceProvider);
+  ref.watch(authUserProvider);
+  final userId = Supabase.instance.client.auth.currentUser?.id ??
+      ref.watch(authUserProvider).value?.id ??
+      '';
 
-  // We need the user ID to apply pending writes locally
-  final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+  if (userId.isEmpty) return [];
 
   var history = <ReadingProgress>[];
 
@@ -123,20 +127,20 @@ Future<List<ReadingProgress>> _fetchOfflineFirstHistory(Ref ref) async {
       // 1. Try fetching fresh data from the cloud
       history = await repo.getAllProgressSnapshot();
       // 2. Silently cache it for the next time we go offline
-      cacheService.cacheProgress(history);
+      await cacheService.cacheProgress(history, userId: userId);
     } catch (_) {
       // If the network call fails (e.g., spotty connection), fallback to cache
-      history = await cacheService.getCachedProgress();
+      history = await cacheService.getCachedProgress(userId);
     }
   } else {
     // 3. We are definitively offline, use the cache
-    history = await cacheService.getCachedProgress();
+    history = await cacheService.getCachedProgress(userId);
   }
 
   // 4. Merge any pending actions the user JUST took
   // so the History immediately reflects their progress even before it syncs.
   final queue = await cacheService.getWriteQueue();
-  if (queue.isNotEmpty && userId.isNotEmpty) {
+  if (queue.isNotEmpty) {
     history = cacheService.mergeWithPendingWrites(history, queue, userId);
   }
 
