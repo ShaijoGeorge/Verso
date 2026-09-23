@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/providers/connectivity_provider.dart';
-import 'package:verso/features/auth/widgets/profile_drawer.dart';
+import 'package:verso/core/widgets/verso_avatar.dart';
+import 'package:verso/data/local/entities/user_settings.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 import 'package:verso/features/stats/providers/activity_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
@@ -22,24 +24,25 @@ class MainWrapper extends ConsumerStatefulWidget {
 
 class _MainWrapperState extends ConsumerState<MainWrapper> {
   void _goBranch(int index) {
-    // 0 = Home, 1 = Bible, 2 = Stats, 3 = Journal
-
-    // Home Page Animation Trigger
-    if (index == 0 && widget.navigationShell.currentIndex != 0) {
-      ref.invalidate(userStatsProvider);
-    }
+    // 0 = Bible, 1 = Stats, 2 = Home, 3 = History, 4 = Profile
 
     // Bible Pages Animation Trigger
-    if (index == 1 && widget.navigationShell.currentIndex != 1) {
+    if (index == 0 && widget.navigationShell.currentIndex != 0) {
       ref.read(biblePageTriggerProvider.notifier).increment();
     }
 
-    // Stats Tab Trigger — refresh detailed stats
-    if (index == 2 && widget.navigationShell.currentIndex != 2) {
+    // Stats Tab Trigger - refresh detailed stats and reset to Overview tab
+    if (index == 1 && widget.navigationShell.currentIndex != 1) {
       ref.invalidate(detailedStatsProvider);
+      ref.read(statsTabResetTriggerProvider.notifier).trigger();
     }
 
-    // Journal Trigger
+    // Home Page Animation Trigger
+    if (index == 2 && widget.navigationShell.currentIndex != 2) {
+      ref.invalidate(userStatsProvider);
+    }
+
+    // History Trigger
     if (index == 3 && widget.navigationShell.currentIndex != 3) {
       ref.invalidate(activityLogProvider);
     }
@@ -56,70 +59,52 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
   Widget build(BuildContext context) {
     final isOnline = ref.watch(connectivityProvider);
 
-    String title;
-    switch (widget.navigationShell.currentIndex) {
-      case 0:
-        title = 'Verso';
-      case 1:
-        title = 'The Bible';
-      case 2:
-        title = 'Stats';
-      case 3:
-        title = 'Reading Journal';
-      default:
-        title = 'Verso';
-    }
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        centerTitle: true,
-        actions: const [],
-      ),
-      drawer: const ProfileDrawer(),
-      body: Column(
-        children: [
-          // Offline indicator banner
-          AnimatedSize(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            child: isOnline
-                ? const SizedBox.shrink()
-                : Material(
-                    color: Theme.of(context).colorScheme.secondaryContainer,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.cloud_off,
-                            size: 14,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSecondaryContainer,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Reading in offline mode. Changes will sync when connected.',
-                            style: TextStyle(
-                              fontSize: 12,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Offline indicator banner
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              child: isOnline
+                  ? const SizedBox.shrink()
+                  : Material(
+                      color: Theme.of(context).colorScheme.secondaryContainer,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.cloud_off,
+                              size: 14,
                               color: Theme.of(context)
                                   .colorScheme
                                   .onSecondaryContainer,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Text(
+                              'Reading in offline mode. Changes will sync when connected.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSecondaryContainer,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-          ),
-          // Main content
-          Expanded(child: widget.navigationShell),
-        ],
+            ),
+            // Main content
+            Expanded(child: widget.navigationShell),
+          ],
+        ),
       ),
       extendBody: true,
       bottomNavigationBar: _VersoBottomNav(
@@ -142,11 +127,6 @@ class _VersoBottomNav extends StatelessWidget {
 
   static const _items = [
     _NavItem(
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home_rounded,
-      label: 'Home',
-    ),
-    _NavItem(
       icon: Icons.menu_book_outlined,
       activeIcon: Icons.menu_book_rounded,
       label: 'Bible',
@@ -157,9 +137,21 @@ class _VersoBottomNav extends StatelessWidget {
       label: 'Stats',
     ),
     _NavItem(
-      icon: Icons.history_edu_outlined,
-      activeIcon: Icons.history_edu_rounded,
-      label: 'Journal',
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home_rounded,
+      label: 'Home',
+      isMiddle: true,
+    ),
+    _NavItem(
+      icon: Icons.history_rounded,
+      activeIcon: Icons.history_rounded,
+      label: 'History',
+    ),
+    _NavItem(
+      icon: Icons.person_outline_rounded,
+      activeIcon: Icons.person_rounded,
+      label: 'Profile',
+      isAvatar: true,
     ),
   ];
 
@@ -167,6 +159,7 @@ class _VersoBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
+    final isAmoled = context.palette.style == AppearanceStyle.amoled;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     // Map selected index -> alignment x in the range [-1, 1] so the pill sits
@@ -186,7 +179,11 @@ class _VersoBottomNav extends StatelessWidget {
             isLight ? scheme.surface : scheme.surface.withValues(alpha: 0.95),
         borderRadius: AppRadii.borderRadiusXL,
         border: Border.all(
-          color: scheme.outline.withValues(alpha: isLight ? 0.1 : 0.08),
+          color: isLight
+              ? scheme.outline.withValues(alpha: 0.1)
+              : (isAmoled
+                  ? scheme.outline
+                  : scheme.outline.withValues(alpha: 0.2)),
         ),
         boxShadow: [
           BoxShadow(
@@ -258,10 +255,14 @@ class _NavItem {
     required this.icon,
     required this.activeIcon,
     required this.label,
+    this.isAvatar = false,
+    this.isMiddle = false,
   });
   final IconData icon;
   final IconData activeIcon;
   final String label;
+  final bool isAvatar;
+  final bool isMiddle;
 }
 
 class _NavItemWidget extends StatelessWidget {
@@ -277,6 +278,48 @@ class _NavItemWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+
+    if (item.isMiddle) {
+      return GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+                width: isSelected ? 44 : 40,
+                height: isSelected ? 44 : 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isSelected
+                      ? scheme.primary
+                      : scheme.primary.withValues(alpha: 0.12),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: scheme.primary.withValues(alpha: 0.35),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Icon(
+                  isSelected ? item.activeIcon : item.icon,
+                  size: 22,
+                  color: isSelected ? scheme.onPrimary : scheme.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return GestureDetector(
       onTap: onTap,
@@ -297,12 +340,24 @@ class _NavItemWidget extends StatelessWidget {
                   child: FadeTransition(opacity: animation, child: child),
                 );
               },
-              child: Icon(
-                isSelected ? item.activeIcon : item.icon,
-                key: ValueKey(isSelected),
-                size: isSelected ? 26 : 24,
-                color: isSelected ? scheme.primary : scheme.onSurfaceVariant,
-              ),
+              child: item.isAvatar
+                  ? Opacity(
+                      opacity: isSelected ? 1.0 : 0.75,
+                      child: VersoAvatar(
+                        size: isSelected ? 26 : 24,
+                        borderWidth: isSelected ? 2.0 : 1.0,
+                        borderColor: isSelected
+                            ? scheme.primary
+                            : scheme.onSurfaceVariant.withValues(alpha: 0.3),
+                      ),
+                    )
+                  : Icon(
+                      isSelected ? item.activeIcon : item.icon,
+                      key: ValueKey(isSelected),
+                      size: isSelected ? 26 : 24,
+                      color:
+                          isSelected ? scheme.primary : scheme.onSurfaceVariant,
+                    ),
             ),
             const SizedBox(height: 4),
             // Label

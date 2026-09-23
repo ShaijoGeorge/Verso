@@ -9,12 +9,14 @@ import 'package:verso/core/transitions/app_page_transitions.dart';
 import 'package:verso/core/widgets/main_wrapper.dart';
 import 'package:verso/core/widgets/not_found_screen.dart';
 import 'package:verso/data/bible_data.dart';
+import 'package:verso/features/about/screens/our_mission_screen.dart';
 import 'package:verso/features/auth/screens/forgot_password_screen.dart';
 import 'package:verso/features/auth/screens/login_screen.dart';
 import 'package:verso/features/auth/screens/profile_screen.dart';
 import 'package:verso/features/auth/screens/update_password_screen.dart';
 import 'package:verso/features/home/screens/home_screen.dart';
 import 'package:verso/features/intro/screens/onboarding_screen.dart';
+import 'package:verso/features/intro/screens/profile_setup_screen.dart';
 import 'package:verso/features/intro/screens/splash_screen.dart';
 import 'package:verso/features/reading/screens/bible_screen.dart';
 import 'package:verso/features/reading/screens/chapters_screen.dart';
@@ -68,15 +70,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isResetCallback = cleanPath == '/reset-callback';
 
       final isOnboardingRoute = cleanPath == '/onboarding';
+      final isProfileSetupRoute = cleanPath == '/profile-setup';
 
-      // Allow Splash Screen to stay
+      // Allow Splash Screen to stay and do its own routing
       if (isSplash) {
         return null;
       }
 
       // IF NOT LOGGED IN
       if (!isLoggedIn) {
-        // Allow access to /onboarding alongside the auth pages
+        // Allow access to /onboarding alongside the auth pages. Profile setup is now POST-login.
         if (!isLoginRoute &&
             !isForgotRoute &&
             !isUpdatePasswordRoute &&
@@ -88,11 +91,26 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // IF LOGGED IN
       if (isLoggedIn) {
-        // If they somehow navigate to /onboarding while logged in, send them Home
+        // Check Supabase user_metadata for profile completeness.
+        // currentUser is already in memory - this is synchronous, zero cost.
+        final metadata =
+            Supabase.instance.client.auth.currentUser?.userMetadata;
+        final hasProfileData =
+            metadata?['gender'] != null && metadata?['birthday'] != null;
+
+        // Profile gate: if data is missing, intercept every route and send
+        // the user to profile setup - EXCEPT if they're already there.
+        if (!hasProfileData && !isProfileSetupRoute) {
+          return '/profile-setup';
+        }
+
+        // Once profile is complete, bounce away from all pre-auth screens.
+        // Also bounce off /profile-setup itself (so back-button can't return there).
+        // Note: isForgotRoute removed so logged-in users can reset their password from the profile screen.
         if (isLoginRoute ||
-            isForgotRoute ||
             isResetCallback ||
-            isOnboardingRoute) {
+            isOnboardingRoute ||
+            isProfileSetupRoute) {
           return '/home';
         }
       }
@@ -112,6 +130,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
           key: state.pageKey,
           child: const OnboardingScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/profile-setup',
+        pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
+          key: state.pageKey,
+          child: const ProfileSetupScreen(),
         ),
       ),
       GoRoute(
@@ -173,19 +198,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         },
         branches: [
-          // Branch 0: Home
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/home',
-                pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
-                  key: state.pageKey,
-                  child: const HomeScreen(),
-                ),
-              ),
-            ],
-          ),
-          // Branch 1: Bible (The new combined screen)
+          // Branch 0: Bible (The new combined screen)
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -197,7 +210,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Branch 2: Stats (Tabbed Stats Screen)
+          // Branch 1: Stats (Tabbed Stats Screen)
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -220,14 +233,38 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Branch 3: Journal (Activity Log)
+          // Branch 2: Home
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/journal',
+                path: '/home',
+                pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
+                  key: state.pageKey,
+                  child: const HomeScreen(),
+                ),
+              ),
+            ],
+          ),
+          // Branch 3: History (Activity Log)
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/history',
                 pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
                   key: state.pageKey,
                   child: const ActivityLogScreen(),
+                ),
+              ),
+            ],
+          ),
+          // Branch 4: Profile
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/profile',
+                pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
+                  key: state.pageKey,
+                  child: const ProfileScreen(),
                 ),
               ),
             ],
@@ -240,22 +277,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) {
           final bookId = int.parse(state.pathParameters['bookId']!);
-          final book = kBibleBooks.firstWhere((b) => b.id == bookId);
+          final book =
+              BibleData.findBookById(bookId) ?? BibleData.catholicCanon.first;
           return AppPageTransitions.slideFromRight(
             key: state.pageKey,
             child: ChaptersScreen(book: book),
           );
         },
-      ),
-
-      // Profile Route
-      GoRoute(
-        path: '/profile',
-        parentNavigatorKey: rootNavigatorKey,
-        pageBuilder: (context, state) => AppPageTransitions.slideFromBottom(
-          key: state.pageKey,
-          child: const ProfileScreen(),
-        ),
       ),
 
       // Settings Route
@@ -265,6 +293,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => AppPageTransitions.slideFromBottom(
           key: state.pageKey,
           child: const SettingsScreen(),
+        ),
+      ),
+
+      // Our Mission Route
+      GoRoute(
+        path: '/our-mission',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.slideFromBottom(
+          key: state.pageKey,
+          child: const OurMissionScreen(),
         ),
       ),
 

@@ -4,6 +4,9 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:verso/core/design/extensions.dart';
+import 'package:verso/core/design/tokens/shadows.dart';
+import 'package:verso/data/local/entities/user_settings.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 import 'package:verso/features/stats/widgets/time_period_navigator.dart';
 
@@ -227,7 +230,7 @@ class YearlyTab extends ConsumerWidget {
                         value: bestMonthLabel,
                         subtitle: '$bestMonthCount chapters',
                         icon: Icons.star_rounded,
-                        iconColor: Colors.amber.shade700,
+                        iconColor: context.appColors.books,
                       ),
                     ),
                     const Gap(12),
@@ -240,7 +243,7 @@ class YearlyTab extends ConsumerWidget {
                             : '0',
                         subtitle: 'chapters / month',
                         icon: Icons.show_chart_rounded,
-                        iconColor: scheme.primary,
+                        iconColor: context.appColors.chartPurple,
                       ),
                     ),
                   ],
@@ -327,13 +330,20 @@ class _YearCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final isAmoled = context.palette.style == AppearanceStyle.amoled;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        color: scheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: scheme.outline.withValues(alpha: 0.1)),
+        border: Border.all(
+          color: isAmoled
+              ? scheme.outline
+              : scheme.outline.withValues(alpha: isLight ? 0.5 : 0.15),
+        ),
+        boxShadow: AppShadows.sm,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

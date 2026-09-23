@@ -75,15 +75,15 @@ class ActivityGroup {
   final DateTime timestamp;
   final BibleBook book;
   final List<int> chapters;
-  final bool isBulkAction; // Was this likely a "Mark All Read"?
-  final bool isFinish;
+  bool isBulkAction; // Was this likely a "Mark All Read"?
+  bool isFinish;
 
   String get timeOfDay {
     final hour = timestamp.hour;
     if (hour < 5) return 'Late Night 🌙';
     if (hour < 12) return 'Morning 🌅';
     if (hour < 17) return 'Afternoon ☀️';
-    return 'Evening 🛋️';
+    return 'Evening 🌇';
   }
 
   String get description {
@@ -134,7 +134,7 @@ Future<List<ReadingProgress>> _fetchOfflineFirstHistory(Ref ref) async {
   }
 
   // 4. Merge any pending actions the user JUST took
-  // so the Journal immediately reflects their progress even before it syncs.
+  // so the History immediately reflects their progress even before it syncs.
   final queue = await cacheService.getWriteQueue();
   if (queue.isNotEmpty && userId.isNotEmpty) {
     history = cacheService.mergeWithPendingWrites(history, queue, userId);
@@ -154,6 +154,8 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
   final rawHistory = await _fetchOfflineFirstHistory(ref);
   final allHistory = List<ReadingProgress>.from(rawHistory);
 
+  final activeBooks = ref.watch(activeCanonBooksProvider);
+
   // Detect Completed Books
   final bookCompletionTimes = <int, DateTime>{};
 
@@ -165,10 +167,7 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
     final progressList = entry.value;
 
     // Find the book definition to get total chapters
-    final book = kBibleBooks.firstWhere(
-      (b) => b.id == bookId,
-      orElse: () => kBibleBooks.first,
-    );
+    final book = BibleData.findBookById(bookId) ?? activeBooks.first;
 
     // Get unique read chapters
     final readChapterSet = progressList.map((p) => p.chapterNumber).toSet();
@@ -199,19 +198,25 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
   for (final entry in allHistory) {
     if (entry.readAt == null) continue;
 
+    final localReadAt = entry.readAt!.toLocal();
+
     // Apply Filters
     if (filter.bookId != null && entry.bookId != filter.bookId) {
       continue;
     }
-    if (filter.startDate != null && entry.readAt!.isBefore(filter.startDate!)) {
+    if (filter.startDate != null && localReadAt.isBefore(filter.startDate!)) {
       continue;
     }
     if (filter.endDate != null &&
-        entry.readAt!.isAfter(filter.endDate!.add(const Duration(days: 1)))) {
+        localReadAt.isAfter(filter.endDate!.add(const Duration(days: 1)))) {
       continue;
     }
 
-    final book = kBibleBooks.firstWhere((b) => b.id == entry.bookId);
+    final book = BibleData.findBookById(entry.bookId);
+    if (book == null) {
+      // Skip this orphan entry gracefully to prevent crashing
+      continue;
+    }
 
     // Check finishing
     var isFinisher = false;
@@ -226,16 +231,22 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
     if (groups.isNotEmpty) {
       final lastGroup = groups.last;
       final timeDiff =
-          lastGroup.timestamp.difference(entry.readAt!).inMinutes.abs();
-      if (lastGroup.book.id == book.id && timeDiff < 2) {
+          lastGroup.timestamp.difference(localReadAt).inMinutes.abs();
+      if (lastGroup.book.id == book.id &&
+          lastGroup.timestamp.day == localReadAt.day &&
+          timeDiff < 2) {
         lastGroup.chapters.add(entry.chapterNumber);
+        if (isFinisher) lastGroup.isFinish = true;
+        if (lastGroup.chapters.length > 5) {
+          lastGroup.isBulkAction = true;
+        }
         continue;
       }
     }
 
     groups.add(
       ActivityGroup(
-        timestamp: entry.readAt!,
+        timestamp: localReadAt,
         book: book,
         chapters: [entry.chapterNumber],
         isFinish: isFinisher,
@@ -260,7 +271,8 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
 Future<List<BibleBook>> booksWithActivity(Ref ref) async {
   // Use our new Offline-First helper so the dropdown works offline!
   final allHistory = await _fetchOfflineFirstHistory(ref);
+  final activeBooks = ref.watch(activeCanonBooksProvider);
   final bookIds = allHistory.map((p) => p.bookId).toSet();
 
-  return kBibleBooks.where((b) => bookIds.contains(b.id)).toList();
+  return activeBooks.where((b) => bookIds.contains(b.id)).toList();
 }

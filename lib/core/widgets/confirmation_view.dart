@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 
@@ -52,9 +53,7 @@ class _ConfirmationViewState extends State<ConfirmationView>
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accentColor =
-        isDark ? const Color(0xFF4CAF7D) : const Color(0xFF2E7D4F);
+    final accentColor = context.appColors.success;
 
     return Center(
       child: SingleChildScrollView(

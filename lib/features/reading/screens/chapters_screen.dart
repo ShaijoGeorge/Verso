@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:verso/core/design/components/verso_circular_progress.dart';
+import 'package:verso/core/design/components/verso_confetti.dart';
 import 'package:verso/core/design/components/verso_progress_bar.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
+import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/shadows.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
@@ -110,12 +112,16 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
                   chapterNum: chapterNum,
                   isRead: isRead,
                   readAt: readAt,
-                  onTap: (newStatus) {
-                    ref.read(readingServiceProvider).toggleChapter(
-                          widget.book.id,
-                          chapterNum,
-                          newStatus,
-                        );
+                  onTap: (newStatus) async {
+                    final newStreak =
+                        await ref.read(readingServiceProvider).toggleChapter(
+                              widget.book.id,
+                              chapterNum,
+                              newStatus,
+                            );
+                    if (newStreak != null && context.mounted) {
+                      VersoConfetti.show(context, streak: newStreak);
+                    }
                   },
                 );
               },
@@ -152,11 +158,15 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
     if (confirm ?? false) {
       setState(() => _isMarkingRead = true);
       try {
-        await ref
+        final newStreak = await ref
             .read(readingServiceProvider)
             .markBookAsRead(widget.book.id, widget.book.chapters);
         if (mounted) {
-          VersoSnackbar.success(context, message: 'Marked as read!');
+          if (newStreak != null) {
+            VersoConfetti.show(context, streak: newStreak);
+          } else {
+            VersoSnackbar.success(context, message: 'Marked as read!');
+          }
         }
       } catch (e) {
         if (mounted) {
@@ -202,13 +212,14 @@ class _HeroHeader extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            scheme.primary.withValues(alpha: isLight ? 0.08 : 0.15),
-            scheme.primary.withValues(alpha: isLight ? 0.03 : 0.05),
+            context.palette.primary.withValues(alpha: isLight ? 0.08 : 0.15),
+            context.palette.primary.withValues(alpha: isLight ? 0.03 : 0.05),
           ],
         ),
         borderRadius: AppRadii.borderRadiusXL,
         border: Border.all(
-          color: scheme.primary.withValues(alpha: isLight ? 0.15 : 0.1),
+          color:
+              context.palette.primary.withValues(alpha: isLight ? 0.15 : 0.1),
         ),
       ),
       child: Row(
@@ -223,14 +234,14 @@ class _HeroHeader extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color:
-                        scheme.primary.withValues(alpha: isLight ? 0.12 : 0.2),
+                    color: context.palette.primary
+                        .withValues(alpha: isLight ? 0.12 : 0.2),
                     borderRadius: AppRadii.borderRadiusFull,
                   ),
                   child: Text(
                     book.category.displayName,
                     style: textTheme.labelSmall?.copyWith(
-                      color: scheme.primary,
+                      color: context.palette.primary,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.3,
                     ),
@@ -260,6 +271,7 @@ class _HeroHeader extends StatelessWidget {
                 VersoProgressBar(
                   value: progress,
                   height: 6,
+                  color: context.palette.primary,
                   label: '$readCount / ${book.chapters}',
                 ),
 
@@ -283,11 +295,12 @@ class _HeroHeader extends StatelessWidget {
                 progress: val,
                 size: 80,
                 strokeWidth: 7,
+                color: context.palette.primary,
                 child: Text(
                   '${val.toInt()}%',
                   style: textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: scheme.primary,
+                    color: context.palette.primary,
                   ),
                 ),
               );
@@ -305,12 +318,14 @@ class _CompletedBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
+    final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
     // Vibrant green-teal gradient for the achievement feel
-    final gradientColors = isLight
-        ? [const Color(0xFF2E7D4F), const Color(0xFF0D9488)]
-        : [const Color(0xFF4CAF7D), const Color(0xFF5EEAD4)];
+    final gradientColors = [
+      context.appColors.success,
+      context.appColors.chapters,
+    ];
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -333,13 +348,13 @@ class _CompletedBadge extends StatelessWidget {
           Icon(
             Icons.auto_awesome_rounded,
             size: 14,
-            color: isLight ? Colors.white : Colors.black87,
+            color: isLight ? scheme.onPrimary : scheme.onSurface,
           ),
           const Gap(Spacing.xs),
           Text(
             'Completed',
             style: textTheme.labelSmall?.copyWith(
-              color: isLight ? Colors.white : Colors.black87,
+              color: isLight ? scheme.onPrimary : scheme.onSurface,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.5,
             ),
@@ -438,21 +453,17 @@ class _ChapterTileState extends State<_ChapterTile>
     _cachedIsRead = _isRead;
     _cachedBrightness = isLight ? Brightness.light : Brightness.dark;
     _cachedDecoration = BoxDecoration(
-      color: _isRead
-          ? scheme.primary
-          : (isLight
-              ? scheme.surface
-              : scheme.surfaceContainerHighest.withValues(alpha: 0.5)),
+      color: _isRead ? context.palette.primary : scheme.surface,
       borderRadius: AppRadii.borderRadiusMD,
       border: _isRead
           ? null
           : Border.all(
-              color: scheme.outline.withValues(alpha: isLight ? 0.15 : 0.1),
+              color: scheme.outline.withValues(alpha: isLight ? 0.5 : 0.2),
             ),
       boxShadow: _isRead
           ? [
               BoxShadow(
-                color: scheme.primary.withValues(alpha: 0.3),
+                color: context.palette.primary.withValues(alpha: 0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
               ),
@@ -483,6 +494,9 @@ class _ChapterTileState extends State<_ChapterTile>
           decoration: BoxDecoration(
             color: scheme.surface,
             borderRadius: AppRadii.borderRadiusXL,
+            border: Border.all(
+              color: scheme.outline.withValues(alpha: isLight ? 0.2 : 0.5),
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: isLight ? 0.1 : 0.3),
@@ -517,12 +531,12 @@ class _ChapterTileState extends State<_ChapterTile>
                     colors: isRead
                         ? (isLight
                             ? [
-                                scheme.primary,
-                                scheme.primary.withValues(alpha: 0.8),
+                                context.palette.primary,
+                                context.palette.primary.withValues(alpha: 0.8),
                               ]
                             : [
-                                scheme.primaryContainer,
-                                scheme.primaryContainer.withValues(alpha: 0.7),
+                                context.palette.primary.withValues(alpha: 0.2),
+                                context.palette.primary.withValues(alpha: 0.1),
                               ])
                         : (isLight
                             ? [
@@ -547,8 +561,8 @@ class _ChapterTileState extends State<_ChapterTile>
                       style: textTheme.displayLarge?.copyWith(
                         color: isRead
                             ? (isLight
-                                ? Colors.white
-                                : scheme.onPrimaryContainer)
+                                ? scheme.onPrimary
+                                : context.palette.primary)
                             : scheme.onSurfaceVariant,
                         fontWeight: FontWeight.bold,
                         fontSize: 48,
@@ -561,8 +575,8 @@ class _ChapterTileState extends State<_ChapterTile>
                       style: textTheme.titleSmall?.copyWith(
                         color: isRead
                             ? (isLight
-                                ? Colors.white.withValues(alpha: 0.85)
-                                : scheme.onPrimaryContainer
+                                ? scheme.onPrimary.withValues(alpha: 0.85)
+                                : context.palette.primary
                                     .withValues(alpha: 0.8))
                             : scheme.onSurfaceVariant,
                       ),
@@ -578,8 +592,9 @@ class _ChapterTileState extends State<_ChapterTile>
                       decoration: BoxDecoration(
                         color: isRead
                             ? (isLight
-                                ? Colors.white.withValues(alpha: 0.2)
-                                : scheme.primary.withValues(alpha: 0.3))
+                                ? scheme.onPrimary.withValues(alpha: 0.2)
+                                : context.palette.primary
+                                    .withValues(alpha: 0.3))
                             : scheme.outline.withValues(alpha: 0.1),
                         borderRadius: AppRadii.borderRadiusFull,
                       ),
@@ -592,7 +607,9 @@ class _ChapterTileState extends State<_ChapterTile>
                                 : Icons.radio_button_unchecked_rounded,
                             size: 14,
                             color: isRead
-                                ? (isLight ? Colors.white : scheme.primary)
+                                ? (isLight
+                                    ? scheme.onPrimary
+                                    : context.palette.primary)
                                 : scheme.onSurfaceVariant,
                           ),
                           const Gap(6),
@@ -600,7 +617,9 @@ class _ChapterTileState extends State<_ChapterTile>
                             isRead ? 'Read' : 'Not yet read',
                             style: textTheme.labelMedium?.copyWith(
                               color: isRead
-                                  ? (isLight ? Colors.white : scheme.primary)
+                                  ? (isLight
+                                      ? scheme.onPrimary
+                                      : context.palette.primary)
                                   : scheme.onSurfaceVariant,
                               fontWeight: FontWeight.w700,
                             ),
@@ -642,7 +661,7 @@ class _ChapterTileState extends State<_ChapterTile>
                           child: Icon(
                             Icons.calendar_today_rounded,
                             size: 20,
-                            color: scheme.primary,
+                            color: context.palette.primary,
                           ),
                         ),
                         const Gap(Spacing.md),
@@ -654,6 +673,7 @@ class _ChapterTileState extends State<_ChapterTile>
                                 DateFormat('EEEE, MMMM d, yyyy').format(readAt),
                                 style: textTheme.bodyMedium?.copyWith(
                                   fontWeight: FontWeight.w600,
+                                  color: context.palette.primary,
                                 ),
                               ),
                               const Gap(2),

@@ -705,18 +705,201 @@ class OfflineWriteQueueCompanion
   }
 }
 
+class $UserSettingsTableTable extends UserSettingsTable
+    with TableInfo<$UserSettingsTableTable, UserSetting> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $UserSettingsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _canonTypeMeta =
+      const VerificationMeta('canonType');
+  @override
+  late final GeneratedColumn<String> canonType = GeneratedColumn<String>(
+      'canon_type', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('catholic'));
+  @override
+  List<GeneratedColumn> get $columns => [id, canonType];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'user_settings';
+  @override
+  VerificationContext validateIntegrity(Insertable<UserSetting> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('canon_type')) {
+      context.handle(_canonTypeMeta,
+          canonType.isAcceptableOrUnknown(data['canon_type']!, _canonTypeMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  UserSetting map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return UserSetting(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      canonType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}canon_type'])!,
+    );
+  }
+
+  @override
+  $UserSettingsTableTable createAlias(String alias) {
+    return $UserSettingsTableTable(attachedDatabase, alias);
+  }
+}
+
+class UserSetting extends DataClass implements Insertable<UserSetting> {
+  final int id;
+  final String canonType;
+  const UserSetting({required this.id, required this.canonType});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['canon_type'] = Variable<String>(canonType);
+    return map;
+  }
+
+  UserSettingsTableCompanion toCompanion(bool nullToAbsent) {
+    return UserSettingsTableCompanion(
+      id: Value(id),
+      canonType: Value(canonType),
+    );
+  }
+
+  factory UserSetting.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return UserSetting(
+      id: serializer.fromJson<int>(json['id']),
+      canonType: serializer.fromJson<String>(json['canonType']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'canonType': serializer.toJson<String>(canonType),
+    };
+  }
+
+  UserSetting copyWith({int? id, String? canonType}) => UserSetting(
+        id: id ?? this.id,
+        canonType: canonType ?? this.canonType,
+      );
+  UserSetting copyWithCompanion(UserSettingsTableCompanion data) {
+    return UserSetting(
+      id: data.id.present ? data.id.value : this.id,
+      canonType: data.canonType.present ? data.canonType.value : this.canonType,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserSetting(')
+          ..write('id: $id, ')
+          ..write('canonType: $canonType')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, canonType);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UserSetting &&
+          other.id == this.id &&
+          other.canonType == this.canonType);
+}
+
+class UserSettingsTableCompanion extends UpdateCompanion<UserSetting> {
+  final Value<int> id;
+  final Value<String> canonType;
+  const UserSettingsTableCompanion({
+    this.id = const Value.absent(),
+    this.canonType = const Value.absent(),
+  });
+  UserSettingsTableCompanion.insert({
+    this.id = const Value.absent(),
+    this.canonType = const Value.absent(),
+  });
+  static Insertable<UserSetting> custom({
+    Expression<int>? id,
+    Expression<String>? canonType,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (canonType != null) 'canon_type': canonType,
+    });
+  }
+
+  UserSettingsTableCompanion copyWith(
+      {Value<int>? id, Value<String>? canonType}) {
+    return UserSettingsTableCompanion(
+      id: id ?? this.id,
+      canonType: canonType ?? this.canonType,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (canonType.present) {
+      map['canon_type'] = Variable<String>(canonType.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserSettingsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('canonType: $canonType')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $CachedProgressTable cachedProgress = $CachedProgressTable(this);
   late final $OfflineWriteQueueTable offlineWriteQueue =
       $OfflineWriteQueueTable(this);
+  late final $UserSettingsTableTable userSettingsTable =
+      $UserSettingsTableTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities =>
-      [cachedProgress, offlineWriteQueue];
+      [cachedProgress, offlineWriteQueue, userSettingsTable];
 }
 
 typedef $$CachedProgressTableCreateCompanionBuilder = CachedProgressCompanion
@@ -1097,6 +1280,130 @@ typedef $$OfflineWriteQueueTableProcessedTableManager = ProcessedTableManager<
     ),
     OfflineWriteQueueData,
     PrefetchHooks Function()>;
+typedef $$UserSettingsTableTableCreateCompanionBuilder
+    = UserSettingsTableCompanion Function({
+  Value<int> id,
+  Value<String> canonType,
+});
+typedef $$UserSettingsTableTableUpdateCompanionBuilder
+    = UserSettingsTableCompanion Function({
+  Value<int> id,
+  Value<String> canonType,
+});
+
+class $$UserSettingsTableTableFilterComposer
+    extends Composer<_$AppDatabase, $UserSettingsTableTable> {
+  $$UserSettingsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get canonType => $composableBuilder(
+      column: $table.canonType, builder: (column) => ColumnFilters(column));
+}
+
+class $$UserSettingsTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $UserSettingsTableTable> {
+  $$UserSettingsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get canonType => $composableBuilder(
+      column: $table.canonType, builder: (column) => ColumnOrderings(column));
+}
+
+class $$UserSettingsTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $UserSettingsTableTable> {
+  $$UserSettingsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get canonType =>
+      $composableBuilder(column: $table.canonType, builder: (column) => column);
+}
+
+class $$UserSettingsTableTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $UserSettingsTableTable,
+    UserSetting,
+    $$UserSettingsTableTableFilterComposer,
+    $$UserSettingsTableTableOrderingComposer,
+    $$UserSettingsTableTableAnnotationComposer,
+    $$UserSettingsTableTableCreateCompanionBuilder,
+    $$UserSettingsTableTableUpdateCompanionBuilder,
+    (
+      UserSetting,
+      BaseReferences<_$AppDatabase, $UserSettingsTableTable, UserSetting>
+    ),
+    UserSetting,
+    PrefetchHooks Function()> {
+  $$UserSettingsTableTableTableManager(
+      _$AppDatabase db, $UserSettingsTableTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$UserSettingsTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$UserSettingsTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$UserSettingsTableTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> canonType = const Value.absent(),
+          }) =>
+              UserSettingsTableCompanion(
+            id: id,
+            canonType: canonType,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> canonType = const Value.absent(),
+          }) =>
+              UserSettingsTableCompanion.insert(
+            id: id,
+            canonType: canonType,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$UserSettingsTableTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $UserSettingsTableTable,
+    UserSetting,
+    $$UserSettingsTableTableFilterComposer,
+    $$UserSettingsTableTableOrderingComposer,
+    $$UserSettingsTableTableAnnotationComposer,
+    $$UserSettingsTableTableCreateCompanionBuilder,
+    $$UserSettingsTableTableUpdateCompanionBuilder,
+    (
+      UserSetting,
+      BaseReferences<_$AppDatabase, $UserSettingsTableTable, UserSetting>
+    ),
+    UserSetting,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1105,4 +1412,6 @@ class $AppDatabaseManager {
       $$CachedProgressTableTableManager(_db, _db.cachedProgress);
   $$OfflineWriteQueueTableTableManager get offlineWriteQueue =>
       $$OfflineWriteQueueTableTableManager(_db, _db.offlineWriteQueue);
+  $$UserSettingsTableTableTableManager get userSettingsTable =>
+      $$UserSettingsTableTableTableManager(_db, _db.userSettingsTable);
 }

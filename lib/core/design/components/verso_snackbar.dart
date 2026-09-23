@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 
 /// Themed snackbar helper - replaces raw ScaffoldMessenger calls.
@@ -29,7 +30,7 @@ abstract final class VersoSnackbar {
     _show(
       context,
       message: message,
-      backgroundColor: const Color(0xFF2E7D4F),
+      backgroundColor: context.appColors.success,
       textColor: Colors.white,
     );
   }

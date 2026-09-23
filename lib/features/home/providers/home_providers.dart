@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/data/bible_data.dart';
@@ -41,8 +42,10 @@ Future<ContinueReadingInfo?> continueReading(Ref ref) async {
   }
 
   // Find the most recently read book that is NOT fully completed
+  final books = ref.watch(activeCanonBooksProvider);
   for (final p in readHistory) {
-    final book = kBibleBooks.firstWhere((b) => b.id == p.bookId);
+    final book = books.firstWhereOrNull((b) => b.id == p.bookId);
+    if (book == null) continue;
     final readCount = readChaptersByBook[p.bookId]?.length ?? 0;
     if (readCount < book.chapters) {
       return ContinueReadingInfo(
@@ -66,8 +69,12 @@ Future<int> todayChapters(Ref ref) async {
 
   return history.where((p) {
     if (!p.isRead || p.readAt == null) return false;
-    final d = p.readAt!;
-    return d.year == today.year && d.month == today.month && d.day == today.day;
+    final d = p.readAt!.toLocal(); // Convert to local time
+    final dt = DateTime(d.year, d.month, d.day);
+
+    // Sanitization: If an old record was saved with the timezone bug,
+    // it might appear as "tomorrow". Count it as today.
+    return dt.isAfter(today) || dt == today;
   }).length;
 }
 

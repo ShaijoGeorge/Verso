@@ -1,0 +1,77 @@
+import 'package:flutter/material.dart';
+import 'package:verso/core/design/profiles/theme_profile.dart';
+import 'package:verso/core/design/profiles/verso_palette.dart';
+import 'package:verso/data/local/entities/user_settings.dart';
+
+/// "Candy Pop" — vibrant solid accents on neutral surfaces across all modes.
+///
+/// Orange primary, blue/purple/pink secondaries, and green success stay
+/// consistent between light, dark, and AMOLED so the branding never shifts.
+const ThemeProfile candyPopProfile = ThemeProfile(
+  id: 'candy_pop',
+  name: 'Candy Pop',
+  tagline: 'Vibrant Orange × Bright Blue × Electric Purple',
+  description:
+      'Bold candy-like accent colors that stay consistent across every mode — vibrant orange for active states, bright blue for progress, purple for achievements, and green for completion.',
+  inspiration: 'Colorful fintech dashboards, vibrant mobile UI design',
+  light: VersoPalette(
+    style: AppearanceStyle.light,
+    bg: Color(0xFFFFFFFF),
+    surface: Color(0xFFFFFFFF),
+    surfaceAlt: Color(0xFFF3F4F6),
+    border: Color(0xFFE5E7EB),
+    borderLight: Color(0xFFF3F4F6),
+    primary: Color(0xFFFF8A00),
+    primaryHover: Color(0xFFE07800),
+    secondary: Color(0xFF3B82F6),
+    accent: Color(0xFF3B82F6),
+    accentBright: Color(0xFF60A5FA),
+    accentSoft: Color(0xFFEFF6FF),
+    text: Color(0xFF111827),
+    textMuted: Color(0xFF9CA3AF),
+    textLight: Color(0xFFD1D5DB),
+    success: Color(0xFF22C55E),
+    warning: Color(0xFFF59E0B),
+    danger: Color(0xFFEF4444),
+    progress: Color(0xFFFF8A00),
+    progressBg: Color(0xFFFFF7ED),
+    tag: Color(0xFFF3E8FF),
+    tagText: Color(0xFFA855F7),
+    divider: Color(0xFFE5E7EB),
+    footerBg: Color(0xFFFFFFFF),
+    footerActive: Color(0xFFFF8A00),
+    footerInactive: Color(0xFF9CA3AF),
+    highlight: Color(0xFFFFF7ED),
+    cross: Color(0xFF22C55E),
+  ),
+  dark: VersoPalette(
+    style: AppearanceStyle.dark,
+    bg: Color(0xFF121212),
+    surface: Color(0xFF1E1E1E),
+    surfaceAlt: Color(0xFF27272A),
+    border: Color(0xFF3F3F46),
+    borderLight: Color(0xFF27272A),
+    primary: Color(0xFFFF8A00),
+    primaryHover: Color(0xFFFFA333),
+    secondary: Color(0xFF3B82F6),
+    accent: Color(0xFF3B82F6),
+    accentBright: Color(0xFF60A5FA),
+    accentSoft: Color(0xFF1A2235),
+    text: Color(0xFFF9FAFB),
+    textMuted: Color(0xFF9CA3AF),
+    textLight: Color(0xFF52525B),
+    success: Color(0xFF22C55E),
+    warning: Color(0xFFF59E0B),
+    danger: Color(0xFFEF4444),
+    progress: Color(0xFFFF8A00),
+    progressBg: Color(0xFF2C1A00),
+    tag: Color(0xFF2D1A3E),
+    tagText: Color(0xFFA855F7),
+    divider: Color(0xFF27272A),
+    footerBg: Color(0xFF1E1E1E),
+    footerActive: Color(0xFFFF8A00),
+    footerInactive: Color(0xFF71717A),
+    highlight: Color(0xFF2C1A00),
+    cross: Color(0xFF22C55E),
+  ),
+);

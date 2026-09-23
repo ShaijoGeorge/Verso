@@ -95,7 +95,7 @@ final class ActivityLogProvider extends $FunctionalProvider<
   }
 }
 
-String _$activityLogHash() => r'6d70376c0cdb3476c6bf6a522bb2ae2cb589809d';
+String _$activityLogHash() => r'47fd5d723f888bb580fe7f526711f4bf0283410b';
 
 @ProviderFor(booksWithActivity)
 final booksWithActivityProvider = BooksWithActivityProvider._();
@@ -129,4 +129,4 @@ final class BooksWithActivityProvider extends $FunctionalProvider<
   }
 }
 
-String _$booksWithActivityHash() => r'f5dd9496a62aa392e99d2156a923e0ae80154c4f';
+String _$booksWithActivityHash() => r'c10737d7320861ddf94f5e562b609329b44ab676';

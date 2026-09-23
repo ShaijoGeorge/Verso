@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 
 /// A gradient-filled CTA button with a glow shadow, used on auth screens.
@@ -24,14 +25,12 @@ class VersoGradientButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   /// Override the default primary gradient color.
-  /// Defaults to the app's primary (deep navy / soft sky) based on theme.
+  /// Defaults to the app's primary based on theme palette.
   final Color? color;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary =
-        color ?? (isDark ? const Color(0xFF7EB8E0) : const Color(0xFF1B3A5C));
+    final primary = color ?? context.palette.primary;
 
     return Material(
       color: Colors.transparent,
@@ -63,12 +62,12 @@ class VersoGradientButton extends StatelessWidget {
           ),
           child: Center(
             child: isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                     ),
                   )
                 : Text(
@@ -76,7 +75,7 @@ class VersoGradientButton extends StatelessWidget {
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                       letterSpacing: 0.3,
                     ),
                   ),

@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:verso/core/design/extensions.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 import 'package:verso/features/stats/widgets/time_period_navigator.dart';
 
@@ -13,7 +14,6 @@ class WeeklyTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
-    final isLight = Theme.of(context).brightness == Brightness.light;
 
     final offset = ref.watch(weeklyOffsetProvider);
     final asyncData = ref.watch(weeklyChartStatsProvider(offset));
@@ -222,15 +222,10 @@ class WeeklyTab extends ConsumerWidget {
                                           scheme.primary.withValues(alpha: 0.7),
                                         ]
                                       : count > 0
-                                          ? isLight
-                                              ? [
-                                                  const Color(0xFF7EB8E0),
-                                                  const Color(0xFFBBDEFB),
-                                                ]
-                                              : [
-                                                  const Color(0xFF1B3A5C),
-                                                  const Color(0xFF7EB8E0),
-                                                ]
+                                          ? [
+                                              context.palette.primary,
+                                              context.palette.primaryHover,
+                                            ]
                                           : [
                                               scheme.outline
                                                   .withValues(alpha: 0.15),

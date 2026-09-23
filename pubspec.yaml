@@ -11,6 +11,9 @@ dependencies:
   connectivity_plus: ^6.1.4
   drift: ^2.22.1
   drift_flutter: ^0.2.4
+  firebase_analytics: ^12.5.0
+  firebase_core: ^4.14.0
+  firebase_crashlytics: ^5.3.0
   fl_chart: ^1.1.1
   flutter:
     sdk: flutter
@@ -24,10 +27,12 @@ dependencies:
   intl: ^0.20.2
   package_info_plus: ^9.0.0
   riverpod_annotation: ^4.0.0
+  share_plus: ^12.0.2
   shared_preferences: ^2.5.5
   shimmer: ^3.0.0
   supabase_flutter: ^2.3.0
   timezone: ^0.11.0
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   analyzer: ^8.4.1
@@ -43,9 +48,9 @@ flutter:
   uses-material-design: true
   assets:
     - .env
-    - assets/app_logo.png
-
-
+    - assets/
+    - assets/avatars/
+    - assets/developer/
 flutter_launcher_icons:
   android: "ic_launcher"
   ios: true

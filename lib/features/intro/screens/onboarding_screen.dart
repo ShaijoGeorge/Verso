@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
@@ -30,8 +30,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       subtitle:
           'Tap to log your progress with a visual book grid. Never lose your place again.',
       icon: Icons.grid_view_rounded,
-      accentColor: Color(0xFF7EB8E0),
-      gradientColors: [Color(0xFF0F2640), Color(0xFF1B3A5C)],
+      accentColor: AppColors.chaptersLight,
+      gradientColors: [
+        Color(0xFF064E3B), // Dark Teal
+        Color(0xFF0D9488), // Teal 600
+      ],
       illustrationElements: [
         _FloatingElement(
           icon: Icons.menu_book_rounded,
@@ -68,8 +71,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       subtitle:
           'Read daily to build your streak. Consistency is the key to finishing the Bible.',
       icon: Icons.local_fire_department_rounded,
-      accentColor: Color(0xFFC4973B),
-      gradientColors: [Color(0xFF3D2E14), Color(0xFF5C4520)],
+      accentColor: AppColors.streakLight,
+      gradientColors: [
+        AppColors.otContainerDark,
+        Color(0xFF5C3D20), // Dark brownish orange
+      ],
       illustrationElements: [
         _FloatingElement(
           icon: Icons.bolt_rounded,
@@ -106,8 +112,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       subtitle:
           'Visualize your progress with beautiful charts and detailed reading analytics.',
       icon: Icons.insights_rounded,
-      accentColor: Color(0xFFA78BFA),
-      gradientColors: [Color(0xFF2D1B69), Color(0xFF4C2E91)],
+      accentColor: AppColors.chartPurpleDark,
+      gradientColors: [
+        AppColors.chartPurpleContainerDark,
+        AppColors.chartPurpleDeepDark,
+      ],
       illustrationElements: [
         _FloatingElement(
           icon: Icons.pie_chart_rounded,
@@ -168,6 +177,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     final repo = SettingsRepository();
     await repo.completeOnboarding();
     if (mounted) {
+      // Go directly to login. After login, the router gate will send them to profile setup if needed.
       context.go('/login');
     }
   }
@@ -338,6 +348,13 @@ class _OnboardingPageView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = screenHeight < 700;
+    final topGap = isCompact ? 36.0 : (screenHeight * 0.08).clamp(48.0, 84.0);
+    final bottomGap =
+        isCompact ? 68.0 : (screenHeight * 0.10).clamp(72.0, 100.0);
+    final titleFontSize = isCompact ? 30.0 : 38.0;
+    final subtitleFontSize = isCompact ? 14.0 : 16.0;
+
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -355,11 +372,11 @@ class _OnboardingPageView extends StatelessWidget {
         bottom: false,
         child: Column(
           children: [
-            const Gap(80),
+            Gap(topGap),
 
             // Illustration area
             Expanded(
-              flex: 5,
+              flex: isCompact ? 4 : 5,
               child: _IllustrationArea(
                 page: page,
                 animationController: animationController,
@@ -371,37 +388,41 @@ class _OnboardingPageView extends StatelessWidget {
               flex: 4,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: Spacing.xl),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Gap(Spacing.lg),
-                    Text(
-                      page.title,
-                      style: GoogleFonts.dmSerifDisplay(
-                        fontSize: 40,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.white,
-                        height: 1.15,
+                child: SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Gap(isCompact ? Spacing.sm : Spacing.md),
+                      Text(
+                        page.title,
+                        style: GoogleFonts.dmSerifDisplay(
+                          fontSize: titleFontSize,
+                          fontWeight: FontWeight.w400,
+                          color: Colors.white,
+                          height: 1.15,
+                        ),
                       ),
-                    ),
-                    const Gap(Spacing.md),
-                    Text(
-                      page.subtitle,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.white.withValues(alpha: 0.65),
-                        height: 1.6,
-                        letterSpacing: 0.2,
+                      Gap(isCompact ? Spacing.xs : Spacing.md),
+                      Text(
+                        page.subtitle,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: subtitleFontSize,
+                          fontWeight: FontWeight.w400,
+                          color: Colors.white.withValues(alpha: 0.65),
+                          height: 1.5,
+                          letterSpacing: 0.2,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
 
             // Space for bottom controls
-            const Gap(100),
+            Gap(bottomGap),
           ],
         ),
       ),

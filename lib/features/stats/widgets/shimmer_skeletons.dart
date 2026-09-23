@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:verso/core/design/tokens/colors.dart';
 
 /// Shimmer skeleton for the Overview tab
 class OverviewShimmer extends StatelessWidget {
@@ -191,6 +192,60 @@ class YearlyShimmer extends StatelessWidget {
   }
 }
 
+/// Shimmer skeleton for the Activity Log (History) tab
+class ActivityLogShimmer extends StatelessWidget {
+  const ActivityLogShimmer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(top: 16, bottom: 100),
+      child: _ShimmerWrap(
+        child: Column(
+          children: [
+            // Pill for Date Header
+            const Center(
+              child: _ShimmerBox(width: 120, height: 28, borderRadius: 14),
+            ),
+            const Gap(24),
+            // Timeline Cards
+            ...List.generate(
+              4,
+              (index) => Padding(
+                padding: const EdgeInsets.only(bottom: 24, left: 20, right: 20),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Timeline axis
+                    Column(
+                      children: [
+                        const _ShimmerBox(width: 2, height: 16),
+                        const Gap(2),
+                        const _ShimmerBox(
+                          width: 28,
+                          height: 28,
+                          borderRadius: 14,
+                        ),
+                        const Gap(2),
+                        _ShimmerBox(width: 2, height: index == 3 ? 0 : 60),
+                      ],
+                    ),
+                    const Gap(16),
+                    // Card
+                    const Expanded(
+                      child: _ShimmerBox(height: 100, borderRadius: 16),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ─────────────────────────────────────────────
 // Internal helpers
 // ─────────────────────────────────────────────
@@ -203,10 +258,16 @@ class _ShimmerWrap extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
+    final bg = Theme.of(context).scaffoldBackgroundColor;
+    final isAmoled = !isLight && bg == AppColors.backgroundAmoled;
 
     return Shimmer.fromColors(
-      baseColor: isLight ? Colors.grey.shade200 : Colors.grey.shade800,
-      highlightColor: isLight ? Colors.grey.shade50 : Colors.grey.shade600,
+      baseColor: isLight
+          ? Colors.grey.shade200
+          : (isAmoled ? const Color(0xFF1A1A1A) : Colors.grey.shade800),
+      highlightColor: isLight
+          ? Colors.grey.shade100
+          : (isAmoled ? const Color(0xFF2E2E2E) : Colors.grey.shade600),
       child: child,
     );
   }

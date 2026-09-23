@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:verso/core/design/tokens/colors.dart';
+import 'package:verso/core/design/extensions.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 import 'package:verso/features/stats/widgets/time_period_navigator.dart';
 
@@ -262,7 +262,6 @@ class _HeatmapCalendar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final isLight = Theme.of(context).brightness == Brightness.light;
 
     final daysInMonth = DateUtils.getDaysInMonth(year, month);
     // Convert Dart weekday (1=Mon..7=Sun) to Sunday-first (0=Sun..6=Sat)
@@ -328,7 +327,7 @@ class _HeatmapCalendar extends StatelessWidget {
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 400),
                           decoration: BoxDecoration(
-                            color: _heatColor(intensity, isLight),
+                            color: _heatColor(context, intensity),
                             borderRadius: BorderRadius.circular(5),
                             border: isToday
                                 ? Border.all(color: scheme.primary, width: 2)
@@ -364,22 +363,19 @@ class _HeatmapCalendar extends StatelessWidget {
     return (totalSlots / 7).ceil();
   }
 
-  Color _heatColor(double intensity, bool isLight) {
+  Color _heatColor(BuildContext context, double intensity) {
     if (intensity <= 0) {
-      return isLight ? AppColors.backgroundLight : AppColors.backgroundDark;
+      return context.palette.surfaceAlt;
     }
 
-    // Sacred Blue scale
     if (intensity <= 0.25) {
-      return isLight
-          ? AppColors.primaryContainerLight
-          : AppColors.primaryContainerDark;
+      return context.palette.primary.withValues(alpha: 0.3);
     } else if (intensity <= 0.5) {
-      return isLight ? const Color(0xFF7EB8E0) : const Color(0xFF1B3A5C);
+      return context.palette.primary.withValues(alpha: 0.5);
     } else if (intensity <= 0.75) {
-      return isLight ? const Color(0xFF3B82C4) : const Color(0xFF4A90D9);
+      return context.palette.primary.withValues(alpha: 0.75);
     } else {
-      return isLight ? AppColors.primaryLight : AppColors.primaryDark;
+      return context.palette.primary;
     }
   }
 }
@@ -392,24 +388,15 @@ class _IntensityLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLight = Theme.of(context).brightness == Brightness.light;
     final scheme = Theme.of(context).colorScheme;
 
-    final colors = isLight
-        ? [
-            AppColors.backgroundLight,
-            AppColors.primaryContainerLight,
-            const Color(0xFF7EB8E0),
-            const Color(0xFF3B82C4),
-            AppColors.primaryLight,
-          ]
-        : [
-            AppColors.backgroundDark,
-            AppColors.primaryContainerDark,
-            const Color(0xFF1B3A5C),
-            const Color(0xFF4A90D9),
-            AppColors.primaryDark,
-          ];
+    final colors = [
+      context.palette.surfaceAlt,
+      context.palette.primary.withValues(alpha: 0.3),
+      context.palette.primary.withValues(alpha: 0.5),
+      context.palette.primary.withValues(alpha: 0.75),
+      context.palette.primary,
+    ];
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,

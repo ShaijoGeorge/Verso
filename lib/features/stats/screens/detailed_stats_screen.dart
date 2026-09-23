@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 
@@ -40,6 +41,8 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
           onRetry: () => ref.invalidate(detailedStatsProvider),
         ),
         data: (stats) {
+          final cs = Theme.of(context).colorScheme;
+          final appColors = context.appColors;
           final maxRead = stats.last7DaysCounts.isNotEmpty
               ? stats.last7DaysCounts.reduce(max)
               : 0;
@@ -60,14 +63,14 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
                         key: ValueKey('ot_circle_$_entryKey'),
                         title: 'Old Testament',
                         targetProgress: stats.otProgress,
-                        color: Colors.orange,
+                        color: appColors.otColor,
                         scale: 1.3,
                       ),
                       _AnimatedTestamentCircle(
                         key: ValueKey('nt_circle_$_entryKey'),
                         title: 'New Testament',
                         targetProgress: stats.ntProgress,
-                        color: Colors.blue,
+                        color: appColors.ntColor,
                         scale: 1.3,
                       ),
                     ],
@@ -84,9 +87,9 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
                           key: ValueKey('ot_card_$_entryKey'),
                           label: 'Old Testament',
                           currentValue: stats.otRead,
-                          maxValue: 1074,
-                          color: Colors.orange.shade100,
-                          textColor: Colors.orange.shade900,
+                          maxValue: stats.totalOTChapters,
+                          color: appColors.otContainer,
+                          textColor: appColors.otColor,
                         ),
                       ),
                       const Gap(8),
@@ -95,9 +98,9 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
                           key: ValueKey('nt_card_$_entryKey'),
                           label: 'New Testament',
                           currentValue: stats.ntRead,
-                          maxValue: 260,
-                          color: Colors.blue.shade100,
-                          textColor: Colors.blue.shade900,
+                          maxValue: stats.totalNTChapters,
+                          color: appColors.ntContainer,
+                          textColor: appColors.ntColor,
                         ),
                       ),
                       const Gap(8),
@@ -106,9 +109,10 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
                           key: ValueKey('total_card_$_entryKey'),
                           label: 'Total Bible',
                           currentValue: stats.totalRead,
-                          maxValue: 1334,
-                          color: Colors.green.shade100,
-                          textColor: Colors.green.shade900,
+                          maxValue: stats.totalBibleChapters,
+                          color:
+                              context.appColors.chapters.withValues(alpha: 0.1),
+                          textColor: context.appColors.chapters,
                         ),
                       ),
                     ],
@@ -131,7 +135,7 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
                               drawVerticalLine: false,
                               horizontalInterval: maxY / 5,
                               getDrawingHorizontalLine: (value) => FlLine(
-                                color: Colors.grey.withValues(alpha: 0.1),
+                                color: cs.outline.withValues(alpha: 0.15),
                                 strokeWidth: 1,
                               ),
                             ),
@@ -178,7 +182,7 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
                                         label,
                                         style: TextStyle(
                                           fontSize: 9,
-                                          color: Colors.grey[600],
+                                          color: cs.onSurfaceVariant,
                                         ),
                                       ),
                                     );
@@ -197,9 +201,9 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
                                   reservedSize: 30,
                                   getTitlesWidget: (value, meta) => Text(
                                     value.toInt().toString(),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 10,
-                                      color: Colors.grey,
+                                      color: cs.onSurfaceVariant,
                                     ),
                                   ),
                                 ),
@@ -222,13 +226,11 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
                                   );
                                 }),
                                 isCurved: true,
-                                color: Theme.of(context).colorScheme.primary,
+                                color: context.palette.primary,
                                 isStrokeCapRound: true,
                                 belowBarData: BarAreaData(
                                   show: true,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .primary
+                                  color: context.palette.primary
                                       .withValues(alpha: 0.1),
                                 ),
                               ),
@@ -295,9 +297,7 @@ class _SectionHeader extends StatelessWidget {
       title,
       style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: Theme.of(context).brightness == Brightness.dark
-                ? Colors.white
-                : Colors.black,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
     );
   }

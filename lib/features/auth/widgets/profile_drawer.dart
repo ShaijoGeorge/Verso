@@ -5,11 +5,12 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
-import 'package:verso/core/design/tokens/colors.dart';
+import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/core/providers/package_info_provider.dart';
 import 'package:verso/core/router.dart';
+import 'package:verso/core/widgets/verso_avatar.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 
@@ -25,18 +26,20 @@ class ProfileDrawer extends ConsumerWidget {
     // 2. Get user metadata (like the name we saved during sign up)
     final name = (user?.userMetadata?['full_name'] as String?) ?? 'Reader';
     final email = user?.email ?? '';
-    final initial = name.isNotEmpty ? name[0].toUpperCase() : 'V';
+    final gender = (user?.userMetadata?['gender'] as String?) ?? 'male';
 
     final scheme = Theme.of(context).colorScheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
     final topPadding = MediaQuery.of(context).padding.top;
 
     return Drawer(
-      backgroundColor:
-          isLight ? AppColors.backgroundLight : AppColors.backgroundDark,
-      shape: const RoundedRectangleBorder(
+      backgroundColor: scheme.surface,
+      shape: RoundedRectangleBorder(
         borderRadius:
-            BorderRadius.horizontal(right: Radius.circular(AppRadii.xl)),
+            const BorderRadius.horizontal(right: Radius.circular(AppRadii.xl)),
+        side: BorderSide(
+          color: scheme.outline.withValues(alpha: isLight ? 0.2 : 0.5),
+        ),
       ),
       child: Column(
         children: [
@@ -44,7 +47,7 @@ class ProfileDrawer extends ConsumerWidget {
           _DrawerHeader(
             name: name,
             email: email,
-            initial: initial,
+            gender: gender,
             topPadding: topPadding,
             scheme: scheme,
             isLight: isLight,
@@ -116,12 +119,7 @@ class ProfileDrawer extends ConsumerWidget {
                           builder: (dialogContext) {
                             final dialogScheme =
                                 Theme.of(dialogContext).colorScheme;
-                            final dialogIsLight =
-                                Theme.of(dialogContext).brightness ==
-                                    Brightness.light;
-                            final errorColor = dialogIsLight
-                                ? AppColors.errorLight
-                                : AppColors.errorDark;
+                            final errorColor = dialogContext.palette.danger;
                             final hasPending = pendingCount > 0;
 
                             return Dialog(
@@ -310,6 +308,7 @@ class ProfileDrawer extends ConsumerWidget {
                         // Close the drawer, then sign out
                         if (context.mounted) Navigator.pop(context);
                         await cacheService.clearAll();
+                        ref.invalidate(globalProgressProvider);
                         await ref.read(authRepositoryProvider).signOut();
 
                         // Use a short delay to allow GoRouter to redirect to the /login route, then show the success message on the root app context so it survives the navigation stack being cleared.
@@ -344,20 +343,22 @@ class _DrawerHeader extends StatelessWidget {
   const _DrawerHeader({
     required this.name,
     required this.email,
-    required this.initial,
+    required this.gender,
     required this.topPadding,
     required this.scheme,
     required this.isLight,
   });
   final String name;
   final String email;
-  final String initial;
+  final String gender;
   final double topPadding;
   final ColorScheme scheme;
   final bool isLight;
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(
@@ -372,43 +373,23 @@ class _DrawerHeader extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: isLight
               ? [
-                  AppColors.primaryLight,
-                  AppColors.primaryLight.withValues(alpha: 0.85),
+                  palette.primary,
+                  palette.primary.withValues(alpha: 0.85),
                 ]
               : [
-                  AppColors.primaryLight,
-                  AppColors.primaryContainerDark,
+                  palette.primary,
+                  palette.accentSoft,
                 ],
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: isLight
-                  ? Colors.white.withValues(alpha: 0.2)
-                  : AppColors.primaryDark.withValues(alpha: 0.2),
-              borderRadius: AppRadii.borderRadiusLG,
-              border: Border.all(
-                color: isLight
-                    ? Colors.white.withValues(alpha: 0.3)
-                    : AppColors.primaryDark.withValues(alpha: 0.3),
-                width: 1.5,
-              ),
-            ),
-            child: Center(
-              child: Text(
-                initial,
-                style: GoogleFonts.dmSerifDisplay(
-                  fontSize: 24,
-                  color: isLight ? Colors.white : AppColors.primaryDark,
-                ),
-              ),
-            ),
+          // Avatar - using the gender-based image
+          VersoAvatar.fromGender(
+            gender,
+            size: 56,
+            borderColor: isLight ? Colors.white : palette.primary,
           ),
 
           const Gap(Spacing.md),
@@ -419,7 +400,7 @@ class _DrawerHeader extends StatelessWidget {
             style: GoogleFonts.plusJakartaSans(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: isLight ? Colors.white : AppColors.onPrimaryContainerDark,
+              color: isLight ? Colors.white : palette.text,
             ),
           ),
 
@@ -433,7 +414,7 @@ class _DrawerHeader extends StatelessWidget {
               fontWeight: FontWeight.w400,
               color: isLight
                   ? Colors.white.withValues(alpha: 0.7)
-                  : AppColors.onPrimaryContainerDark.withValues(alpha: 0.6),
+                  : palette.textMuted,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -541,7 +522,7 @@ class _LogoutButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final errorColor = isLight ? AppColors.errorLight : AppColors.errorDark;
+    final errorColor = context.palette.danger;
 
     return Material(
       color: errorColor.withValues(alpha: isLight ? 0.06 : 0.1),

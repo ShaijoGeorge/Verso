@@ -45,7 +45,7 @@ class BibleRepository {
     final userId = _currentUserId;
     if (userId.isEmpty) return;
 
-    final now = DateTime.now();
+    final now = DateTime.now().toUtc();
 
     await _supabase.from('user_progress').upsert(
       {
@@ -65,7 +65,7 @@ class BibleRepository {
     final userId = _currentUserId;
     if (userId.isEmpty) return;
 
-    final now = DateTime.now().toIso8601String();
+    final now = DateTime.now().toUtc().toIso8601String();
 
     // Fetch which chapters are ALREADY read
     final existingData = await _supabase
@@ -143,7 +143,7 @@ class BibleRepository {
         .map(
           (row) => DateTime.parse(
             (row as Map<String, dynamic>)['read_at'] as String,
-          ),
+          ).toLocal(),
         )
         .map((dt) => DateTime(dt.year, dt.month, dt.day))
         .toSet()

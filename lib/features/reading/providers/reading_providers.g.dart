@@ -134,7 +134,7 @@ final class AppDatabaseProvider
   }
 }
 
-String _$appDatabaseHash() => r'448adad5717e7b1c0b3ca3ca7e03d0b2116237af';
+String _$appDatabaseHash() => r'59cce38d45eeaba199eddd097d8e149d66f9f3e1';
 
 @ProviderFor(offlineCacheService)
 final offlineCacheServiceProvider = OfflineCacheServiceProvider._();
@@ -216,7 +216,7 @@ final class GlobalProgressProvider extends $FunctionalProvider<
   }
 }
 
-String _$globalProgressHash() => r'bbaa5600dfe5d1579aa666a07fa7d1b973f33601';
+String _$globalProgressHash() => r'1031d2fa4474af5f36fa4403b316a75e02c53297';
 
 @ProviderFor(bookReadCount)
 final bookReadCountProvider = BookReadCountFamily._();
@@ -368,3 +368,45 @@ final class BookProgressFamily extends $Family
   @override
   String toString() => r'bookProgressProvider';
 }
+
+@ProviderFor(activeCanonBooks)
+final activeCanonBooksProvider = ActiveCanonBooksProvider._();
+
+final class ActiveCanonBooksProvider extends $FunctionalProvider<
+    List<BibleBook>,
+    List<BibleBook>,
+    List<BibleBook>> with $Provider<List<BibleBook>> {
+  ActiveCanonBooksProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'activeCanonBooksProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$activeCanonBooksHash();
+
+  @$internal
+  @override
+  $ProviderElement<List<BibleBook>> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  List<BibleBook> create(Ref ref) {
+    return activeCanonBooks(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(List<BibleBook> value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<List<BibleBook>>(value),
+    );
+  }
+}
+
+String _$activeCanonBooksHash() => r'11ce7142a64ee3eb0edcd0bda1611b79aa1a569e';

@@ -50,21 +50,39 @@ abstract final class AppColors {
   static const Color errorDark = Color(0xFFEF5350); // Salmon
 
   // ──────────────── Accent / Chart Colors ────────────────
-  static const Color streakLight =
-      Color(0xFFC4973B); // Warm Gold (same as secondary)
-  static const Color streakDark = Color(0xFFA8864A);
+  static const Color streakLight = Color(0xFFFF8A00); // Vibrant Orange
+  static const Color streakDark = Color(0xFFFF9800); // Bright Orange
+  static const Color chaptersLight = Color(0xFF0D9488); // Teal
+  static const Color chaptersDark = Color(0xFF2DD4BF);
+  static const Color booksLight = Color(0xFFEAB308); // Yellow/Gold
+  static const Color booksDark = Color(0xFFFACC15);
 
   static const Color chartPurpleLight = Color(0xFF7C3AED);
   static const Color chartPurpleDark = Color(0xFFA78BFA);
+  static const Color chartPurpleContainerDark = Color(0xFF2D1B69);
+  static const Color chartPurpleDeepDark = Color(0xFF4C2E91);
 
   static const Color chartTealLight = Color(0xFF0D9488);
   static const Color chartTealDark = Color(0xFF5EEAD4);
 
   static const Color otColorLight = Color(0xFFE65100); // Orange for OT
   static const Color otColorDark = Color(0xFFFF9800);
+  static const Color otContainerLight = Color(0xFFFFE0B2);
+  static const Color otContainerDark = Color(0xFF3D2400);
 
   static const Color ntColorLight = Color(0xFF1565C0); // Blue for NT
   static const Color ntColorDark = Color(0xFF64B5F6);
+  static const Color ntContainerLight = Color(0xFFBBDEFB);
+  static const Color ntContainerDark = Color(0xFF0D2240);
+  static const Color completionEmptyLight = Color(0xFFE8E8E8);
+  static const Color completionEmptyDark = Color(0xFF2A2A2E);
+
+  static const Color primaryAccentLight = Color(0xFF2A5580);
+  static const Color primaryAccentDark = Color(0xFF4A8BBF);
+  static const Color primaryHighlightLight = Color(0xFF3B82C4);
+  static const Color primaryHighlightDark = Color(0xFF4A90D9);
+  static const Color secondaryAccentDark = Color(0xFF5C4520);
+  static const Color secondaryOnContainerLight = Color(0xFF78350F);
 
   // ──────────────── Outline / Divider ────────────────
   static const Color outlineLight = Color(0xFFD4D4D4);
@@ -72,4 +90,10 @@ abstract final class AppColors {
 
   static const Color outlineVariantLight = Color(0xFFE8E8E8);
   static const Color outlineVariantDark = Color(0xFF1F1F23);
+
+  // ──────────────── AMOLED overrides (true black) ────────────────
+  static const Color backgroundAmoled = Color(0xFF000000);
+  static const Color surfaceAmoled = Color(0xFF101012);
+  static const Color outlineAmoled = Color(0xFF383838);
+  static const Color outlineVariantAmoled = Color(0xFF1A1A1A);
 }

@@ -1,18 +1,52 @@
+import 'dart:ui';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/constants.dart';
-import 'package:verso/core/design/theme.dart';
 import 'package:verso/core/providers/package_info_provider.dart';
 import 'package:verso/core/router.dart';
+import 'package:verso/core/utils/firebase_crash_reporter.dart';
 import 'package:verso/core/utils/verso_error_observer.dart';
+import 'package:verso/features/reading/services/reading_service.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
+import 'package:verso/features/settings/providers/theme_resolver.dart';
 import 'package:verso/features/settings/services/notification_service.dart';
+import 'package:verso/firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase & Crashlytics
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  final crashReporter = FirebaseCrashReporter();
+  await crashReporter.init();
+
+  // Pass all uncaught "fatal" errors from the framework to Crashlytics.
+  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+
+  // Pass all uncaught asynchronous errors that aren't handled by the Flutter framework to Crashlytics.
+  PlatformDispatcher.instance.onError = (error, stack) {
+    final isNetworkError = error.toString().contains('SocketException') ||
+        error.toString().contains('AuthRetryableFetchException');
+
+    crashReporter.recordError(
+      error,
+      stack,
+      fatal: !isNetworkError,
+      reason: isNetworkError
+          ? 'Network connectivity issue'
+          : 'Unhandled fatal exception',
+    );
+    return true;
+  };
 
   // 1. Load the .env file
   await dotenv.load();
@@ -37,7 +71,7 @@ void main() async {
       overrides: [
         packageInfoProvider.overrideWithValue(packageInfo),
       ],
-      observers: [VersoErrorObserver()],
+      observers: [VersoErrorObserver(crashReporter)],
       child: const BibliaApp(),
     ),
   );
@@ -51,10 +85,16 @@ class BibliaApp extends ConsumerStatefulWidget {
   ConsumerState<BibliaApp> createState() => _BibliaAppState();
 }
 
-class _BibliaAppState extends ConsumerState<BibliaApp> {
+class _BibliaAppState extends ConsumerState<BibliaApp>
+    with WidgetsBindingObserver {
+  Brightness _systemBrightness =
+      SchedulerBinding.instance.platformDispatcher.platformBrightness;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
     // Listen for the "Password Recovery" event
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       final event = data.event;
@@ -66,6 +106,31 @@ class _BibliaAppState extends ConsumerState<BibliaApp> {
 
     // Re-schedule reminders on app start
     _initializeReminders();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    final brightness =
+        SchedulerBinding.instance.platformDispatcher.platformBrightness;
+    if (brightness != _systemBrightness) {
+      setState(() => _systemBrightness = brightness);
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Re-evaluate schedule boundaries when returning from background.
+      ref.invalidate(scheduleTickStreamProvider);
+      // Reconcile cross-device reading progress on resume.
+      ref.read(readingServiceProvider).syncOnResume();
+    }
   }
 
   Future<void> _initializeReminders() async {
@@ -86,30 +151,30 @@ class _BibliaAppState extends ConsumerState<BibliaApp> {
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
-    // Watch the settings provider to get the current theme preference
+    final resolved = ref.watch(resolvedThemeProvider(_systemBrightness));
     final settingsAsync = ref.watch(currentSettingsProvider);
+    final fontScaleFactor = settingsAsync.value?.fontScaleFactor ?? 1.0;
 
     return MaterialApp.router(
       title: 'Verso',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-
-      // A duration of 500ms - 800ms is usually good for a "luxurious" feel.
-      themeAnimationDuration: const Duration(milliseconds: 600),
-      themeAnimationCurve:
-          Curves.easeInOutCubic, // Starts slow, speeds up, ends slow
-
-      // Determine the ThemeMode based on the loaded settings
-      themeMode: settingsAsync.when(
-        data: (settings) =>
-            settings.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-        loading: () => ThemeMode.system, // Default while loading
-        error: (_, __) => ThemeMode.system, // Default on error
-      ),
+      theme: resolved.lightTheme,
+      darkTheme: resolved.darkTheme,
+      themeMode: resolved.themeMode,
 
       // Connect GoRouter
       routerConfig: router,
+
+      // Apply in-app font size and completely ignore device/OS font scaling
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: TextScaler.linear(fontScaleFactor),
+          ),
+          child: child!,
+        );
+      },
     );
   }
 }

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/shadows.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
+import 'package:verso/data/local/entities/user_settings.dart';
 
 /// A themed card that replaces raw Container decorations.
 ///
@@ -33,6 +35,7 @@ class VersoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
+    final isAmoled = context.palette.style == AppearanceStyle.amoled;
 
     final content = Container(
       padding: padding ?? Spacing.cardPadding,
@@ -41,7 +44,9 @@ class VersoCard extends StatelessWidget {
         borderRadius: borderRadius ?? AppRadii.borderRadiusLG,
         border: border ??
             Border.all(
-              color: scheme.outline.withValues(alpha: isLight ? 0.5 : 0.15),
+              color: isAmoled
+                  ? scheme.outline
+                  : scheme.outline.withValues(alpha: isLight ? 0.5 : 0.15),
             ),
         boxShadow: shadow ?? AppShadows.sm,
       ),
