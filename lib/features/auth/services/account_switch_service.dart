@@ -95,14 +95,41 @@ class AccountSwitchService {
         return SwitchSessionExpired(targetAccount);
       }
 
-      // 5. Invalidate all user-scoped providers to re-render for new user
+      // 5. Restore target user canon and local DB settings
+      final user = Supabase.instance.client.auth.currentUser;
+      var remoteCanon = user?.userMetadata?['canon_type'] as String?;
+
+      if (remoteCanon == null && user != null) {
+        try {
+          final userData = await Supabase.instance.client
+              .from('profiles')
+              .select('canon_type')
+              .eq('id', user.id)
+              .maybeSingle();
+          remoteCanon = userData?['canon_type'] as String?;
+        } catch (_) {
+          // Optional profiles table fallback
+        }
+      }
+
+      final canonToRestore = remoteCanon ?? 'catholic';
+
+      // 1. Save fetched canon to local Drift DB
+      await _ref.read(localDatabaseProvider).updateLocalCanon(canonToRestore);
+
+      // 2. Save to SharedPreferences and refresh Riverpod settings
+      await _ref
+          .read(currentSettingsProvider.notifier)
+          .setCanonType(canonToRestore);
+
+      // 6. Invalidate all user-scoped providers to re-render for new user
       _invalidateUserProviders();
 
-      // 6. Refresh the saved accounts list state
+      // 7. Refresh the saved accounts list state
       await _ref.read(savedAccountsListProvider.notifier).refresh();
 
-      // 7. Sync reading data for new account
-      unawaited(_ref.read(readingServiceProvider).syncOnResume());
+      // 8. Trigger cloud sync to pull latest reading progress for this account
+      unawaited(_ref.read(readingServiceProvider).syncOnResume(force: true));
 
       return SwitchSuccess(targetAccount);
     } catch (e) {
@@ -161,6 +188,7 @@ class AccountSwitchService {
     _ref.invalidate(userStatsProvider);
     _ref.invalidate(detailedStatsProvider);
     _ref.invalidate(currentSettingsProvider);
+    _ref.invalidate(userSettingsProvider);
     _ref.invalidate(activityLogProvider);
     _ref.invalidate(todayChaptersProvider);
     _ref.invalidate(continueReadingProvider);
