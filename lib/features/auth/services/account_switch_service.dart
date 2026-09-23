@@ -72,8 +72,6 @@ class AccountSwitchService {
           return SwitchFlushFailed(remaining);
         }
 
-        await _cache.clearWriteQueue();
-
         await _ref
             .read(savedAccountsServiceProvider)
             .syncCurrentSession(currentSession);
@@ -152,8 +150,6 @@ class AccountSwitchService {
       if (remaining > 0) {
         return SwitchFlushFailed(remaining);
       }
-
-      await _cache.clearWriteQueue();
 
       // 2. Preserve current user in saved accounts
       final currentSession = Supabase.instance.client.auth.currentSession;
