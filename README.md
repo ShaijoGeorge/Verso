@@ -1,5 +1,5 @@
 > **🚧 Verso v2 is currently under active development.**
-> The codebase in this repository (`test`,`dev` branches) reflects v2. The documentation below describes v1 and its code is in `master` branch.
+> The codebase in this repository (`dev`, `test` branches) reflects v2. The documentation below describes v1 and its code is in `master` branch.
  
 ---
 
