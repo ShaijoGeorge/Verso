@@ -274,6 +274,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     }
   }
 
+  Future<void> _handleRemoveAccount(SavedAccount account) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          'Remove account?',
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          'Remove "${account.displayName}" (${account.email}) from this device?',
+          style: GoogleFonts.plusJakartaSans(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed ?? false) {
+      await ref
+          .read(savedAccountsListProvider.notifier)
+          .removeAccount(account.userId);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -389,11 +424,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                       account: account,
                                       isLoading: _isLoading,
                                       onTap: () => _quickSignIn(account),
-                                      onRemove: () => ref
-                                          .read(
-                                            savedAccountsListProvider.notifier,
-                                          )
-                                          .removeAccount(account.userId),
+                                      onRemove: () =>
+                                          _handleRemoveAccount(account),
                                     ),
                                   );
                                 }),
