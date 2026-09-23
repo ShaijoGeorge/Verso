@@ -32,13 +32,13 @@ class SavedAccount {
   final String refreshToken;
   final DateTime lastActive;
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson({bool includeRefreshToken = false}) {
     return {
       'userId': userId,
       'email': email,
       'displayName': displayName,
       'avatarUrl': avatarUrl,
-      'refreshToken': refreshToken,
+      if (includeRefreshToken) 'refreshToken': refreshToken,
       'lastActive': lastActive.toIso8601String(),
     };
   }

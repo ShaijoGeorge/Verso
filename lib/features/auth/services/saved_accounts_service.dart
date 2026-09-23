@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -8,9 +9,26 @@ import 'package:verso/features/auth/models/saved_account.dart';
 part 'saved_accounts_service.g.dart';
 
 class SavedAccountsService {
+  SavedAccountsService({FlutterSecureStorage? secureStorage})
+      : _secureStorage = secureStorage ??
+            const FlutterSecureStorage(
+              iOptions:
+                  IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+            );
+
+  final FlutterSecureStorage _secureStorage;
+
   static const _kSavedAccountsKey = 'verso_saved_accounts_list';
+  static const _kTokenKeyPrefix = 'verso_refresh_token_';
+
+  String _tokenKey(String userId) => '$_kTokenKeyPrefix$userId';
 
   /// Retrieves all saved accounts stored on this device.
+  ///
+  /// Profile metadata is read from SharedPreferences, while sensitive
+  /// refresh tokens are loaded from hardware-backed secure storage.
+  /// If any legacy plaintext tokens exist in SharedPreferences, they are
+  /// automatically migrated to secure storage and stripped from SharedPreferences.
   Future<List<SavedAccount>> getSavedAccounts() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_kSavedAccountsKey);
@@ -18,10 +36,45 @@ class SavedAccountsService {
 
     try {
       final list = json.decode(raw) as List<dynamic>;
-      return list
-          .map((item) => SavedAccount.fromJson(item as Map<String, dynamic>))
-          .where((acc) => acc.userId.isNotEmpty && acc.refreshToken.isNotEmpty)
-          .toList();
+      final accounts = <SavedAccount>[];
+      var needsSanitization = false;
+
+      for (final item in list) {
+        final acc = SavedAccount.fromJson(item as Map<String, dynamic>);
+        if (acc.userId.isEmpty) continue;
+
+        // 1. Fetch token from hardware-backed secure storage
+        var token = await _secureStorage.read(key: _tokenKey(acc.userId));
+
+        // 2. Backward compatibility & migration:
+        // If secure storage doesn't have it yet, check if legacy SharedPreferences JSON had it.
+        if ((token == null || token.isEmpty) && acc.refreshToken.isNotEmpty) {
+          token = acc.refreshToken;
+          await _secureStorage.write(
+            key: _tokenKey(acc.userId),
+            value: token,
+          );
+          needsSanitization = true;
+        } else if (acc.refreshToken.isNotEmpty) {
+          // If SharedPreferences still has plaintext token even though secure storage has it,
+          // mark for sanitization to strip it from SharedPreferences.
+          needsSanitization = true;
+        }
+
+        if (token != null && token.isNotEmpty) {
+          accounts.add(acc.copyWith(refreshToken: token));
+        }
+      }
+
+      // If any accounts had plaintext tokens in SharedPreferences, rewrite SharedPreferences
+      // without tokens (toJson() excludes refreshToken by default).
+      if (needsSanitization) {
+        final sanitizedRaw =
+            json.encode(accounts.map((a) => a.toJson()).toList());
+        await prefs.setString(_kSavedAccountsKey, sanitizedRaw);
+      }
+
+      return accounts;
     } catch (_) {
       return [];
     }
@@ -31,6 +84,13 @@ class SavedAccountsService {
   Future<void> saveOrUpdateAccount(SavedAccount account) async {
     if (account.userId.isEmpty || account.refreshToken.isEmpty) return;
 
+    // 1. Save sensitive refresh token to hardware-backed secure storage
+    await _secureStorage.write(
+      key: _tokenKey(account.userId),
+      value: account.refreshToken,
+    );
+
+    // 2. Save profile metadata to SharedPreferences (toJson() excludes refreshToken)
     final prefs = await SharedPreferences.getInstance();
     final existing = await getSavedAccounts();
     final updated = <SavedAccount>[];
@@ -80,6 +140,11 @@ class SavedAccountsService {
   /// Removes an account completely from this device.
   Future<void> removeAccount(String userId) async {
     if (userId.isEmpty) return;
+
+    // 1. Delete token from secure storage
+    await _secureStorage.delete(key: _tokenKey(userId));
+
+    // 2. Remove from SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     final existing = await getSavedAccounts();
     final updated = existing.where((acc) => acc.userId != userId).toList();
