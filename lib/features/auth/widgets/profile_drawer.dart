@@ -12,7 +12,11 @@ import 'package:verso/core/providers/package_info_provider.dart';
 import 'package:verso/core/router.dart';
 import 'package:verso/core/widgets/verso_avatar.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
+import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
+import 'package:verso/features/stats/providers/activity_providers.dart';
+import 'package:verso/features/stats/providers/stats_providers.dart';
 
 class ProfileDrawer extends ConsumerWidget {
   const ProfileDrawer({super.key});
@@ -309,6 +313,13 @@ class ProfileDrawer extends ConsumerWidget {
                         if (context.mounted) Navigator.pop(context);
                         await cacheService.clearAll();
                         ref.invalidate(globalProgressProvider);
+                        ref.invalidate(userStatsProvider);
+                        ref.invalidate(detailedStatsProvider);
+                        ref.invalidate(currentSettingsProvider);
+                        ref.invalidate(activityLogProvider);
+                        ref.invalidate(todayChaptersProvider);
+                        ref.invalidate(continueReadingProvider);
+                        ref.invalidate(userNameProvider);
                         await ref.read(authRepositoryProvider).signOut();
 
                         // Use a short delay to allow GoRouter to redirect to the /login route, then show the success message on the root app context so it survives the navigation stack being cleared.

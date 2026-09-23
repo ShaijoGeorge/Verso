@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/data/bible_data.dart';
+import 'package:verso/features/auth/providers/auth_providers.dart';
 import 'package:verso/features/home/data/verse_repository.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 
@@ -81,7 +82,9 @@ Future<int> todayChapters(Ref ref) async {
 /// Returns the user's first name from Supabase auth metadata.
 @riverpod
 String userName(Ref ref) {
-  final user = Supabase.instance.client.auth.currentUser;
+  ref.watch(authUserProvider);
+  final user = Supabase.instance.client.auth.currentUser ??
+      ref.watch(authUserProvider).value;
   final fullName = user?.userMetadata?['full_name'] as String? ?? '';
   if (fullName.isEmpty) return 'Reader';
   // Return first name only

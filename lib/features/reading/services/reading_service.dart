@@ -5,9 +5,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/providers/connectivity_provider.dart';
 import 'package:verso/core/services/offline_cache_service.dart';
 import 'package:verso/data/local/entities/reading_progress.dart';
+import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/reading/data/bible_repository.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
+import 'package:verso/features/stats/providers/activity_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 
 part 'reading_service.g.dart';
@@ -104,7 +106,7 @@ class ReadingService {
     }
 
     // 2. Check if user already has read records for today in local cache
-    final cached = await _cache.getCachedProgress();
+    final cached = await _cache.getCachedProgress(uid);
     final todayDate = DateTime(now.year, now.month, now.day);
 
     final alreadyReadToday = cached.any((p) {
@@ -145,6 +147,9 @@ class ReadingService {
     _ref.invalidate(globalProgressProvider);
     _ref.invalidate(userStatsProvider);
     _ref.invalidate(detailedStatsProvider);
+    _ref.invalidate(activityLogProvider);
+    _ref.invalidate(todayChaptersProvider);
+    _ref.invalidate(continueReadingProvider);
   }
 
   void _triggerSync() {
@@ -236,7 +241,7 @@ class ReadingService {
         userId,
       );
 
-      await _cache.cacheProgress(merged);
+      await _cache.cacheProgress(merged, userId: userId);
       _lastSyncTime = DateTime.now();
       _invalidateProviders();
     } catch (_) {

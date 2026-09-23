@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -15,8 +17,12 @@ import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/core/utils/app_error_handler.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
+import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
+import 'package:verso/features/reading/services/reading_service.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
+import 'package:verso/features/stats/providers/activity_providers.dart';
+import 'package:verso/features/stats/providers/stats_providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -168,6 +174,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             .read(currentSettingsProvider.notifier)
             .setCanonType(canonToRestore);
         ref.invalidate(userSettingsProvider);
+
+        // 3. Invalidate user-scoped providers to rebuild with the new account's data
+        ref.invalidate(globalProgressProvider);
+        ref.invalidate(userStatsProvider);
+        ref.invalidate(detailedStatsProvider);
+        ref.invalidate(activityLogProvider);
+        ref.invalidate(todayChaptersProvider);
+        ref.invalidate(continueReadingProvider);
+        ref.invalidate(userNameProvider);
+
+        // 4. Trigger cloud sync to pull latest reading progress for this account
+        unawaited(ref.read(readingServiceProvider).syncOnResume());
 
         // Router handles navigation via auth state change
       }

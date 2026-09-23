@@ -2,9 +2,11 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:verso/core/providers/connectivity_provider.dart';
 import 'package:verso/core/services/offline_cache_service.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
+import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 import 'package:verso/features/reading/services/reading_service.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
+import 'package:verso/features/stats/providers/activity_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 
 part 'account_switch_service.g.dart';
@@ -33,14 +35,12 @@ class SwitchError extends SwitchResult {
 ///
 /// 1. Guard: must be online
 /// 2. Flush any pending offline writes to Supabase
-/// 3. Clear only the write queue (cached_progress is user-scoped and safe)
+/// 3. Clear the write queue
 /// 4. Sign out via Supabase
 /// 5. Invalidate all user-scoped providers so the next login starts fresh
 ///
-/// This is intentionally separate from the regular sign-out flow.
-/// Sign-out does a full [OfflineCacheService.clearAll] because the user is "leaving the device".
-/// Switch keeps cached_progress intact so the returning user doesn't need
-/// a full re-fetch.
+/// cached_progress is user-scoped in Drift SQLite by userId, preserving
+/// offline progress for returning accounts while preventing data cross-talk.
 class AccountSwitchService {
   AccountSwitchService(this._ref, this._cache);
   final Ref _ref;
@@ -76,6 +76,10 @@ class AccountSwitchService {
       _ref.invalidate(userStatsProvider);
       _ref.invalidate(detailedStatsProvider);
       _ref.invalidate(currentSettingsProvider);
+      _ref.invalidate(activityLogProvider);
+      _ref.invalidate(todayChaptersProvider);
+      _ref.invalidate(continueReadingProvider);
+      _ref.invalidate(userNameProvider);
 
       return SwitchSuccess();
     } catch (e) {
