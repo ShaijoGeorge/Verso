@@ -235,6 +235,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Future<void> _quickSignIn(SavedAccount account) async {
+    if (_isLoading) return;
     setState(() => _isLoading = true);
     try {
       final switchService = ref.read(accountSwitchServiceProvider);
@@ -275,6 +276,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Future<void> _handleRemoveAccount(SavedAccount account) async {
+    if (_isLoading) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -740,7 +742,7 @@ class _QuickAccountTile extends StatelessWidget {
                   ),
                   tooltip: 'Forget account',
                   visualDensity: VisualDensity.compact,
-                  onPressed: onRemove,
+                  onPressed: isLoading ? null : onRemove,
                 ),
                 Icon(
                   Icons.arrow_forward_ios_rounded,

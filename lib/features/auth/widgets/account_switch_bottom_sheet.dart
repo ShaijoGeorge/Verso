@@ -173,15 +173,17 @@ class _AccountSwitchBottomSheetState
                         final account = accounts[index];
                         final isCurrent = account.userId == currentUserId;
                         final isSwitching = _switchingUserId == account.userId;
+                        final isBusy =
+                            _switchingUserId != null || _isAddingAccount;
 
                         return _AccountCard(
                           account: account,
                           isCurrent: isCurrent,
                           isSwitching: isSwitching,
-                          onTap: isSwitching || isCurrent
+                          onTap: isBusy || isCurrent
                               ? null
                               : () => _handleSwitchTo(account),
-                          onRemove: isCurrent
+                          onRemove: isBusy || isCurrent
                               ? null
                               : () => _handleRemoveAccount(account),
                         );
@@ -239,6 +241,7 @@ class _AccountSwitchBottomSheetState
   }
 
   Future<void> _handleSwitchTo(SavedAccount account) async {
+    if (_switchingUserId != null || _isAddingAccount) return;
     HapticFeedback.lightImpact();
     setState(() => _switchingUserId = account.userId);
 
@@ -308,6 +311,7 @@ class _AccountSwitchBottomSheetState
   }
 
   Future<void> _handleRemoveAccount(SavedAccount account) async {
+    if (_switchingUserId != null || _isAddingAccount) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -343,6 +347,7 @@ class _AccountSwitchBottomSheetState
   }
 
   Future<void> _handleAddAccount() async {
+    if (_isAddingAccount || _switchingUserId != null) return;
     HapticFeedback.lightImpact();
     setState(() => _isAddingAccount = true);
 
@@ -543,16 +548,15 @@ class _AccountCard extends StatelessWidget {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               else if (!isCurrent) ...[
-                if (onRemove != null)
-                  IconButton(
-                    icon: Icon(
-                      Icons.delete_outline_rounded,
-                      size: 18,
-                      color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
-                    ),
-                    tooltip: 'Remove from device',
-                    onPressed: onRemove,
+                IconButton(
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    size: 18,
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
                   ),
+                  tooltip: 'Remove from device',
+                  onPressed: onRemove,
+                ),
                 Icon(
                   Icons.arrow_forward_ios_rounded,
                   size: 14,
