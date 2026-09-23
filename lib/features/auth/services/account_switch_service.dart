@@ -1,7 +1,10 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/providers/connectivity_provider.dart';
 import 'package:verso/core/services/offline_cache_service.dart';
+import 'package:verso/features/auth/models/saved_account.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
+import 'package:verso/features/auth/services/saved_accounts_service.dart';
 import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 import 'package:verso/features/reading/services/reading_service.dart';
@@ -12,12 +15,12 @@ import 'package:verso/features/stats/providers/stats_providers.dart';
 part 'account_switch_service.g.dart';
 
 /// Result of an account-switch attempt.
-///
-/// Using a sealed type instead of throwing gives the UI full control
-/// over how each case is presented (dialog, snackbar, inline error).
 sealed class SwitchResult {}
 
-class SwitchSuccess extends SwitchResult {}
+class SwitchSuccess extends SwitchResult {
+  SwitchSuccess([this.targetAccount]);
+  final SavedAccount? targetAccount;
+}
 
 class SwitchOffline extends SwitchResult {}
 
@@ -26,65 +29,132 @@ class SwitchFlushFailed extends SwitchResult {
   final int pendingCount;
 }
 
+class SwitchSessionExpired extends SwitchResult {
+  SwitchSessionExpired(this.account);
+  final SavedAccount account;
+}
+
 class SwitchError extends SwitchResult {
   SwitchError(this.message);
   final String message;
 }
 
-/// Orchestrates the "Switch Account" flow:
-///
-/// 1. Guard: must be online
-/// 2. Flush any pending offline writes to Supabase
-/// 3. Clear the write queue
-/// 4. Sign out via Supabase
-/// 5. Invalidate all user-scoped providers so the next login starts fresh
-///
-/// cached_progress is user-scoped in Drift SQLite by userId, preserving
-/// offline progress for returning accounts while preventing data cross-talk.
+/// Orchestrates multi-account operations:
+/// - 1-tap switching between saved accounts without returning to the login screen
+/// - Safely flushing current user writes before swapping sessions
+/// - Adding new accounts while preserving the current account on the device
 class AccountSwitchService {
   AccountSwitchService(this._ref, this._cache);
   final Ref _ref;
   final OfflineCacheService _cache;
 
-  /// Attempts to switch accounts. Returns a [SwitchResult] describing
-  /// the outcome — the UI layer decides how to present it.
-  Future<SwitchResult> switchAccount() async {
-    // 1. Online guard
+  /// Switches directly to a [targetAccount] in 1 tap:
+  /// 1. Verifies device is online
+  /// 2. Flushes User A's pending writes to Supabase
+  /// 3. Backs up User A's session in SavedAccounts
+  /// 4. Restores User B's session via Supabase `setSession`
+  /// 5. Invalidates user-scoped Riverpod providers
+  Future<SwitchResult> switchToAccount(SavedAccount targetAccount) async {
     final isOnline = _ref.read(connectivityProvider);
     if (!isOnline) return SwitchOffline();
 
     try {
-      // 2. Flush pending writes so User A's data reaches Supabase
+      // 1. If someone is currently logged in, flush their pending writes and preserve session
+      final currentSession = Supabase.instance.client.auth.currentSession;
+      if (currentSession != null) {
+        final readingService = _ref.read(readingServiceProvider);
+        await readingService.flushWriteQueue();
+
+        final remaining = await _cache.pendingWriteCount();
+        if (remaining > 0) {
+          return SwitchFlushFailed(remaining);
+        }
+
+        await _cache.clearWriteQueue();
+
+        await _ref
+            .read(savedAccountsServiceProvider)
+            .syncCurrentSession(currentSession);
+      }
+
+      // 4. Restore target user session
+      try {
+        final response = await Supabase.instance.client.auth.setSession(
+          targetAccount.refreshToken,
+        );
+        final newSession = response.session;
+        if (newSession == null) {
+          return SwitchSessionExpired(targetAccount);
+        }
+        await _ref
+            .read(savedAccountsServiceProvider)
+            .syncCurrentSession(newSession);
+      } on AuthException {
+        return SwitchSessionExpired(targetAccount);
+      }
+
+      // 5. Invalidate all user-scoped providers to re-render for new user
+      _invalidateUserProviders();
+
+      // 6. Refresh the saved accounts list state
+      await _ref.read(savedAccountsListProvider.notifier).refresh();
+
+      return SwitchSuccess(targetAccount);
+    } catch (e) {
+      return SwitchError(e.toString());
+    }
+  }
+
+  /// Prepares the app to add another account by syncing the current user,
+  /// preserving their saved account, and navigating to the Login screen.
+  Future<SwitchResult> prepareForAddAccount() async {
+    final isOnline = _ref.read(connectivityProvider);
+    if (!isOnline) return SwitchOffline();
+
+    try {
+      // 1. Flush pending writes
       final readingService = _ref.read(readingServiceProvider);
       await readingService.flushWriteQueue();
 
-      // 3. Verify the queue is actually empty after flush
       final remaining = await _cache.pendingWriteCount();
       if (remaining > 0) {
         return SwitchFlushFailed(remaining);
       }
 
-      // 4. Clear the write queue (defensive — should already be empty)
       await _cache.clearWriteQueue();
 
-      // 5. Sign out
+      // 2. Preserve current user in saved accounts
+      final currentSession = Supabase.instance.client.auth.currentSession;
+      if (currentSession != null) {
+        await _ref
+            .read(savedAccountsServiceProvider)
+            .syncCurrentSession(currentSession);
+      }
+
+      // 3. Sign out locally to navigate to login screen
       await _ref.read(authRepositoryProvider).signOut();
 
-      // 6. Invalidate all user-scoped providers so the next login
-      //    rebuilds everything from scratch for the new user.
-      _ref.invalidate(globalProgressProvider);
-      _ref.invalidate(userStatsProvider);
-      _ref.invalidate(detailedStatsProvider);
-      _ref.invalidate(currentSettingsProvider);
-      _ref.invalidate(activityLogProvider);
-      _ref.invalidate(todayChaptersProvider);
-      _ref.invalidate(continueReadingProvider);
-      _ref.invalidate(userNameProvider);
+      // 4. Invalidate providers
+      _invalidateUserProviders();
 
       return SwitchSuccess();
     } catch (e) {
       return SwitchError(e.toString());
     }
+  }
+
+  /// Legacy switch account method (signs out to login screen).
+  Future<SwitchResult> switchAccount() => prepareForAddAccount();
+
+  void _invalidateUserProviders() {
+    _ref.invalidate(globalProgressProvider);
+    _ref.invalidate(userStatsProvider);
+    _ref.invalidate(detailedStatsProvider);
+    _ref.invalidate(currentSettingsProvider);
+    _ref.invalidate(activityLogProvider);
+    _ref.invalidate(todayChaptersProvider);
+    _ref.invalidate(continueReadingProvider);
+    _ref.invalidate(userNameProvider);
   }
 }
 
