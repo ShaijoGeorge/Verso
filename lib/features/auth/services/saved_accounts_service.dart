@@ -107,6 +107,19 @@ SavedAccountsService savedAccountsService(Ref ref) {
 
 @riverpod
 class SavedAccountsList extends _$SavedAccountsList {
+  static int compareAccounts(
+    SavedAccount a,
+    SavedAccount b,
+    String? currentUserId,
+  ) {
+    if (a.userId == b.userId) return 0;
+    if (a.userId == currentUserId) return -1;
+    if (b.userId == currentUserId) return 1;
+    final dateComp = b.lastActive.compareTo(a.lastActive);
+    if (dateComp != 0) return dateComp;
+    return a.userId.compareTo(b.userId);
+  }
+
   @override
   Future<List<SavedAccount>> build() async {
     final service = ref.watch(savedAccountsServiceProvider);
@@ -114,11 +127,7 @@ class SavedAccountsList extends _$SavedAccountsList {
 
     // Sort: current user first, then by lastActive descending
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
-    accounts.sort((a, b) {
-      if (a.userId == currentUserId) return -1;
-      if (b.userId == currentUserId) return 1;
-      return b.lastActive.compareTo(a.lastActive);
-    });
+    accounts.sort((a, b) => compareAccounts(a, b, currentUserId));
 
     return accounts;
   }
@@ -129,11 +138,7 @@ class SavedAccountsList extends _$SavedAccountsList {
       final service = ref.read(savedAccountsServiceProvider);
       final accounts = await service.getSavedAccounts();
       final currentUserId = Supabase.instance.client.auth.currentUser?.id;
-      accounts.sort((a, b) {
-        if (a.userId == currentUserId) return -1;
-        if (b.userId == currentUserId) return 1;
-        return b.lastActive.compareTo(a.lastActive);
-      });
+      accounts.sort((a, b) => compareAccounts(a, b, currentUserId));
       return accounts;
     });
   }
