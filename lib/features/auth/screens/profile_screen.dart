@@ -19,7 +19,10 @@ import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/core/widgets/verso_avatar.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
 import 'package:verso/features/auth/services/account_switch_service.dart';
+import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
+import 'package:verso/features/stats/providers/activity_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -1130,6 +1133,12 @@ class _SignOutTile extends ConsumerWidget {
     await cacheService.clearAll();
     widgetRef.invalidate(globalProgressProvider);
     widgetRef.invalidate(userStatsProvider);
+    widgetRef.invalidate(detailedStatsProvider);
+    widgetRef.invalidate(currentSettingsProvider);
+    widgetRef.invalidate(activityLogProvider);
+    widgetRef.invalidate(todayChaptersProvider);
+    widgetRef.invalidate(continueReadingProvider);
+    widgetRef.invalidate(userNameProvider);
     await widgetRef.read(authRepositoryProvider).signOut();
 
     Future.delayed(const Duration(milliseconds: 150), () {
