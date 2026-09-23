@@ -56,7 +56,10 @@ class AccountSwitchService {
   /// 3. Backs up User A's session in SavedAccounts
   /// 4. Restores User B's session via Supabase `setSession`
   /// 5. Invalidates user-scoped Riverpod providers
-  Future<SwitchResult> switchToAccount(SavedAccount targetAccount) async {
+  Future<SwitchResult> switchToAccount(
+    SavedAccount targetAccount, {
+    bool force = false,
+  }) async {
     final isOnline = _ref.read(connectivityProvider);
     if (!isOnline) return SwitchOffline();
 
@@ -68,7 +71,7 @@ class AccountSwitchService {
         await readingService.flushWriteQueue();
 
         final remaining = await _cache.pendingWriteCount();
-        if (remaining > 0) {
+        if (!force && remaining > 0) {
           return SwitchFlushFailed(remaining);
         }
 
@@ -137,7 +140,7 @@ class AccountSwitchService {
 
   /// Prepares the app to add another account by syncing the current user,
   /// preserving their saved account, and navigating to the Login screen.
-  Future<SwitchResult> prepareForAddAccount() async {
+  Future<SwitchResult> prepareForAddAccount({bool force = false}) async {
     final isOnline = _ref.read(connectivityProvider);
     if (!isOnline) return SwitchOffline();
 
@@ -147,7 +150,7 @@ class AccountSwitchService {
       await readingService.flushWriteQueue();
 
       final remaining = await _cache.pendingWriteCount();
-      if (remaining > 0) {
+      if (!force && remaining > 0) {
         return SwitchFlushFailed(remaining);
       }
 

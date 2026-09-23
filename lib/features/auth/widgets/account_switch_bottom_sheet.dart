@@ -240,13 +240,16 @@ class _AccountSwitchBottomSheetState
     );
   }
 
-  Future<void> _handleSwitchTo(SavedAccount account) async {
+  Future<void> _handleSwitchTo(
+    SavedAccount account, {
+    bool force = false,
+  }) async {
     if (_switchingUserId != null || _isAddingAccount) return;
     HapticFeedback.lightImpact();
     setState(() => _switchingUserId = account.userId);
 
     final switchService = ref.read(accountSwitchServiceProvider);
-    final result = await switchService.switchToAccount(account);
+    final result = await switchService.switchToAccount(account, force: force);
 
     if (!mounted) return;
     setState(() => _switchingUserId = null);
@@ -266,23 +269,65 @@ class _AccountSwitchBottomSheetState
         );
 
       case SwitchFlushFailed(:final pendingCount):
-        VersoSnackbar.show(
-          context,
-          message: '$pendingCount records could not sync. Try again later.',
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(
+              'Sync in progress',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+            ),
+            content: Text(
+              'Could not sync $pendingCount offline records. Switch anyway and sync them later, or Cancel?',
+              style: GoogleFonts.plusJakartaSans(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Switch anyway'),
+              ),
+            ],
+          ),
         );
+        if ((confirmed ?? false) && mounted) {
+          await _handleSwitchTo(account, force: true);
+        }
 
       case SwitchSessionExpired():
         // Sign out current user locally so GoRouter allows navigating to /login
         // without bouncing back to /home, while preserving their session in SavedAccounts.
-        final prepResult = await switchService.prepareForAddAccount();
+        var prepResult = await switchService.prepareForAddAccount();
         if (!mounted) return;
-        if (prepResult is SwitchFlushFailed) {
-          VersoSnackbar.show(
-            context,
-            message:
-                '${prepResult.pendingCount} records could not sync. Try again later.',
+        if (prepResult case SwitchFlushFailed(:final pendingCount)) {
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: Text(
+                'Sync in progress',
+                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+              ),
+              content: Text(
+                'Could not sync $pendingCount offline records. Continue anyway and sync them later, or Cancel?',
+                style: GoogleFonts.plusJakartaSans(),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  child: const Text('Continue anyway'),
+                ),
+              ],
+            ),
           );
-          return;
+          if (!(confirmed ?? false) || !mounted) return;
+          prepResult = await switchService.prepareForAddAccount(force: true);
+          if (!mounted) return;
         }
 
         Navigator.of(context).pop();
@@ -346,13 +391,13 @@ class _AccountSwitchBottomSheetState
     }
   }
 
-  Future<void> _handleAddAccount() async {
+  Future<void> _handleAddAccount({bool force = false}) async {
     if (_isAddingAccount || _switchingUserId != null) return;
     HapticFeedback.lightImpact();
     setState(() => _isAddingAccount = true);
 
     final switchService = ref.read(accountSwitchServiceProvider);
-    final result = await switchService.prepareForAddAccount();
+    final result = await switchService.prepareForAddAccount(force: force);
 
     if (!mounted) return;
     setState(() => _isAddingAccount = false);
@@ -382,10 +427,32 @@ class _AccountSwitchBottomSheetState
         );
 
       case SwitchFlushFailed(:final pendingCount):
-        VersoSnackbar.show(
-          context,
-          message: '$pendingCount records could not sync. Try again later.',
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(
+              'Sync in progress',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+            ),
+            content: Text(
+              'Could not sync $pendingCount offline records. Continue anyway and sync them later, or Cancel?',
+              style: GoogleFonts.plusJakartaSans(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Continue anyway'),
+              ),
+            ],
+          ),
         );
+        if ((confirmed ?? false) && mounted) {
+          await _handleAddAccount(force: true);
+        }
 
       case SwitchSessionExpired():
         VersoSnackbar.error(

@@ -234,44 +234,67 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     _animController.forward();
   }
 
-  Future<void> _quickSignIn(SavedAccount account) async {
+  Future<void> _quickSignIn(SavedAccount account, {bool force = false}) async {
     if (_isLoading) return;
     setState(() => _isLoading = true);
+    final SwitchResult result;
     try {
       final switchService = ref.read(accountSwitchServiceProvider);
-      final result = await switchService.switchToAccount(account);
-      if (!mounted) return;
-
-      switch (result) {
-        case SwitchSuccess():
-          VersoSnackbar.success(
-            context,
-            message: 'Signed in as ${account.displayName}',
-          );
-        case SwitchOffline():
-          VersoSnackbar.show(
-            context,
-            message: 'Connect to the internet to sign in',
-          );
-        case SwitchSessionExpired():
-          VersoSnackbar.show(
-            context,
-            message:
-                'Session expired for ${account.displayName}. Please enter your password.',
-          );
-          setState(() {
-            _emailController.text = account.email;
-          });
-        case SwitchFlushFailed():
-          VersoSnackbar.error(
-            context,
-            message: 'Could not sync pending changes',
-          );
-        case SwitchError(:final message):
-          VersoSnackbar.error(context, message: 'Could not sign in: $message');
-      }
+      result = await switchService.switchToAccount(account, force: force);
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+    if (!mounted) return;
+
+    switch (result) {
+      case SwitchSuccess():
+        VersoSnackbar.success(
+          context,
+          message: 'Signed in as ${account.displayName}',
+        );
+      case SwitchOffline():
+        VersoSnackbar.show(
+          context,
+          message: 'Connect to the internet to sign in',
+        );
+      case SwitchSessionExpired():
+        VersoSnackbar.show(
+          context,
+          message:
+              'Session expired for ${account.displayName}. Please enter your password.',
+        );
+        setState(() {
+          _emailController.text = account.email;
+        });
+      case SwitchFlushFailed(:final pendingCount):
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(
+              'Sync in progress',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+            ),
+            content: Text(
+              'Could not sync $pendingCount offline records. Switch anyway and sync them later, or Cancel?',
+              style: GoogleFonts.plusJakartaSans(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Switch anyway'),
+              ),
+            ],
+          ),
+        );
+        if ((confirmed ?? false) && mounted) {
+          await _quickSignIn(account, force: true);
+        }
+      case SwitchError(:final message):
+        VersoSnackbar.error(context, message: 'Could not sign in: $message');
     }
   }
 
