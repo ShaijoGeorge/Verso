@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:verso/core/design/extensions.dart';
+import 'package:verso/data/bible_book_names.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 import 'package:verso/features/reading/widgets/book_progress_card.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
 
-class BookGrid extends StatefulWidget {
+class BookGrid extends ConsumerStatefulWidget {
   const BookGrid({
     required this.books,
     required this.onBookTap,
@@ -16,10 +18,10 @@ class BookGrid extends StatefulWidget {
   final void Function(BibleBook) onBookTap;
 
   @override
-  State<BookGrid> createState() => _BookGridState();
+  ConsumerState<BookGrid> createState() => _BookGridState();
 }
 
-class _BookGridState extends State<BookGrid> {
+class _BookGridState extends ConsumerState<BookGrid> {
   // MEMORY: Keeps track of which books have already played their entry animation
   final Set<int> _hasAnimated = {};
   final TextEditingController _searchController = TextEditingController();
@@ -32,10 +34,14 @@ class _BookGridState extends State<BookGrid> {
   }
 
   // Group books by category
-  Map<BookCategory, List<BibleBook>> _groupBooks(List<BibleBook> books) {
+  Map<BookCategory, List<BibleBook>> _groupBooks(
+    List<BibleBook> books,
+    String bibleLanguage,
+    CanonType canon,
+  ) {
     final groups = <BookCategory, List<BibleBook>>{};
     for (final book in books) {
-      if (book.name.toLowerCase().contains(_searchQuery.toLowerCase())) {
+      if (book.matchesQuery(_searchQuery, bibleLanguage, canon)) {
         groups.putIfAbsent(book.category, () => []).add(book);
       }
     }
@@ -47,7 +53,14 @@ class _BookGridState extends State<BookGrid> {
     final scheme = Theme.of(context).colorScheme;
     final isAmoled = context.palette.style == AppearanceStyle.amoled;
 
-    final groupedBooks = _groupBooks(widget.books);
+    final settings = switch (ref.watch(currentSettingsProvider)) {
+      AsyncData(:final value) => value,
+      _ => null,
+    };
+    final bibleLanguage = settings?.bibleLanguage ?? 'en';
+    final canon = settings?.canon ?? CanonType.catholic;
+
+    final groupedBooks = _groupBooks(widget.books, bibleLanguage, canon);
     final sortedCategories =
         BookCategory.values.where(groupedBooks.containsKey).toList();
 
@@ -64,7 +77,9 @@ class _BookGridState extends State<BookGrid> {
               controller: _searchController,
               onChanged: (val) => setState(() => _searchQuery = val),
               decoration: InputDecoration(
-                hintText: 'Search books...',
+                hintText: bibleLanguage == 'ml'
+                    ? 'പുസ്തകം തിരയുക...'
+                    : 'Search books...',
                 prefixIcon: Icon(
                   Icons.search_rounded,
                   color: scheme.primary.withValues(alpha: 0.5),
@@ -117,7 +132,7 @@ class _BookGridState extends State<BookGrid> {
               child: Row(
                 children: [
                   Text(
-                    category.displayName,
+                    category.getLocalizedDisplayName(bibleLanguage),
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Theme.of(context).colorScheme.primary,
@@ -165,18 +180,24 @@ class _BookGridState extends State<BookGrid> {
                           onTap: () => widget.onBookTap(book),
                           shouldAnimateEntry: !_hasAnimated.contains(book.id),
                           onAnimationStarted: () => _hasAnimated.add(book.id),
+                          bibleLanguage: bibleLanguage,
+                          canon: canon,
                         ),
                         loading: () => BookProgressCard(
                           book: book,
                           chaptersRead: 0,
                           onTap: () {},
                           shouldAnimateEntry: false,
+                          bibleLanguage: bibleLanguage,
+                          canon: canon,
                         ),
                         error: (_, __) => BookProgressCard(
                           book: book,
                           chaptersRead: 0,
                           onTap: () {},
                           shouldAnimateEntry: false,
+                          bibleLanguage: bibleLanguage,
+                          canon: canon,
                         ),
                       );
                     },

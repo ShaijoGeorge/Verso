@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
+import 'package:verso/data/bible_book_names.dart';
 import 'package:verso/data/bible_data.dart';
 
 class BookProgressCard extends StatefulWidget {
@@ -11,12 +12,16 @@ class BookProgressCard extends StatefulWidget {
     super.key,
     this.shouldAnimateEntry = true,
     this.onAnimationStarted,
+    this.bibleLanguage = 'en',
+    this.canon = CanonType.catholic,
   });
   final BibleBook book;
   final int chaptersRead;
   final VoidCallback onTap;
   final bool shouldAnimateEntry;
   final VoidCallback? onAnimationStarted;
+  final String bibleLanguage;
+  final CanonType canon;
 
   @override
   State<BookProgressCard> createState() => _BookProgressCardState();
@@ -154,7 +159,10 @@ class _BookProgressCardState extends State<BookProgressCard> {
                           const SizedBox(width: Spacing.sm),
                           Expanded(
                             child: Text(
-                              widget.book.name,
+                              widget.book.getLocalizedName(
+                                widget.bibleLanguage,
+                                widget.canon,
+                              ),
                               style: TextStyle(
                                 fontWeight: isCompleted
                                     ? FontWeight.bold

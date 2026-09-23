@@ -1,16 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:verso/core/design/extensions.dart';
+import 'package:verso/data/bible_book_names.dart';
+import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
 import 'package:verso/features/reading/screens/new_testament_screen.dart';
 import 'package:verso/features/reading/screens/old_testament_screen.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
 
-class BibleScreen extends StatelessWidget {
+class BibleScreen extends ConsumerWidget {
   const BibleScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final isAmoled = context.palette.style == AppearanceStyle.amoled;
+
+    final settings = switch (ref.watch(currentSettingsProvider)) {
+      AsyncData(:final value) => value,
+      _ => null,
+    };
+    final bibleLanguage = settings?.bibleLanguage ?? 'en';
 
     // DefaultTabController automatically manages the state for the TabBar and TabBarView
     return DefaultTabController(
@@ -49,14 +59,15 @@ class BibleScreen extends StatelessWidget {
                     .titleSmall
                     ?.copyWith(fontWeight: FontWeight.bold),
                 unselectedLabelColor: scheme.onSurfaceVariant,
-                tabs: const [
+                tabs: [
                   Tab(
                     height: 40,
-                    text: 'Old Testament',
+                    text: Testament.old.getLocalizedName(bibleLanguage),
                   ),
                   Tab(
                     height: 40,
-                    text: 'New Testament',
+                    text:
+                        Testament.newTestament.getLocalizedName(bibleLanguage),
                   ),
                 ],
               ),

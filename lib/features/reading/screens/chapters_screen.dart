@@ -13,10 +13,12 @@ import 'package:verso/core/design/tokens/shadows.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/core/utils/app_error_handler.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
+import 'package:verso/data/bible_book_names.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/reading_progress.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 import 'package:verso/features/reading/services/reading_service.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
 
 class ChaptersScreen extends ConsumerStatefulWidget {
   const ChaptersScreen({required this.book, super.key});
@@ -32,10 +34,18 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
   @override
   Widget build(BuildContext context) {
     final progressAsync = ref.watch(bookProgressProvider(widget.book.id));
+    final settings = switch (ref.watch(currentSettingsProvider)) {
+      AsyncData(:final value) => value,
+      _ => null,
+    };
+    final bibleLanguage = settings?.bibleLanguage ?? 'en';
+    final canon = settings?.canon ?? CanonType.catholic;
+    final localizedBookName =
+        widget.book.getLocalizedName(bibleLanguage, canon);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.book.name),
+        title: Text(localizedBookName),
         actions: [
           IconButton(
             icon: _isMarkingRead
@@ -46,15 +56,21 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
                   )
                 : const Icon(Icons.done_all_rounded),
             tooltip: 'Mark all as read',
-            onPressed: _isMarkingRead ? null : _markAllRead,
+            onPressed:
+                _isMarkingRead ? null : () => _markAllRead(localizedBookName),
           ),
         ],
       ),
-      body: _buildBody(progressAsync),
+      body: _buildBody(progressAsync, bibleLanguage, canon, localizedBookName),
     );
   }
 
-  Widget _buildBody(AsyncValue<List<ReadingProgress>> progressAsync) {
+  Widget _buildBody(
+    AsyncValue<List<ReadingProgress>> progressAsync,
+    String bibleLanguage,
+    CanonType canon,
+    String localizedBookName,
+  ) {
     // On first load (no data yet), show spinner.
     // On refresh (provider invalidated but previous data exists), keep
     // showing the grid so tiles don't vanish and blink.
@@ -108,7 +124,7 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
                 final readAt = readDataMap[chapterNum];
 
                 return _ChapterTile(
-                  bookName: widget.book.name,
+                  bookName: localizedBookName,
                   chapterNum: chapterNum,
                   isRead: isRead,
                   readAt: readAt,
@@ -133,14 +149,14 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
     );
   }
 
-  Future<void> _markAllRead() async {
+  Future<void> _markAllRead(String localizedBookName) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: AppRadii.borderRadiusLG),
         title: const Text('Mark all as read?'),
         content: Text(
-          'This will mark all ${widget.book.chapters} chapters of ${widget.book.name} as read.',
+          'This will mark all ${widget.book.chapters} chapters of $localizedBookName as read.',
         ),
         actions: [
           TextButton(
@@ -186,7 +202,7 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
 
 // HERO HEADER
 
-class _HeroHeader extends StatelessWidget {
+class _HeroHeader extends ConsumerWidget {
   const _HeroHeader({
     required this.book,
     required this.readCount,
@@ -199,10 +215,18 @@ class _HeroHeader extends StatelessWidget {
   final bool isComplete;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
+
+    final settings = switch (ref.watch(currentSettingsProvider)) {
+      AsyncData(:final value) => value,
+      _ => null,
+    };
+    final bibleLanguage = settings?.bibleLanguage ?? 'en';
+    final canon = settings?.canon ?? CanonType.catholic;
+    final localizedBookName = book.getLocalizedName(bibleLanguage, canon);
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -239,7 +263,7 @@ class _HeroHeader extends StatelessWidget {
                     borderRadius: AppRadii.borderRadiusFull,
                   ),
                   child: Text(
-                    book.category.displayName,
+                    book.category.getLocalizedDisplayName(bibleLanguage),
                     style: textTheme.labelSmall?.copyWith(
                       color: context.palette.primary,
                       fontWeight: FontWeight.w700,
@@ -251,7 +275,7 @@ class _HeroHeader extends StatelessWidget {
 
                 // Book name
                 Text(
-                  book.name,
+                  localizedBookName,
                   style: textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
