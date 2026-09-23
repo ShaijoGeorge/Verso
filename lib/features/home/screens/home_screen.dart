@@ -13,8 +13,11 @@ import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/shadows.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
+import 'package:verso/data/bible_book_names.dart';
+import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
 import 'package:verso/features/home/providers/home_providers.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
 import 'package:verso/features/stats/providers/activity_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 
@@ -624,15 +627,22 @@ class _WeeklyChart extends StatelessWidget {
 // CONTINUE READING CARD
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _ContinueReadingCard extends StatelessWidget {
+class _ContinueReadingCard extends ConsumerWidget {
   const _ContinueReadingCard({required this.info});
   final ContinueReadingInfo info;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isOT = info.book.testament.name == 'old';
+
+    final settings = switch (ref.watch(currentSettingsProvider)) {
+      AsyncData(:final value) => value,
+      _ => null,
+    };
+    final bibleLanguage = settings?.bibleLanguage ?? 'en';
+    final canon = settings?.canon ?? CanonType.catholic;
 
     return VersoCard(
       onTap: () => context.push('/book/${info.book.id}'),
@@ -667,7 +677,7 @@ class _ContinueReadingCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  info.book.name,
+                  info.book.getLocalizedName(bibleLanguage, canon),
                   style: textTheme.titleSmall,
                 ),
                 const Gap(2),
@@ -709,14 +719,21 @@ class _ContinueReadingCard extends StatelessWidget {
 // RECENT ACTIVITY LIST
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _RecentActivityList extends StatelessWidget {
+class _RecentActivityList extends ConsumerWidget {
   const _RecentActivityList({required this.groups});
   final List<ActivityGroup> groups;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+
+    final settings = switch (ref.watch(currentSettingsProvider)) {
+      AsyncData(:final value) => value,
+      _ => null,
+    };
+    final bibleLanguage = settings?.bibleLanguage ?? 'en';
+    final canon = settings?.canon ?? CanonType.catholic;
 
     return Column(
       children: groups.map((group) {
@@ -760,7 +777,7 @@ class _RecentActivityList extends StatelessWidget {
                       Row(
                         children: [
                           Text(
-                            group.book.name,
+                            group.book.getLocalizedName(bibleLanguage, canon),
                             style: textTheme.titleSmall,
                           ),
                           if (isFinish) ...[

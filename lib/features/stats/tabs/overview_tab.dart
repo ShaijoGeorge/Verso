@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/shadows.dart';
+import 'package:verso/data/bible_book_names.dart';
+import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 import 'package:verso/features/stats/widgets/book_completion_grid.dart';
 import 'package:verso/features/stats/widgets/stat_summary_card.dart';
@@ -50,15 +54,21 @@ class OverviewTab extends StatelessWidget {
 }
 
 // OT/NT Rings - side by side with animated fill
-class _TestamentRings extends StatelessWidget {
+class _TestamentRings extends ConsumerWidget {
   const _TestamentRings({required this.stats});
   final DetailedStats stats;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
     final isAmoled = context.palette.style == AppearanceStyle.amoled;
+
+    final settings = switch (ref.watch(currentSettingsProvider)) {
+      AsyncData(:final value) => value,
+      _ => null,
+    };
+    final bibleLanguage = settings?.bibleLanguage ?? 'en';
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
@@ -76,7 +86,7 @@ class _TestamentRings extends StatelessWidget {
         children: [
           Expanded(
             child: _RingWidget(
-              label: 'Old Testament',
+              label: Testament.old.getLocalizedName(bibleLanguage),
               progress: stats.otProgress,
               chaptersRead: stats.otRead,
               totalChapters: stats.totalOTChapters,
@@ -93,7 +103,7 @@ class _TestamentRings extends StatelessWidget {
           ),
           Expanded(
             child: _RingWidget(
-              label: 'New Testament',
+              label: Testament.newTestament.getLocalizedName(bibleLanguage),
               progress: stats.ntProgress,
               chaptersRead: stats.ntRead,
               totalChapters: stats.totalNTChapters,

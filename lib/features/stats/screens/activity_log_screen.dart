@@ -6,7 +6,9 @@ import 'package:intl/intl.dart';
 import 'package:verso/core/design/components/verso_card.dart';
 import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
+import 'package:verso/data/bible_book_names.dart';
 import 'package:verso/data/bible_data.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
 import 'package:verso/features/stats/providers/activity_providers.dart';
 import 'package:verso/features/stats/widgets/shimmer_skeletons.dart';
 
@@ -152,12 +154,24 @@ class _FilterBar extends StatelessWidget {
               loading: () => _buildPlaceholder(colorScheme),
               error: (_, __) => _buildPlaceholder(colorScheme),
               data: (books) {
+                final settings = switch (ref.watch(currentSettingsProvider)) {
+                  AsyncData(:final value) => value,
+                  _ => null,
+                };
+                final bibleLanguage = settings?.bibleLanguage ?? 'en';
+                final canon = settings?.canon ?? CanonType.catholic;
+
                 final selectedBook = filter.bookId != null
                     ? BibleData.findBookById(filter.bookId!)
                     : null;
 
                 return GestureDetector(
-                  onTap: () => _showBookPicker(context, books),
+                  onTap: () => _showBookPicker(
+                    context,
+                    books,
+                    bibleLanguage,
+                    canon,
+                  ),
                   child: Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -186,7 +200,13 @@ class _FilterBar extends StatelessWidget {
                         const Gap(6),
                         Flexible(
                           child: Text(
-                            selectedBook?.name ?? 'All Books',
+                            selectedBook?.getLocalizedName(
+                                  bibleLanguage,
+                                  canon,
+                                ) ??
+                                (bibleLanguage == 'ml'
+                                    ? 'എല്ലാ പുസ്തകങ്ങളും'
+                                    : 'All Books'),
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: filter.bookId != null
@@ -363,7 +383,12 @@ class _FilterBar extends StatelessWidget {
     return '${startFmt.format(start)} – ${endFmt.format(end)}';
   }
 
-  void _showBookPicker(BuildContext context, List<BibleBook> books) {
+  void _showBookPicker(
+    BuildContext context,
+    List<BibleBook> books,
+    String bibleLanguage,
+    CanonType canon,
+  ) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -390,7 +415,9 @@ class _FilterBar extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    'Filter by Book',
+                    bibleLanguage == 'ml'
+                        ? 'പുസ്തകം തിരഞ്ഞെടുക്കുക'
+                        : 'Filter by Book',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -408,7 +435,11 @@ class _FilterBar extends StatelessWidget {
                               ? colorScheme.primary
                               : null,
                         ),
-                        title: const Text('All Books'),
+                        title: Text(
+                          bibleLanguage == 'ml'
+                              ? 'എല്ലാ പുസ്തകങ്ങളും'
+                              : 'All Books',
+                        ),
                         selected: filter.bookId == null,
                         selectedColor: colorScheme.primary,
                         onTap: () {
@@ -427,7 +458,9 @@ class _FilterBar extends StatelessWidget {
                                 ? colorScheme.primary
                                 : null,
                           ),
-                          title: Text(book.name),
+                          title: Text(
+                            book.getLocalizedName(bibleLanguage, canon),
+                          ),
                           selected: filter.bookId == book.id,
                           selectedColor: colorScheme.primary,
                           onTap: () {
@@ -644,16 +677,23 @@ class _ActivityCard extends StatelessWidget {
 
 // STANDARD CARD
 
-class _StandardCard extends StatelessWidget {
+class _StandardCard extends ConsumerWidget {
   const _StandardCard({required this.group, required this.isBulk});
   final ActivityGroup group;
   final bool isBulk;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
+
+    final settings = switch (ref.watch(currentSettingsProvider)) {
+      AsyncData(:final value) => value,
+      _ => null,
+    };
+    final bibleLanguage = settings?.bibleLanguage ?? 'en';
+    final canon = settings?.canon ?? CanonType.catholic;
 
     return VersoCard(
       padding: const EdgeInsets.all(16),
@@ -663,7 +703,7 @@ class _StandardCard extends StatelessWidget {
           Row(
             children: [
               Text(
-                group.book.name,
+                group.book.getLocalizedName(bibleLanguage, canon),
                 style:
                     const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
@@ -709,14 +749,21 @@ class _StandardCard extends StatelessWidget {
 
 // ENHANCED COMPLETION CARD
 
-class _CompletionCard extends StatelessWidget {
+class _CompletionCard extends ConsumerWidget {
   const _CompletionCard({required this.group});
   final ActivityGroup group;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+
+    final settings = switch (ref.watch(currentSettingsProvider)) {
+      AsyncData(:final value) => value,
+      _ => null,
+    };
+    final bibleLanguage = settings?.bibleLanguage ?? 'en';
+    final canon = settings?.canon ?? CanonType.catholic;
 
     return Container(
       clipBehavior: Clip.antiAlias,
@@ -818,7 +865,7 @@ class _CompletionCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            group.book.name,
+                            group.book.getLocalizedName(bibleLanguage, canon),
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 17,
