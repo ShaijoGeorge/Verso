@@ -28,7 +28,9 @@ import 'package:verso/features/stats/providers/activity_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.initialEmail});
+
+  final String? initialEmail;
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -81,8 +83,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
     _animController.forward();
 
-    // Load any previously remembered email right after the widget initialises
-    _loadRememberedEmail();
+    // Pre-fill email from route args if provided, otherwise load remembered email
+    if (widget.initialEmail != null && widget.initialEmail!.isNotEmpty) {
+      _emailController.text = widget.initialEmail!;
+      _rememberMe = true;
+    } else {
+      _loadRememberedEmail();
+    }
+  }
+
+  @override
+  void didUpdateWidget(LoginScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialEmail != null &&
+        widget.initialEmail!.isNotEmpty &&
+        widget.initialEmail != oldWidget.initialEmail) {
+      _emailController.text = widget.initialEmail!;
+      _rememberMe = true;
+    }
   }
 
   // Read the saved email from disk and pre-fills the field + checkbox
@@ -216,43 +234,103 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     _animController.forward();
   }
 
-  Future<void> _quickSignIn(SavedAccount account) async {
+  Future<void> _quickSignIn(SavedAccount account, {bool force = false}) async {
+    if (_isLoading) return;
     setState(() => _isLoading = true);
+    final SwitchResult result;
     try {
       final switchService = ref.read(accountSwitchServiceProvider);
-      final result = await switchService.switchToAccount(account);
-      if (!mounted) return;
-
-      switch (result) {
-        case SwitchSuccess():
-          VersoSnackbar.success(
-            context,
-            message: 'Signed in as ${account.displayName}',
-          );
-        case SwitchOffline():
-          VersoSnackbar.show(
-            context,
-            message: 'Connect to the internet to sign in',
-          );
-        case SwitchSessionExpired():
-          VersoSnackbar.show(
-            context,
-            message:
-                'Session expired for ${account.displayName}. Please enter your password.',
-          );
-          setState(() {
-            _emailController.text = account.email;
-          });
-        case SwitchFlushFailed():
-          VersoSnackbar.error(
-            context,
-            message: 'Could not sync pending changes',
-          );
-        case SwitchError(:final message):
-          VersoSnackbar.error(context, message: 'Could not sign in: $message');
-      }
+      result = await switchService.switchToAccount(account, force: force);
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+    if (!mounted) return;
+
+    switch (result) {
+      case SwitchSuccess():
+        VersoSnackbar.success(
+          context,
+          message: 'Signed in as ${account.displayName}',
+        );
+      case SwitchOffline():
+        VersoSnackbar.show(
+          context,
+          message: 'Connect to the internet to sign in',
+        );
+      case SwitchSessionExpired():
+        VersoSnackbar.show(
+          context,
+          message:
+              'Session expired for ${account.displayName}. Please enter your password.',
+        );
+        setState(() {
+          _emailController.text = account.email;
+        });
+      case SwitchFlushFailed(:final pendingCount):
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(
+              'Sync in progress',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+            ),
+            content: Text(
+              'Could not sync $pendingCount offline records. Switch anyway and sync them later, or Cancel?',
+              style: GoogleFonts.plusJakartaSans(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Switch anyway'),
+              ),
+            ],
+          ),
+        );
+        if ((confirmed ?? false) && mounted) {
+          await _quickSignIn(account, force: true);
+        }
+      case SwitchError(:final message):
+        VersoSnackbar.error(context, message: 'Could not sign in: $message');
+    }
+  }
+
+  Future<void> _handleRemoveAccount(SavedAccount account) async {
+    if (_isLoading) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          'Remove account?',
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          'Remove "${account.displayName}" (${account.email}) from this device?',
+          style: GoogleFonts.plusJakartaSans(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed ?? false) {
+      await ref
+          .read(savedAccountsListProvider.notifier)
+          .removeAccount(account.userId);
     }
   }
 
@@ -371,11 +449,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                       account: account,
                                       isLoading: _isLoading,
                                       onTap: () => _quickSignIn(account),
-                                      onRemove: () => ref
-                                          .read(
-                                            savedAccountsListProvider.notifier,
-                                          )
-                                          .removeAccount(account.userId),
+                                      onRemove: () =>
+                                          _handleRemoveAccount(account),
                                     ),
                                   );
                                 }),
@@ -690,7 +765,7 @@ class _QuickAccountTile extends StatelessWidget {
                   ),
                   tooltip: 'Forget account',
                   visualDensity: VisualDensity.compact,
-                  onPressed: onRemove,
+                  onPressed: isLoading ? null : onRemove,
                 ),
                 Icon(
                   Icons.arrow_forward_ios_rounded,

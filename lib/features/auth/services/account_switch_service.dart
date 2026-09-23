@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/providers/connectivity_provider.dart';
@@ -54,7 +56,10 @@ class AccountSwitchService {
   /// 3. Backs up User A's session in SavedAccounts
   /// 4. Restores User B's session via Supabase `setSession`
   /// 5. Invalidates user-scoped Riverpod providers
-  Future<SwitchResult> switchToAccount(SavedAccount targetAccount) async {
+  Future<SwitchResult> switchToAccount(
+    SavedAccount targetAccount, {
+    bool force = false,
+  }) async {
     final isOnline = _ref.read(connectivityProvider);
     if (!isOnline) return SwitchOffline();
 
@@ -66,11 +71,9 @@ class AccountSwitchService {
         await readingService.flushWriteQueue();
 
         final remaining = await _cache.pendingWriteCount();
-        if (remaining > 0) {
+        if (!force && remaining > 0) {
           return SwitchFlushFailed(remaining);
         }
-
-        await _cache.clearWriteQueue();
 
         await _ref
             .read(savedAccountsServiceProvider)
@@ -93,11 +96,41 @@ class AccountSwitchService {
         return SwitchSessionExpired(targetAccount);
       }
 
-      // 5. Invalidate all user-scoped providers to re-render for new user
+      // 5. Restore target user canon and local DB settings
+      final user = Supabase.instance.client.auth.currentUser;
+      var remoteCanon = user?.userMetadata?['canon_type'] as String?;
+
+      if (remoteCanon == null && user != null) {
+        try {
+          final userData = await Supabase.instance.client
+              .from('profiles')
+              .select('canon_type')
+              .eq('id', user.id)
+              .maybeSingle();
+          remoteCanon = userData?['canon_type'] as String?;
+        } catch (_) {
+          // Optional profiles table fallback
+        }
+      }
+
+      final canonToRestore = remoteCanon ?? 'catholic';
+
+      // 1. Save fetched canon to local Drift DB
+      await _ref.read(localDatabaseProvider).updateLocalCanon(canonToRestore);
+
+      // 2. Save to SharedPreferences and refresh Riverpod settings
+      await _ref
+          .read(currentSettingsProvider.notifier)
+          .setCanonType(canonToRestore);
+
+      // 6. Invalidate all user-scoped providers to re-render for new user
       _invalidateUserProviders();
 
-      // 6. Refresh the saved accounts list state
+      // 7. Refresh the saved accounts list state
       await _ref.read(savedAccountsListProvider.notifier).refresh();
+
+      // 8. Trigger cloud sync to pull latest reading progress for this account
+      unawaited(_ref.read(readingServiceProvider).syncOnResume(force: true));
 
       return SwitchSuccess(targetAccount);
     } catch (e) {
@@ -107,7 +140,7 @@ class AccountSwitchService {
 
   /// Prepares the app to add another account by syncing the current user,
   /// preserving their saved account, and navigating to the Login screen.
-  Future<SwitchResult> prepareForAddAccount() async {
+  Future<SwitchResult> prepareForAddAccount({bool force = false}) async {
     final isOnline = _ref.read(connectivityProvider);
     if (!isOnline) return SwitchOffline();
 
@@ -117,11 +150,9 @@ class AccountSwitchService {
       await readingService.flushWriteQueue();
 
       final remaining = await _cache.pendingWriteCount();
-      if (remaining > 0) {
+      if (!force && remaining > 0) {
         return SwitchFlushFailed(remaining);
       }
-
-      await _cache.clearWriteQueue();
 
       // 2. Preserve current user in saved accounts
       final currentSession = Supabase.instance.client.auth.currentSession;
@@ -131,11 +162,16 @@ class AccountSwitchService {
             .syncCurrentSession(currentSession);
       }
 
-      // 3. Sign out locally to navigate to login screen
-      await _ref.read(authRepositoryProvider).signOut();
+      // 3. Sign out locally to navigate to login screen without revoking tokens on the server
+      await _ref
+          .read(authRepositoryProvider)
+          .signOut(scope: SignOutScope.local);
 
       // 4. Invalidate providers
       _invalidateUserProviders();
+
+      // 5. Refresh the saved accounts list state
+      await _ref.read(savedAccountsListProvider.notifier).refresh();
 
       return SwitchSuccess();
     } catch (e) {
@@ -151,6 +187,7 @@ class AccountSwitchService {
     _ref.invalidate(userStatsProvider);
     _ref.invalidate(detailedStatsProvider);
     _ref.invalidate(currentSettingsProvider);
+    _ref.invalidate(userSettingsProvider);
     _ref.invalidate(activityLogProvider);
     _ref.invalidate(todayChaptersProvider);
     _ref.invalidate(continueReadingProvider);

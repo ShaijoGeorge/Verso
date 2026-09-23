@@ -173,15 +173,17 @@ class _AccountSwitchBottomSheetState
                         final account = accounts[index];
                         final isCurrent = account.userId == currentUserId;
                         final isSwitching = _switchingUserId == account.userId;
+                        final isBusy =
+                            _switchingUserId != null || _isAddingAccount;
 
                         return _AccountCard(
                           account: account,
                           isCurrent: isCurrent,
                           isSwitching: isSwitching,
-                          onTap: isSwitching || isCurrent
+                          onTap: isBusy || isCurrent
                               ? null
                               : () => _handleSwitchTo(account),
-                          onRemove: isCurrent
+                          onRemove: isBusy || isCurrent
                               ? null
                               : () => _handleRemoveAccount(account),
                         );
@@ -238,12 +240,16 @@ class _AccountSwitchBottomSheetState
     );
   }
 
-  Future<void> _handleSwitchTo(SavedAccount account) async {
+  Future<void> _handleSwitchTo(
+    SavedAccount account, {
+    bool force = false,
+  }) async {
+    if (_switchingUserId != null || _isAddingAccount) return;
     HapticFeedback.lightImpact();
     setState(() => _switchingUserId = account.userId);
 
     final switchService = ref.read(accountSwitchServiceProvider);
-    final result = await switchService.switchToAccount(account);
+    final result = await switchService.switchToAccount(account, force: force);
 
     if (!mounted) return;
     setState(() => _switchingUserId = null);
@@ -263,19 +269,83 @@ class _AccountSwitchBottomSheetState
         );
 
       case SwitchFlushFailed(:final pendingCount):
-        VersoSnackbar.show(
-          context,
-          message: '$pendingCount records could not sync. Try again later.',
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(
+              'Sync in progress',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+            ),
+            content: Text(
+              'Could not sync $pendingCount offline records. Switch anyway and sync them later, or Cancel?',
+              style: GoogleFonts.plusJakartaSans(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Switch anyway'),
+              ),
+            ],
+          ),
         );
+        if ((confirmed ?? false) && mounted) {
+          await _handleSwitchTo(account, force: true);
+        }
 
       case SwitchSessionExpired():
+        // Sign out current user locally so GoRouter allows navigating to /login
+        // without bouncing back to /home, while preserving their session in SavedAccounts.
+        var prepResult = await switchService.prepareForAddAccount();
+        if (!mounted) return;
+        if (prepResult case SwitchFlushFailed(:final pendingCount)) {
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: Text(
+                'Sync in progress',
+                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+              ),
+              content: Text(
+                'Could not sync $pendingCount offline records. Continue anyway and sync them later, or Cancel?',
+                style: GoogleFonts.plusJakartaSans(),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  child: const Text('Continue anyway'),
+                ),
+              ],
+            ),
+          );
+          if (!(confirmed ?? false) || !mounted) return;
+          prepResult = await switchService.prepareForAddAccount(force: true);
+          if (!mounted) return;
+        }
+
         Navigator.of(context).pop();
-        VersoSnackbar.show(
-          context,
-          message:
-              'Session expired for ${account.displayName}. Please sign in again.',
-        );
-        ref.read(routerProvider).go('/login');
+        ref.read(routerProvider).go('/login', extra: account.email);
+        Future.delayed(const Duration(milliseconds: 150), () {
+          final rootContext = ref
+              .read(routerProvider)
+              .routerDelegate
+              .navigatorKey
+              .currentContext;
+          if (rootContext != null && rootContext.mounted) {
+            VersoSnackbar.show(
+              rootContext,
+              message:
+                  'Session expired for ${account.displayName}. Please sign in again.',
+            );
+          }
+        });
 
       case SwitchError(:final message):
         VersoSnackbar.error(
@@ -286,6 +356,7 @@ class _AccountSwitchBottomSheetState
   }
 
   Future<void> _handleRemoveAccount(SavedAccount account) async {
+    if (_switchingUserId != null || _isAddingAccount) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -320,12 +391,13 @@ class _AccountSwitchBottomSheetState
     }
   }
 
-  Future<void> _handleAddAccount() async {
+  Future<void> _handleAddAccount({bool force = false}) async {
+    if (_isAddingAccount || _switchingUserId != null) return;
     HapticFeedback.lightImpact();
     setState(() => _isAddingAccount = true);
 
     final switchService = ref.read(accountSwitchServiceProvider);
-    final result = await switchService.prepareForAddAccount();
+    final result = await switchService.prepareForAddAccount(force: force);
 
     if (!mounted) return;
     setState(() => _isAddingAccount = false);
@@ -333,11 +405,20 @@ class _AccountSwitchBottomSheetState
     switch (result) {
       case SwitchSuccess():
         Navigator.of(context).pop();
-        VersoSnackbar.show(
-          context,
-          message: 'Sign in to add an account to this device',
-        );
         ref.read(routerProvider).go('/login');
+        Future.delayed(const Duration(milliseconds: 150), () {
+          final rootContext = ref
+              .read(routerProvider)
+              .routerDelegate
+              .navigatorKey
+              .currentContext;
+          if (rootContext != null && rootContext.mounted) {
+            VersoSnackbar.show(
+              rootContext,
+              message: 'Sign in to add an account to this device',
+            );
+          }
+        });
 
       case SwitchOffline():
         VersoSnackbar.show(
@@ -346,10 +427,32 @@ class _AccountSwitchBottomSheetState
         );
 
       case SwitchFlushFailed(:final pendingCount):
-        VersoSnackbar.show(
-          context,
-          message: '$pendingCount records could not sync. Try again later.',
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(
+              'Sync in progress',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+            ),
+            content: Text(
+              'Could not sync $pendingCount offline records. Continue anyway and sync them later, or Cancel?',
+              style: GoogleFonts.plusJakartaSans(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Continue anyway'),
+              ),
+            ],
+          ),
         );
+        if ((confirmed ?? false) && mounted) {
+          await _handleAddAccount(force: true);
+        }
 
       case SwitchSessionExpired():
         VersoSnackbar.error(
@@ -512,16 +615,15 @@ class _AccountCard extends StatelessWidget {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               else if (!isCurrent) ...[
-                if (onRemove != null)
-                  IconButton(
-                    icon: Icon(
-                      Icons.delete_outline_rounded,
-                      size: 18,
-                      color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
-                    ),
-                    tooltip: 'Remove from device',
-                    onPressed: onRemove,
+                IconButton(
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    size: 18,
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
                   ),
+                  tooltip: 'Remove from device',
+                  onPressed: onRemove,
+                ),
                 Icon(
                   Icons.arrow_forward_ios_rounded,
                   size: 14,

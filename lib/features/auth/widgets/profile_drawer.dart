@@ -330,12 +330,14 @@ class ProfileDrawer extends ConsumerWidget {
                           await ref
                               .read(savedAccountsServiceProvider)
                               .removeAccount(currentUserId);
+                          await cacheService.clearUserCache(currentUserId);
                         }
-                        await cacheService.clearAll();
+                        await cacheService.clearWriteQueue();
                         ref.invalidate(globalProgressProvider);
                         ref.invalidate(userStatsProvider);
                         ref.invalidate(detailedStatsProvider);
                         ref.invalidate(currentSettingsProvider);
+                        ref.invalidate(userSettingsProvider);
                         ref.invalidate(activityLogProvider);
                         ref.invalidate(todayChaptersProvider);
                         ref.invalidate(continueReadingProvider);

@@ -25,6 +25,7 @@ class ReadingService {
 
   // Cooldown tracker to prevent rapid redundant sync calls
   DateTime? _lastSyncTime;
+  String? _lastSyncUserId;
 
   // Debounce timer so rapid taps coalesce into one provider refresh
   Timer? _refreshTimer;
@@ -212,15 +213,19 @@ class ReadingService {
   /// 3. Reconciles remote snapshot with any writes queued during fetch.
   /// 4. Atomically updates local Drift SQLite cache.
   /// 5. Invalidates providers so UI updates immediately and stream reconnects.
-  Future<void> syncOnResume() async {
+  Future<void> syncOnResume({bool force = false}) async {
     final userId = _currentUserId;
     if (!_isOnline || userId.isEmpty) return;
 
     // Cooldown guard: Avoid repeated calls if user rapidly switches apps or toggles notification shade,
-    // unless there are pending writes in the queue waiting to be synced.
+    // unless there are pending writes in the queue waiting to be synced, force is true, or user changed.
     final now = DateTime.now();
     final queue = await _cache.getWriteQueue();
-    if (queue.isEmpty &&
+    final isDifferentUser =
+        _lastSyncUserId != null && _lastSyncUserId != userId;
+    if (!force &&
+        !isDifferentUser &&
+        queue.isEmpty &&
         _lastSyncTime != null &&
         now.difference(_lastSyncTime!) < const Duration(seconds: 5)) {
       return;
@@ -243,6 +248,7 @@ class ReadingService {
 
       await _cache.cacheProgress(merged, userId: userId);
       _lastSyncTime = DateTime.now();
+      _lastSyncUserId = userId;
       _invalidateProviders();
     } catch (_) {
       // Gracefully ignore network errors on resume so app stays on local cache
