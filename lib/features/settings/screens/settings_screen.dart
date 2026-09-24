@@ -6,14 +6,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:verso/core/design/design.dart';
 import 'package:verso/core/providers/package_info_provider.dart';
-import 'package:verso/core/utils/app_error_handler.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
 import 'package:verso/features/settings/screens/debug_cache_screen.dart';
-import 'package:verso/features/settings/services/notification_service.dart';
+import 'package:verso/features/settings/screens/notifications_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -60,34 +59,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         );
       },
     );
-  }
-
-  Future<void> _pickReminderTime(int currentHour, int currentMinute) async {
-    final picked = await _pickTimeDialog(currentHour, currentMinute);
-    if (picked != null) {
-      try {
-        await ref.read(currentSettingsProvider.notifier).updateReminder(
-              true,
-              picked.hour,
-              picked.minute,
-            );
-        await NotificationService().scheduleDailyReminder(
-          picked.hour,
-          picked.minute,
-        );
-        if (mounted) {
-          VersoSnackbar.success(
-            context,
-            message:
-                'Reminder set for ${_formatTime(picked.hour, picked.minute)}',
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          VersoSnackbar.error(context, message: AppErrorHandler.getMessage(e));
-        }
-      }
-    }
   }
 
   Future<void> _pickScheduleTime(
@@ -1105,69 +1076,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                   // --- NOTIFICATIONS SECTION ---
                   _SettingsSectionCard(
-                    title: 'Reminders',
+                    title: 'Notifications',
                     children: [
-                      _SettingsSwitchTile(
-                        title: 'Daily Reminder',
-                        subtitle: settings.isReminderEnabled
-                            ? 'Scheduled for ${_formatTime(settings.reminderHour, settings.reminderMinute)}'
-                            : 'Get a daily nudge to read',
+                      _SettingsActionTile(
+                        title: 'Manage Notifications',
+                        subtitle: 'Daily Verse & Daily Reminder',
                         icon: Icons.notifications_active_outlined,
                         iconColor: const Color(0xFF10B981),
-                        value: settings.isReminderEnabled,
-                        onChanged: (value) async {
-                          try {
-                            await ref
-                                .read(currentSettingsProvider.notifier)
-                                .updateReminder(
-                                  value,
-                                  settings.reminderHour,
-                                  settings.reminderMinute,
-                                );
-                            if (value) {
-                              await NotificationService().scheduleDailyReminder(
-                                settings.reminderHour,
-                                settings.reminderMinute,
-                              );
-                              if (mounted) {
-                                VersoSnackbar.success(
-                                  context,
-                                  message: 'Daily reminder enabled',
-                                );
-                              }
-                            } else {
-                              await NotificationService().cancelReminders();
-                            }
-                          } catch (e) {
-                            if (mounted) {
-                              VersoSnackbar.error(
-                                context,
-                                message: AppErrorHandler.getMessage(e),
-                              );
-                            }
-                          }
+                        onTap: () {
+                          showModalBottomSheet<void>(
+                            context: context,
+                            backgroundColor: Colors.transparent,
+                            isScrollControlled: true,
+                            builder: (context) =>
+                                const NotificationsBottomSheet(),
+                          );
                         },
                       ),
-                      if (settings.isReminderEnabled)
-                        _SettingsActionTile(
-                          title: 'Reminder Time',
-                          icon: Icons.access_time,
-                          iconColor: const Color(0xFF3B82F6),
-                          trailing: _TimeChip(
-                            label: _formatTime(
-                              settings.reminderHour,
-                              settings.reminderMinute,
-                            ),
-                            onTap: () => _pickReminderTime(
-                              settings.reminderHour,
-                              settings.reminderMinute,
-                            ),
-                          ),
-                          onTap: () => _pickReminderTime(
-                            settings.reminderHour,
-                            settings.reminderMinute,
-                          ),
-                        ),
                     ],
                   ),
                   const Gap(24),

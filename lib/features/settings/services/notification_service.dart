@@ -65,11 +65,20 @@ class NotificationService {
     return (ios ?? true) && (android ?? true);
   }
 
-  /// Schedule daily reminder
+  /// Dedicated notification IDs to prevent collisions between features
+  static const int readingReminderNotificationId = 100;
+  static const int dailyVerseNotificationId = 200;
+
+  /// Dedicated Android notification channels
+  static const String dailyReminderChannelId = 'daily_reminder';
+  static const String dailyVerseChannelId = 'daily_verse_channel';
+
+  /// Schedule daily reading reminder
   Future<void> scheduleDailyReminder(int hour, int minute) async {
     if (!_isInitialized) await init();
 
-    await cancelReminders();
+    // Cancel ONLY the reading reminder to avoid wiping out the daily verse!
+    await cancelDailyReminder();
 
     final hasPermission = await requestPermissions();
     if (!hasPermission) {
@@ -93,15 +102,15 @@ class NotificationService {
     final message = messages[dayOfWeek % messages.length];
 
     await _notificationsPlugin.zonedSchedule(
-      id: 0,
+      id: readingReminderNotificationId,
       title: 'Bible Reading Time 📖',
       body: message,
       scheduledDate: scheduled,
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
-          'daily_reminder',
-          'Daily Reminder',
-          channelDescription: 'Daily Bible reading reminder',
+          dailyReminderChannelId,
+          'Daily Reading Reminder',
+          channelDescription: 'Daily Bible reading streak and plan reminder',
           importance: Importance.max,
           priority: Priority.high,
           styleInformation: BigTextStyleInformation(''),
@@ -114,11 +123,84 @@ class NotificationService {
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
+      payload: 'reading_reminder',
     );
   }
 
-  /// Cancel all reminders
-  Future<void> cancelReminders() async {
+  /// Schedule daily verse notification (default at 6:00 AM)
+  Future<void> scheduleDailyVerseNotification({
+    int hour = 6,
+    int minute = 0,
+  }) async {
+    if (!_isInitialized) await init();
+
+    // Cancel previous daily verse schedule before setting new one
+    await cancelDailyVerseNotification();
+
+    final hasPermission = await requestPermissions();
+    if (!hasPermission) {
+      throw Exception('Notification permission denied');
+    }
+
+    final scheduled = _nextInstance(hour, minute);
+
+    // Morning inspirational messages encouraging users to start their day with Scripture
+    final morningMessages = [
+      'Begin your morning with God’s Word. Tap to read today’s verse 🌅',
+      'Start your day grounded in grace and truth 📖',
+      'Good morning! Your daily verse is ready to inspire you ✨',
+      'A fresh day, a fresh word from Scripture 🙏',
+      'Fuel your spirit before starting your day 💫',
+      'Step into today with peace and divine wisdom ☀️',
+      'The morning is here! Discover today’s verse of the day 🌟',
+    ];
+
+    final dayOfWeek = DateTime.now().weekday;
+    final message = morningMessages[dayOfWeek % morningMessages.length];
+
+    await _notificationsPlugin.zonedSchedule(
+      id: dailyVerseNotificationId,
+      title: 'Verse of the Day 🌅',
+      body: message,
+      scheduledDate: scheduled,
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          dailyVerseChannelId,
+          'Daily Verse',
+          channelDescription: 'Daily morning Scripture verse at 6:00 AM',
+          importance: Importance.max,
+          priority: Priority.high,
+          styleInformation: BigTextStyleInformation(''),
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+      payload: 'daily_verse',
+    );
+  }
+
+  /// Cancel only daily verse notification
+  Future<void> cancelDailyVerseNotification() async {
+    if (!_isInitialized) await init();
+    await _notificationsPlugin.cancel(id: dailyVerseNotificationId);
+  }
+
+  /// Cancel only the daily reading reminder
+  Future<void> cancelDailyReminder() async {
+    if (!_isInitialized) await init();
+    await _notificationsPlugin.cancel(id: readingReminderNotificationId);
+  }
+
+  /// Deprecated alias kept for backwards compatibility with existing UI callers
+  Future<void> cancelReminders() => cancelDailyReminder();
+
+  /// Cancel all notifications across all features (e.g., on sign out or full reset)
+  Future<void> cancelAllNotifications() async {
     if (!_isInitialized) await init();
     await _notificationsPlugin.cancelAll();
   }

@@ -122,6 +122,18 @@ class CurrentSettings extends _$CurrentSettings {
     ref.invalidateSelf(); // Refresh UI
   }
 
+  Future<void> updateDailyVerse(bool isEnabled) async {
+    final current = _current;
+    if (current == null) return;
+    state = AsyncData(
+      current.copyWith(
+        isDailyVerseEnabled: isEnabled,
+      ),
+    );
+    await ref.read(settingsRepositoryProvider).updateDailyVerse(isEnabled);
+    ref.invalidateSelf(); // Refresh UI
+  }
+
   Future<void> setFontScaleFactor(double factor) async {
     final current = _current;
     if (current == null) return;
