@@ -18,10 +18,25 @@ class SavedAccountsService {
 
   final FlutterSecureStorage _secureStorage;
 
+  // Auth events can arrive while a manual save is still in progress. Refresh
+  // tokens rotate on every use, so allowing those writes to overlap can let an
+  // older event overwrite the freshly rotated token. Keep all saved-account
+  // storage operations in their invocation order.
+  Future<void> _operationTail = Future<void>.value();
+
   static const _kSavedAccountsKey = 'verso_saved_accounts_list';
   static const _kTokenKeyPrefix = 'verso_refresh_token_';
 
   String _tokenKey(String userId) => '$_kTokenKeyPrefix$userId';
+
+  Future<T> _enqueue<T>(Future<T> Function() operation) {
+    final result = _operationTail.then((_) => operation());
+    _operationTail = result.then<void>(
+      (_) {},
+      onError: (_, __) {},
+    );
+    return result;
+  }
 
   /// Retrieves all saved accounts stored on this device.
   ///
@@ -29,7 +44,9 @@ class SavedAccountsService {
   /// refresh tokens are loaded from hardware-backed secure storage.
   /// If any legacy plaintext tokens exist in SharedPreferences, they are
   /// automatically migrated to secure storage and stripped from SharedPreferences.
-  Future<List<SavedAccount>> getSavedAccounts() async {
+  Future<List<SavedAccount>> getSavedAccounts() => _enqueue(_getSavedAccounts);
+
+  Future<List<SavedAccount>> _getSavedAccounts() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_kSavedAccountsKey);
     if (raw == null || raw.isEmpty) return [];
@@ -81,7 +98,10 @@ class SavedAccountsService {
   }
 
   /// Saves or updates a saved account on this device.
-  Future<void> saveOrUpdateAccount(SavedAccount account) async {
+  Future<void> saveOrUpdateAccount(SavedAccount account) =>
+      _enqueue(() => _saveOrUpdateAccount(account));
+
+  Future<void> _saveOrUpdateAccount(SavedAccount account) async {
     if (account.userId.isEmpty || account.refreshToken.isEmpty) return;
 
     // 1. Save sensitive refresh token to hardware-backed secure storage
@@ -92,7 +112,7 @@ class SavedAccountsService {
 
     // 2. Save profile metadata to SharedPreferences (toJson() excludes refreshToken)
     final prefs = await SharedPreferences.getInstance();
-    final existing = await getSavedAccounts();
+    final existing = await _getSavedAccounts();
     final updated = <SavedAccount>[];
     var found = false;
 
@@ -115,10 +135,10 @@ class SavedAccountsService {
   }
 
   /// Convenience method to sync from a Supabase [Session].
-  Future<void> syncCurrentSession(Session session) async {
+  Future<void> syncCurrentSession(Session session) {
     final user = session.user;
     final refreshToken = session.refreshToken;
-    if (refreshToken == null || refreshToken.isEmpty) return;
+    if (refreshToken == null || refreshToken.isEmpty) return Future.value();
 
     final fullName = (user.userMetadata?['full_name'] as String?)?.trim();
     final displayName = (fullName != null && fullName.isNotEmpty)
@@ -134,11 +154,14 @@ class SavedAccountsService {
       lastActive: DateTime.now(),
     );
 
-    await saveOrUpdateAccount(account);
+    return _enqueue(() => _saveOrUpdateAccount(account));
   }
 
   /// Removes an account completely from this device.
-  Future<void> removeAccount(String userId) async {
+  Future<void> removeAccount(String userId) =>
+      _enqueue(() => _removeAccount(userId));
+
+  Future<void> _removeAccount(String userId) async {
     if (userId.isEmpty) return;
 
     // 1. Delete token from secure storage
@@ -146,15 +169,18 @@ class SavedAccountsService {
 
     // 2. Remove from SharedPreferences
     final prefs = await SharedPreferences.getInstance();
-    final existing = await getSavedAccounts();
+    final existing = await _getSavedAccounts();
     final updated = existing.where((acc) => acc.userId != userId).toList();
     final raw = json.encode(updated.map((a) => a.toJson()).toList());
     await prefs.setString(_kSavedAccountsKey, raw);
   }
 
   /// Updates the last active timestamp for an account.
-  Future<void> touchAccount(String userId) async {
-    final existing = await getSavedAccounts();
+  Future<void> touchAccount(String userId) =>
+      _enqueue(() => _touchAccount(userId));
+
+  Future<void> _touchAccount(String userId) async {
+    final existing = await _getSavedAccounts();
     final index = existing.indexWhere((acc) => acc.userId == userId);
     if (index != -1) {
       existing[index] = existing[index].copyWith(lastActive: DateTime.now());

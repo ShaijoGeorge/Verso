@@ -297,8 +297,8 @@ class _AccountSwitchBottomSheetState
         }
 
       case SwitchSessionExpired():
-        // Sign out current user locally so GoRouter allows navigating to /login
-        // without bouncing back to /home, while preserving their session in SavedAccounts.
+        // Keep the current user signed in while opening the special add-account
+        // login route. Signing out would revoke their refresh token.
         var prepResult = await switchService.prepareForAddAccount();
         if (!mounted) return;
         if (prepResult case SwitchFlushFailed(:final pendingCount)) {
@@ -331,7 +331,9 @@ class _AccountSwitchBottomSheetState
         }
 
         Navigator.of(context).pop();
-        ref.read(routerProvider).go('/login', extra: account.email);
+        ref
+            .read(routerProvider)
+            .go('/login?addAccount=true', extra: account.email);
         Future.delayed(const Duration(milliseconds: 150), () {
           final rootContext = ref
               .read(routerProvider)
@@ -405,7 +407,7 @@ class _AccountSwitchBottomSheetState
     switch (result) {
       case SwitchSuccess():
         Navigator.of(context).pop();
-        ref.read(routerProvider).go('/login');
+        ref.read(routerProvider).go('/login?addAccount=true');
         Future.delayed(const Duration(milliseconds: 150), () {
           final rootContext = ref
               .read(routerProvider)

@@ -5,7 +5,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/providers/connectivity_provider.dart';
 import 'package:verso/core/services/offline_cache_service.dart';
 import 'package:verso/features/auth/models/saved_account.dart';
-import 'package:verso/features/auth/providers/auth_providers.dart';
 import 'package:verso/features/auth/services/saved_accounts_service.dart';
 import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
@@ -64,6 +63,11 @@ class AccountSwitchService {
     if (!isOnline) return SwitchOffline();
 
     try {
+      final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+      if (currentUserId == targetAccount.userId) {
+        return SwitchSuccess(targetAccount);
+      }
+
       // 1. If someone is currently logged in, flush their pending writes and preserve session
       final currentSession = Supabase.instance.client.auth.currentSession;
       if (currentSession != null) {
@@ -139,7 +143,10 @@ class AccountSwitchService {
   }
 
   /// Prepares the app to add another account by syncing the current user,
-  /// preserving their saved account, and navigating to the Login screen.
+  /// preserving their saved account. The current Supabase session deliberately
+  /// remains active: Supabase's `signOut(scope: local)` also revokes that
+  /// server-side session, which would invalidate the token needed for a later
+  /// account switch.
   Future<SwitchResult> prepareForAddAccount({bool force = false}) async {
     final isOnline = _ref.read(connectivityProvider);
     if (!isOnline) return SwitchOffline();
@@ -154,23 +161,25 @@ class AccountSwitchService {
         return SwitchFlushFailed(remaining);
       }
 
-      // 2. Preserve current user in saved accounts
+      // 2. Refresh and preserve the current user in saved accounts. A refresh
+      // token is rotated whenever it is used, so saving `currentSession`
+      // directly can capture a token that an in-flight auto-refresh has just
+      // made stale. Persist the session returned by Supabase instead.
       final currentSession = Supabase.instance.client.auth.currentSession;
       if (currentSession != null) {
+        final refreshed = await Supabase.instance.client.auth.refreshSession();
+        final sessionToPreserve =
+            refreshed.session ?? Supabase.instance.client.auth.currentSession;
+        if (sessionToPreserve == null) {
+          return SwitchError('Could not refresh the current session');
+        }
         await _ref
             .read(savedAccountsServiceProvider)
-            .syncCurrentSession(currentSession);
+            .syncCurrentSession(sessionToPreserve);
       }
 
-      // 3. Sign out locally to navigate to login screen without revoking tokens on the server
-      await _ref
-          .read(authRepositoryProvider)
-          .signOut(scope: SignOutScope.local);
-
-      // 4. Invalidate providers
-      _invalidateUserProviders();
-
-      // 5. Refresh the saved accounts list state
+      // 3. Refresh the saved accounts list state. The login route is opened in
+      // add-account mode, which intentionally permits this active session.
       await _ref.read(savedAccountsListProvider.notifier).refresh();
 
       return SwitchSuccess();

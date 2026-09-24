@@ -28,9 +28,14 @@ import 'package:verso/features/stats/providers/activity_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key, this.initialEmail});
+  const LoginScreen({
+    super.key,
+    this.initialEmail,
+    this.isAddingAccount = false,
+  });
 
   final String? initialEmail;
+  final bool isAddingAccount;
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -217,7 +222,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           await ref.read(savedAccountsListProvider.notifier).refresh();
         }
 
-        // Router handles navigation via auth state change
+        // The add-account route intentionally permits the previous user to
+        // remain signed in until this credential exchange succeeds. Once it
+        // does, leave that special route for the newly signed-in account.
+        if (widget.isAddingAccount && mounted) {
+          context.go('/home');
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -252,6 +262,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           context,
           message: 'Signed in as ${account.displayName}',
         );
+        if (widget.isAddingAccount) {
+          context.go('/home');
+        }
       case SwitchOffline():
         VersoSnackbar.show(
           context,
