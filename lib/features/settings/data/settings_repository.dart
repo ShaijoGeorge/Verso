@@ -16,6 +16,7 @@ class SettingsRepository {
   static const _kReminderEnabledKey = 'is_reminder_enabled';
   static const _kReminderHourKey = 'reminder_hour';
   static const _kReminderMinuteKey = 'reminder_minute';
+  static const _kDailyVerseEnabledKey = 'is_daily_verse_enabled';
   static const _kOnboardingKey = 'has_seen_onboarding';
   // Profile Setup keys (collected before login)
   static const _kProfileSetupKey = 'has_completed_profile_setup';
@@ -138,6 +139,8 @@ class SettingsRepository {
           _readScoped(prefs, _kReminderHourKey, uid, prefs.getInt) ?? 7,
       reminderMinute:
           _readScoped(prefs, _kReminderMinuteKey, uid, prefs.getInt) ?? 0,
+      isDailyVerseEnabled:
+          _readScoped(prefs, _kDailyVerseEnabledKey, uid, prefs.getBool) ?? true,
       themeProfileId:
           _readScoped(prefs, _kThemeProfileKey, uid, prefs.getString) ??
               'current',
@@ -339,6 +342,20 @@ class SettingsRepository {
       _kReminderMinuteKey,
       uid,
       (k) => prefs.setInt(k, minute),
+    );
+  }
+
+  Future<void> updateDailyVerse(
+    bool isEnabled, {
+    String? userId,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final uid = _resolveUserId(userId);
+    await _writeScoped(
+      prefs,
+      _kDailyVerseEnabledKey,
+      uid,
+      (k) => prefs.setBool(k, isEnabled),
     );
   }
 

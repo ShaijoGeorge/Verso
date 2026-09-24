@@ -42,6 +42,7 @@ class UserSettings {
     this.isReminderEnabled = false,
     this.reminderHour = 7,
     this.reminderMinute = 0,
+    this.isDailyVerseEnabled = true,
     this.themeProfileId = 'current',
     this.fontScaleFactor = 1,
     this.canonType = 'catholic',
@@ -60,6 +61,7 @@ class UserSettings {
   final bool isReminderEnabled;
   final int reminderHour;
   final int reminderMinute;
+  final bool isDailyVerseEnabled;
   final String themeProfileId;
   final double fontScaleFactor;
 
@@ -89,6 +91,7 @@ class UserSettings {
     bool? isReminderEnabled,
     int? reminderHour,
     int? reminderMinute,
+    bool? isDailyVerseEnabled,
     String? themeProfileId,
     double? fontScaleFactor,
     String? canonType,
@@ -107,6 +110,7 @@ class UserSettings {
         isReminderEnabled: isReminderEnabled ?? this.isReminderEnabled,
         reminderHour: reminderHour ?? this.reminderHour,
         reminderMinute: reminderMinute ?? this.reminderMinute,
+        isDailyVerseEnabled: isDailyVerseEnabled ?? this.isDailyVerseEnabled,
         themeProfileId: themeProfileId ?? this.themeProfileId,
         fontScaleFactor: fontScaleFactor ?? this.fontScaleFactor,
         canonType: canonType ?? this.canonType,
