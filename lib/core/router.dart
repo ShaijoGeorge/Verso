@@ -65,6 +65,8 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       final isSplash = path == '/';
       final isLoginRoute = cleanPath == '/login';
+      final isAddAccountLogin =
+          isLoginRoute && state.uri.queryParameters['addAccount'] == 'true';
       final isForgotRoute = cleanPath == '/forgot-password';
       final isUpdatePasswordRoute = cleanPath == '/update-password';
       final isResetCallback = cleanPath == '/reset-callback';
@@ -107,7 +109,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         // Once profile is complete, bounce away from all pre-auth screens.
         // Also bounce off /profile-setup itself (so back-button can't return there).
         // Note: isForgotRoute removed so logged-in users can reset their password from the profile screen.
-        if (isLoginRoute ||
+        if ((isLoginRoute && !isAddAccountLogin) ||
             isResetCallback ||
             isOnboardingRoute ||
             isProfileSetupRoute) {
@@ -147,6 +149,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             key: state.pageKey,
             child: LoginScreen(
               initialEmail: extra is String ? extra : null,
+              isAddingAccount:
+                  state.uri.queryParameters['addAccount'] == 'true',
             ),
           );
         },
