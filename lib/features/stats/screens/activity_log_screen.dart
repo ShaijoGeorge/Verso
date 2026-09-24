@@ -204,9 +204,7 @@ class _FilterBar extends StatelessWidget {
                                   bibleLanguage,
                                   canon,
                                 ) ??
-                                (bibleLanguage == 'ml'
-                                    ? 'എല്ലാ പുസ്തകങ്ങളും'
-                                    : 'All Books'),
+                                'All Books',
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: filter.bookId != null
@@ -415,9 +413,7 @@ class _FilterBar extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    bibleLanguage == 'ml'
-                        ? 'പുസ്തകം തിരഞ്ഞെടുക്കുക'
-                        : 'Filter by Book',
+                    'Filter by Book',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -435,11 +431,7 @@ class _FilterBar extends StatelessWidget {
                               ? colorScheme.primary
                               : null,
                         ),
-                        title: Text(
-                          bibleLanguage == 'ml'
-                              ? 'എല്ലാ പുസ്തകങ്ങളും'
-                              : 'All Books',
-                        ),
+                        title: const Text('All Books'),
                         selected: filter.bookId == null,
                         selectedColor: colorScheme.primary,
                         onTap: () {

@@ -77,9 +77,7 @@ class _BookGridState extends ConsumerState<BookGrid> {
               controller: _searchController,
               onChanged: (val) => setState(() => _searchQuery = val),
               decoration: InputDecoration(
-                hintText: bibleLanguage == 'ml'
-                    ? 'പുസ്തകം തിരയുക...'
-                    : 'Search books...',
+                hintText: 'Search books...',
                 prefixIcon: Icon(
                   Icons.search_rounded,
                   color: scheme.primary.withValues(alpha: 0.5),
