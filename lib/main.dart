@@ -137,6 +137,8 @@ class _BibliaAppState extends ConsumerState<BibliaApp>
       ref.invalidate(scheduleTickStreamProvider);
       // Reconcile cross-device reading progress on resume.
       ref.read(readingServiceProvider).syncOnResume();
+      // Ensure daily reminders and verse notifications remain fresh and registered
+      _initializeReminders();
     }
   }
 
@@ -151,6 +153,9 @@ class _BibliaAppState extends ConsumerState<BibliaApp>
           settings.reminderHour,
           settings.reminderMinute,
         );
+      }
+      if (settings.isDailyVerseEnabled) {
+        await NotificationService().scheduleDailyVerseNotification();
       }
     });
   }
