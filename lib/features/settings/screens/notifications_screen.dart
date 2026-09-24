@@ -55,7 +55,8 @@ class _NotificationsBottomSheetState
           if (mounted) {
             VersoSnackbar.success(
               context,
-              message: 'Reminder updated to ${_formatTime(time.hour, time.minute)}',
+              message:
+                  'Reminder updated to ${_formatTime(time.hour, time.minute)}',
             );
           }
         }

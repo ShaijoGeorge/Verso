@@ -61,7 +61,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-
   Future<void> _pickScheduleTime(
     UserSettings settings, {
     required bool isDay,
@@ -1089,7 +1088,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             context: context,
                             backgroundColor: Colors.transparent,
                             isScrollControlled: true,
-                            builder: (context) => const NotificationsBottomSheet(),
+                            builder: (context) =>
+                                const NotificationsBottomSheet(),
                           );
                         },
                       ),

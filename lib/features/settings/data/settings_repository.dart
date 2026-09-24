@@ -140,7 +140,8 @@ class SettingsRepository {
       reminderMinute:
           _readScoped(prefs, _kReminderMinuteKey, uid, prefs.getInt) ?? 0,
       isDailyVerseEnabled:
-          _readScoped(prefs, _kDailyVerseEnabledKey, uid, prefs.getBool) ?? true,
+          _readScoped(prefs, _kDailyVerseEnabledKey, uid, prefs.getBool) ??
+              true,
       themeProfileId:
           _readScoped(prefs, _kThemeProfileKey, uid, prefs.getString) ??
               'current',
