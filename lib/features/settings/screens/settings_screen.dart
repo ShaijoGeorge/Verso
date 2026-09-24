@@ -225,6 +225,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _ => 'English',
       };
 
+  String _bibleLanguageSubtitle(String langCode) => switch (langCode) {
+        'ml' => 'Book names & navigation in Malayalam',
+        _ => 'Book names & navigation in English',
+      };
+
   Future<void> _pickBibleLanguage(UserSettings settings) async {
     final currentLang = settings.bibleLanguage;
 
@@ -826,6 +831,146 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   const Gap(24),
 
+                  // --- BIBLE PREFERENCES SECTION ---
+                  _SettingsSectionCard(
+                    title: 'Bible Preferences',
+                    children: [
+                      _SettingsActionTile(
+                        title: 'Bible Canon',
+                        subtitle: _canonLabel(settings.canon),
+                        icon: Icons.auto_stories_rounded,
+                        iconColor: const Color(0xFF8B5CF6),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: scheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                switch (settings.canon) {
+                                  CanonType.catholic => 'Catholic',
+                                  CanonType.protestant => 'Protestant',
+                                  CanonType.orthodox => 'Orthodox',
+                                },
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: scheme.primary,
+                                ),
+                              ),
+                            ),
+                            const Gap(6),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              color: scheme.onSurfaceVariant
+                                  .withValues(alpha: 0.6),
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                        onTap: () => _pickCanon(settings),
+                      ),
+                      _SettingsActionTile(
+                        title: 'Bible Language',
+                        subtitle:
+                            _bibleLanguageSubtitle(settings.bibleLanguage),
+                        icon: Icons.translate_rounded,
+                        iconColor: const Color(0xFF0EA5E9),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: scheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                settings.bibleLanguage == 'ml'
+                                    ? 'മലയാളം'
+                                    : 'English',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: scheme.primary,
+                                ),
+                              ),
+                            ),
+                            const Gap(6),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              color: scheme.onSurfaceVariant
+                                  .withValues(alpha: 0.6),
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                        onTap: () => _pickBibleLanguage(settings),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? const Color(0xFF452B00)
+                                        .withValues(alpha: 0.35)
+                                    : const Color(0xFFFFFBEB),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? const Color(0xFFB45309)
+                                      .withValues(alpha: 0.35)
+                                  : const Color(0xFFFDE68A),
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.info_outline_rounded,
+                                size: 16,
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? const Color(0xFFFBBF24)
+                                    : const Color(0xFFD97706),
+                              ),
+                              const Gap(8),
+                              Expanded(
+                                child: Text(
+                                  'Customizes your canon (66, 73, or 78 books) and scripture display language. Your reading progress is safely preserved across changes.',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11,
+                                    height: 1.35,
+                                    color: Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? const Color(0xFFFDE68A)
+                                        : const Color(0xFF92400E),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Gap(24),
+
                   // --- TEXT SIZE SECTION ---
                   _SettingsSectionCard(
                     title: 'Text Size',
@@ -1023,145 +1168,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             settings.reminderMinute,
                           ),
                         ),
-                    ],
-                  ),
-                  const Gap(24),
-
-                  // --- BIBLE CANON SECTION ---
-                  _SettingsSectionCard(
-                    title: 'Bible Tradition',
-                    children: [
-                      _SettingsActionTile(
-                        title: 'Bible Canon',
-                        subtitle: _canonLabel(settings.canon),
-                        icon: Icons.auto_stories_rounded,
-                        iconColor: const Color(0xFF8B5CF6),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: scheme.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                switch (settings.canon) {
-                                  CanonType.catholic => 'Catholic',
-                                  CanonType.protestant => 'Protestant',
-                                  CanonType.orthodox => 'Orthodox',
-                                },
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: scheme.primary,
-                                ),
-                              ),
-                            ),
-                            const Gap(6),
-                            Icon(
-                              Icons.chevron_right_rounded,
-                              color: scheme.onSurfaceVariant
-                                  .withValues(alpha: 0.6),
-                              size: 20,
-                            ),
-                          ],
-                        ),
-                        onTap: () => _pickCanon(settings),
-                      ),
-                      _SettingsActionTile(
-                        title: 'Bible Language',
-                        subtitle: _bibleLanguageLabel(settings.bibleLanguage),
-                        icon: Icons.translate_rounded,
-                        iconColor: const Color(0xFF0EA5E9),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: scheme.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                settings.bibleLanguage == 'ml'
-                                    ? 'മലയാളം'
-                                    : 'English',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: scheme.primary,
-                                ),
-                              ),
-                            ),
-                            const Gap(6),
-                            Icon(
-                              Icons.chevron_right_rounded,
-                              color: scheme.onSurfaceVariant
-                                  .withValues(alpha: 0.6),
-                              size: 20,
-                            ),
-                          ],
-                        ),
-                        onTap: () => _pickBibleLanguage(settings),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                    ? const Color(0xFF452B00)
-                                        .withValues(alpha: 0.35)
-                                    : const Color(0xFFFFFBEB),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? const Color(0xFFB45309)
-                                      .withValues(alpha: 0.35)
-                                  : const Color(0xFFFDE68A),
-                            ),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(
-                                Icons.info_outline_rounded,
-                                size: 16,
-                                color: Theme.of(context).brightness ==
-                                        Brightness.dark
-                                    ? const Color(0xFFFBBF24)
-                                    : const Color(0xFFD97706),
-                              ),
-                              const Gap(8),
-                              Expanded(
-                                child: Text(
-                                  'Tap above to change your tradition. Visible books (66, 73, or 78) and stats adjust dynamically, while your reading progress is always preserved.',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 11,
-                                    height: 1.35,
-                                    color: Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? const Color(0xFFFDE68A)
-                                        : const Color(0xFF92400E),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                   const Gap(24),
