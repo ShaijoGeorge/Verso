@@ -327,9 +327,6 @@ class ProfileDrawer extends ConsumerWidget {
                         final currentUserId =
                             Supabase.instance.client.auth.currentUser?.id;
                         if (currentUserId != null && currentUserId.isNotEmpty) {
-                          await ref
-                              .read(savedAccountsServiceProvider)
-                              .removeAccount(currentUserId);
                           await cacheService.clearUserCache(currentUserId);
                         }
                         await cacheService.clearWriteQueue();
