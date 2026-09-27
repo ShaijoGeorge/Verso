@@ -20,6 +20,7 @@ import 'package:verso/features/auth/models/saved_account.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
 import 'package:verso/features/auth/services/account_switch_service.dart';
 import 'package:verso/features/auth/services/saved_accounts_service.dart';
+import 'package:verso/features/auth/widgets/saved_account_tile.dart';
 import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 import 'package:verso/features/reading/services/reading_service.dart';
@@ -458,7 +459,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 ...savedAccounts.map((account) {
                                   return Padding(
                                     padding: const EdgeInsets.only(bottom: 8),
-                                    child: _QuickAccountTile(
+                                    child: SavedAccountTile(
                                       account: account,
                                       isLoading: _isLoading,
                                       onTap: () => _quickSignIn(account),
@@ -681,111 +682,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   ),
                 ),
               ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _QuickAccountTile extends StatelessWidget {
-  const _QuickAccountTile({
-    required this.account,
-    required this.isLoading,
-    required this.onTap,
-    required this.onRemove,
-  });
-
-  final SavedAccount account;
-  final bool isLoading;
-  final VoidCallback onTap;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final initial = account.displayName.isNotEmpty
-        ? account.displayName[0].toUpperCase()
-        : '?';
-
-    return Container(
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(AppRadii.md),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.25),
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadii.md),
-          onTap: isLoading ? null : onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
-              children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: scheme.primary.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    initial,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: scheme.primary,
-                    ),
-                  ),
-                ),
-                const Gap(10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        account.displayName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: scheme.onSurface,
-                        ),
-                      ),
-                      Text(
-                        account.email,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.close_rounded,
-                    size: 16,
-                    color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
-                  ),
-                  tooltip: 'Forget account',
-                  visualDensity: VisualDensity.compact,
-                  onPressed: isLoading ? null : onRemove,
-                ),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 13,
-                  color: scheme.primary,
-                ),
-              ],
             ),
           ),
         ),
