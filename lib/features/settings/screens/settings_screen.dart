@@ -659,6 +659,295 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  void _showSettingsSheet({
+    required BuildContext context,
+    required String title,
+    required Widget child,
+  }) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Consumer(
+        builder: (context, ref, _) {
+          // Force a rebuild of the bottom sheet when settings (e.g. theme mode) change.
+          ref.watch(currentSettingsProvider);
+          final scheme = Theme.of(context).colorScheme;
+
+          return Container(
+            decoration: BoxDecoration(
+              color: scheme.surface,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).padding.bottom + 24,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Gap(12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const Gap(16),
+                Text(
+                  title,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSurface,
+                  ),
+                ),
+                const Gap(16),
+                child,
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showColorThemePicker(BuildContext context, UserSettings settings) {
+    _showSettingsSheet(
+      context: context,
+      title: 'Color Theme',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final profile in ThemeProfiles.all)
+            _ThemeProfileTile(
+              profile: profile,
+              isSelected: settings.themeProfileId == profile.id,
+              onTap: () {
+                ref
+                    .read(currentSettingsProvider.notifier)
+                    .setThemeProfileId(profile.id);
+                Navigator.pop(context);
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showAppearancePicker(BuildContext context, UserSettings settings) {
+    _showSettingsSheet(
+      context: context,
+      title: 'Appearance',
+      child: Consumer(
+        builder: (context, ref, _) {
+          final currentSettings =
+              ref.watch(currentSettingsProvider).value ?? settings;
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<AppThemeMode>(
+                    showSelectedIcon: false,
+                    segments: const [
+                      ButtonSegment(
+                        value: AppThemeMode.system,
+                        icon: Icon(Icons.brightness_auto_outlined, size: 18),
+                        label: Text('System',
+                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ),
+                      ButtonSegment(
+                        value: AppThemeMode.light,
+                        icon: Icon(Icons.light_mode_outlined, size: 18),
+                        label: Text('Light',
+                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ),
+                      ButtonSegment(
+                        value: AppThemeMode.dark,
+                        icon: Icon(Icons.dark_mode_outlined, size: 18),
+                        label: Text('Dark',
+                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ),
+                    ],
+                    selected: {currentSettings.themeMode},
+                    onSelectionChanged: (s) => ref
+                        .read(currentSettingsProvider.notifier)
+                        .setThemeMode(s.first),
+                    style: ButtonStyle(
+                      visualDensity: VisualDensity.compact,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      textStyle: WidgetStatePropertyAll(
+                        GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              if (currentSettings.themeMode != AppThemeMode.light)
+                _SettingsSwitchTile(
+                  title: 'Pure Black (AMOLED)',
+                  icon: Icons.brightness_1_outlined,
+                  iconColor: const Color(0xFF8B5CF6),
+                  value: currentSettings.useAmoledForDark,
+                  onChanged: (v) => ref
+                      .read(currentSettingsProvider.notifier)
+                      .setUseAmoledForDark(v),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _showTextSizePicker(BuildContext context, UserSettings settings) {
+    _showSettingsSheet(
+      context: context,
+      title: 'Text Size',
+      child: Consumer(
+        builder: (context, ref, _) {
+          final currentSettings =
+              ref.watch(currentSettingsProvider).value ?? settings;
+          return _FontSizeSettingsTile(
+            currentScale: currentSettings.fontScaleFactor,
+            onChanged: (scale) => ref
+                .read(currentSettingsProvider.notifier)
+                .setFontScaleFactor(scale),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showScheduleThemePicker(BuildContext context) {
+    _showSettingsSheet(
+      context: context,
+      title: 'Schedule Theme',
+      child: Consumer(
+        builder: (context, ref, _) {
+          final settings = ref.watch(currentSettingsProvider).value;
+          if (settings == null) return const SizedBox.shrink();
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _SettingsSwitchTile(
+                title: 'Enable Scheduling',
+                icon: Icons.schedule_outlined,
+                iconColor: const Color(0xFFF59E0B),
+                value: settings.scheduleEnabled,
+                onChanged: (v) =>
+                    ref.read(currentSettingsProvider.notifier).setSchedule(
+                          enabled: v,
+                          dayStyle: settings.dayStyle,
+                          nightStyle: settings.nightStyle,
+                          dayStartHour: settings.dayStartHour,
+                          dayStartMinute: settings.dayStartMinute,
+                          nightStartHour: settings.nightStartHour,
+                          nightStartMinute: settings.nightStartMinute,
+                        ),
+              ),
+              if (settings.scheduleEnabled) ...[
+                _SettingsActionTile(
+                  title: 'Day Mode',
+                  icon: Icons.wb_sunny_outlined,
+                  iconColor: const Color(0xFFF59E0B),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _styleLabel(settings.dayStyle),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const Gap(8),
+                      _TimeChip(
+                        label: _formatTime(
+                          settings.dayStartHour,
+                          settings.dayStartMinute,
+                        ),
+                        onTap: () => _pickScheduleTime(settings, isDay: true),
+                      ),
+                    ],
+                  ),
+                  onTap: () async {
+                    final picked =
+                        await _pickStyle(settings.dayStyle, 'Day mode');
+                    if (picked != null) {
+                      await ref
+                          .read(currentSettingsProvider.notifier)
+                          .setSchedule(
+                            enabled: settings.scheduleEnabled,
+                            dayStyle: picked,
+                            nightStyle: settings.nightStyle,
+                            dayStartHour: settings.dayStartHour,
+                            dayStartMinute: settings.dayStartMinute,
+                            nightStartHour: settings.nightStartHour,
+                            nightStartMinute: settings.nightStartMinute,
+                          );
+                    }
+                  },
+                ),
+                _SettingsActionTile(
+                  title: 'Night Mode',
+                  icon: Icons.nightlight_outlined,
+                  iconColor: const Color(0xFF6366F1),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _styleLabel(settings.nightStyle),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const Gap(8),
+                      _TimeChip(
+                        label: _formatTime(
+                          settings.nightStartHour,
+                          settings.nightStartMinute,
+                        ),
+                        onTap: () => _pickScheduleTime(settings, isDay: false),
+                      ),
+                    ],
+                  ),
+                  onTap: () async {
+                    final picked =
+                        await _pickStyle(settings.nightStyle, 'Night mode');
+                    if (picked != null) {
+                      await ref
+                          .read(currentSettingsProvider.notifier)
+                          .setSchedule(
+                            enabled: settings.scheduleEnabled,
+                            dayStyle: settings.dayStyle,
+                            nightStyle: picked,
+                            dayStartHour: settings.dayStartHour,
+                            dayStartMinute: settings.dayStartMinute,
+                            nightStartHour: settings.nightStartHour,
+                            nightStartMinute: settings.nightStartMinute,
+                          );
+                    }
+                  },
+                ),
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final settingsAsync = ref.watch(currentSettingsProvider);
@@ -688,399 +977,56 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- COLOR THEME SECTION ---
                   _SettingsSectionCard(
-                    title: 'Color Theme',
                     children: [
-                      for (final profile in ThemeProfiles.all)
-                        _ThemeProfileTile(
-                          profile: profile,
-                          isSelected: settings.themeProfileId == profile.id,
-                          onTap: () => ref
-                              .read(currentSettingsProvider.notifier)
-                              .setThemeProfileId(profile.id),
-                        ),
-                    ],
-                  ),
-                  const Gap(24),
-
-                  // --- APPEARANCE SECTION ---
-                  _SettingsSectionCard(
-                    title: 'Appearance',
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              'Theme Mode',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: scheme.onSurface,
-                              ),
-                            ),
-                            const Gap(12),
-                            SizedBox(
-                              width: double.infinity,
-                              child: SegmentedButton<AppThemeMode>(
-                                showSelectedIcon: false,
-                                segments: const [
-                                  ButtonSegment(
-                                    value: AppThemeMode.system,
-                                    icon: Icon(
-                                      Icons.brightness_auto_outlined,
-                                      size: 18,
-                                    ),
-                                    label: Text(
-                                      'System',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  ButtonSegment(
-                                    value: AppThemeMode.light,
-                                    icon: Icon(
-                                      Icons.light_mode_outlined,
-                                      size: 18,
-                                    ),
-                                    label: Text(
-                                      'Light',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  ButtonSegment(
-                                    value: AppThemeMode.dark,
-                                    icon: Icon(
-                                      Icons.dark_mode_outlined,
-                                      size: 18,
-                                    ),
-                                    label: Text(
-                                      'Dark',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                                selected: {settings.themeMode},
-                                onSelectionChanged: (s) => ref
-                                    .read(currentSettingsProvider.notifier)
-                                    .setThemeMode(s.first),
-                                style: ButtonStyle(
-                                  visualDensity: VisualDensity.compact,
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                  padding: const WidgetStatePropertyAll(
-                                    EdgeInsets.symmetric(horizontal: 4),
-                                  ),
-                                  textStyle: WidgetStatePropertyAll(
-                                    GoogleFonts.plusJakartaSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                      _SettingsActionTile(
+                        title: 'Choose Color Theme',
+                        icon: Icons.palette_outlined,
+                        iconColor: scheme.primary,
+                        onTap: () => _showColorThemePicker(context, settings),
                       ),
-                      if (settings.themeMode != AppThemeMode.light)
-                        _SettingsSwitchTile(
-                          title: 'Pure Black (AMOLED)',
-                          subtitle: 'Applies when dark theme is active',
-                          icon: Icons.brightness_1_outlined,
-                          iconColor: const Color(0xFF8B5CF6),
-                          value: settings.useAmoledForDark,
-                          onChanged: (v) => ref
-                              .read(currentSettingsProvider.notifier)
-                              .setUseAmoledForDark(v),
-                        ),
+                      _SettingsActionTile(
+                        title: 'Theme Mode',
+                        icon: Icons.brightness_6_outlined,
+                        iconColor: scheme.primary,
+                        onTap: () => _showAppearancePicker(context, settings),
+                      ),
+                      _SettingsActionTile(
+                        title: 'Schedule Theme',
+                        icon: Icons.schedule_outlined,
+                        iconColor: const Color(0xFFF59E0B),
+                        onTap: () => _showScheduleThemePicker(context),
+                      ),
                     ],
                   ),
                   const Gap(24),
-
-                  // --- BIBLE PREFERENCES SECTION ---
                   _SettingsSectionCard(
-                    title: 'Bible Preferences',
                     children: [
                       _SettingsActionTile(
                         title: 'Bible Canon',
-                        subtitle: _canonLabel(settings.canon),
                         icon: Icons.auto_stories_rounded,
                         iconColor: const Color(0xFF8B5CF6),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: scheme.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                switch (settings.canon) {
-                                  CanonType.catholic => 'Catholic',
-                                  CanonType.protestant => 'Protestant',
-                                  CanonType.orthodox => 'Orthodox',
-                                },
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: scheme.primary,
-                                ),
-                              ),
-                            ),
-                            const Gap(6),
-                            Icon(
-                              Icons.chevron_right_rounded,
-                              color: scheme.onSurfaceVariant
-                                  .withValues(alpha: 0.6),
-                              size: 20,
-                            ),
-                          ],
-                        ),
                         onTap: () => _pickCanon(settings),
                       ),
                       _SettingsActionTile(
                         title: 'Bible Language',
-                        subtitle:
-                            _bibleLanguageSubtitle(settings.bibleLanguage),
                         icon: Icons.translate_rounded,
                         iconColor: const Color(0xFF0EA5E9),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: scheme.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                settings.bibleLanguage == 'ml'
-                                    ? 'മലയാളം'
-                                    : 'English',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: scheme.primary,
-                                ),
-                              ),
-                            ),
-                            const Gap(6),
-                            Icon(
-                              Icons.chevron_right_rounded,
-                              color: scheme.onSurfaceVariant
-                                  .withValues(alpha: 0.6),
-                              size: 20,
-                            ),
-                          ],
-                        ),
                         onTap: () => _pickBibleLanguage(settings),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                    ? const Color(0xFF452B00)
-                                        .withValues(alpha: 0.35)
-                                    : const Color(0xFFFFFBEB),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? const Color(0xFFB45309)
-                                      .withValues(alpha: 0.35)
-                                  : const Color(0xFFFDE68A),
-                            ),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(
-                                Icons.info_outline_rounded,
-                                size: 16,
-                                color: Theme.of(context).brightness ==
-                                        Brightness.dark
-                                    ? const Color(0xFFFBBF24)
-                                    : const Color(0xFFD97706),
-                              ),
-                              const Gap(8),
-                              Expanded(
-                                child: Text(
-                                  'Customizes your canon (66, 73, or 78 books) and scripture display language. Your reading progress is safely preserved across changes.',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 11,
-                                    height: 1.35,
-                                    color: Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? const Color(0xFFFDE68A)
-                                        : const Color(0xFF92400E),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                      _SettingsActionTile(
+                        title: 'Adjust Text Size',
+                        icon: Icons.format_size_rounded,
+                        iconColor: scheme.primary,
+                        onTap: () => _showTextSizePicker(context, settings),
                       ),
                     ],
                   ),
                   const Gap(24),
-
-                  // --- TEXT SIZE SECTION ---
                   _SettingsSectionCard(
-                    title: 'Text Size',
-                    children: [
-                      _FontSizeSettingsTile(
-                        currentScale: settings.fontScaleFactor,
-                        onChanged: (scale) => ref
-                            .read(currentSettingsProvider.notifier)
-                            .setFontScaleFactor(scale),
-                      ),
-                    ],
-                  ),
-                  const Gap(24),
-
-                  // --- SCHEDULED THEME SECTION ---
-                  _SettingsSectionCard(
-                    title: 'Scheduled Theme',
-                    children: [
-                      _SettingsSwitchTile(
-                        title: 'Schedule Theme',
-                        subtitle: 'Auto-switch between day and night modes',
-                        icon: Icons.schedule_outlined,
-                        iconColor: const Color(0xFFF59E0B),
-                        value: settings.scheduleEnabled,
-                        onChanged: (v) => ref
-                            .read(currentSettingsProvider.notifier)
-                            .setSchedule(
-                              enabled: v,
-                              dayStyle: settings.dayStyle,
-                              nightStyle: settings.nightStyle,
-                              dayStartHour: settings.dayStartHour,
-                              dayStartMinute: settings.dayStartMinute,
-                              nightStartHour: settings.nightStartHour,
-                              nightStartMinute: settings.nightStartMinute,
-                            ),
-                      ),
-                      if (settings.scheduleEnabled) ...[
-                        _SettingsActionTile(
-                          title: 'Day Mode',
-                          icon: Icons.wb_sunny_outlined,
-                          iconColor: const Color(0xFFF59E0B),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _styleLabel(settings.dayStyle),
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 13,
-                                  color: scheme.onSurfaceVariant,
-                                ),
-                              ),
-                              const Gap(8),
-                              _TimeChip(
-                                label: _formatTime(
-                                  settings.dayStartHour,
-                                  settings.dayStartMinute,
-                                ),
-                                onTap: () =>
-                                    _pickScheduleTime(settings, isDay: true),
-                              ),
-                            ],
-                          ),
-                          onTap: () async {
-                            final picked = await _pickStyle(
-                              settings.dayStyle,
-                              'Day mode',
-                            );
-                            if (picked != null) {
-                              await ref
-                                  .read(currentSettingsProvider.notifier)
-                                  .setSchedule(
-                                    enabled: settings.scheduleEnabled,
-                                    dayStyle: picked,
-                                    nightStyle: settings.nightStyle,
-                                    dayStartHour: settings.dayStartHour,
-                                    dayStartMinute: settings.dayStartMinute,
-                                    nightStartHour: settings.nightStartHour,
-                                    nightStartMinute: settings.nightStartMinute,
-                                  );
-                            }
-                          },
-                        ),
-                        _SettingsActionTile(
-                          title: 'Night Mode',
-                          icon: Icons.nightlight_outlined,
-                          iconColor: const Color(0xFF6366F1),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _styleLabel(settings.nightStyle),
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 13,
-                                  color: scheme.onSurfaceVariant,
-                                ),
-                              ),
-                              const Gap(8),
-                              _TimeChip(
-                                label: _formatTime(
-                                  settings.nightStartHour,
-                                  settings.nightStartMinute,
-                                ),
-                                onTap: () =>
-                                    _pickScheduleTime(settings, isDay: false),
-                              ),
-                            ],
-                          ),
-                          onTap: () async {
-                            final picked = await _pickStyle(
-                              settings.nightStyle,
-                              'Night mode',
-                            );
-                            if (picked != null) {
-                              await ref
-                                  .read(currentSettingsProvider.notifier)
-                                  .setSchedule(
-                                    enabled: settings.scheduleEnabled,
-                                    dayStyle: settings.dayStyle,
-                                    nightStyle: picked,
-                                    dayStartHour: settings.dayStartHour,
-                                    dayStartMinute: settings.dayStartMinute,
-                                    nightStartHour: settings.nightStartHour,
-                                    nightStartMinute: settings.nightStartMinute,
-                                  );
-                            }
-                          },
-                        ),
-                      ],
-                    ],
-                  ),
-                  const Gap(24),
-
-                  // --- NOTIFICATIONS SECTION ---
-                  _SettingsSectionCard(
-                    title: 'Notifications',
                     children: [
                       _SettingsActionTile(
                         title: 'Manage Notifications',
-                        subtitle: 'Daily Verse & Daily Reminder',
                         icon: Icons.notifications_active_outlined,
                         iconColor: const Color(0xFF10B981),
                         onTap: () {
@@ -1093,18 +1039,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           );
                         },
                       ),
-                    ],
-                  ),
-                  const Gap(24),
-
-                  // --- SHARE & SUPPORT SECTION ---
-                  _SettingsSectionCard(
-                    title: 'Share & Support',
-                    children: [
                       _SettingsActionTile(
                         title: 'Our Mission',
-                        subtitle:
-                            'Why we built Verso & a note from the creator',
                         icon: Icons.favorite_outline_rounded,
                         iconColor: const Color(0xFFEC4899),
                         onTap: () {
@@ -1113,7 +1049,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                       _SettingsActionTile(
                         title: 'Share Verso with a friend',
-                        subtitle: 'Spread the word',
                         icon: Icons.share_outlined,
                         iconColor: const Color(0xFF10B981),
                         onTap: () {
@@ -1124,7 +1059,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   "and track my daily progress. It's been a "
                                   'game changer for my Bible reading habit.\n\n'
                                   'Join me on the journey: '
-                                  'https://play.google.com/store/apps/details?id=com.shaijo.verso', // Placeholder link
+                                  'https://play.google.com/store/apps/details?id=com.shaijo.verso',
                             ),
                           );
                         },
@@ -1197,11 +1132,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
 class _SettingsSectionCard extends StatelessWidget {
   const _SettingsSectionCard({
-    required this.title,
     required this.children,
   });
 
-  final String title;
   final List<Widget> children;
 
   @override
@@ -1209,50 +1142,33 @@ class _SettingsSectionCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 10),
-          child: Text(
-            title.toUpperCase(),
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: scheme.onSurfaceVariant,
-              letterSpacing: 1.1,
-            ),
+    return VersoCard(
+      shadow: AppShadows.md,
+      padding: EdgeInsets.zero,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        child: AnimatedSize(
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: Column(
+            children: [
+              for (int i = 0; i < children.length; i++) ...[
+                children[i],
+                if (i < children.length - 1)
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    indent: 66,
+                    endIndent: 16,
+                    color: scheme.outlineVariant
+                        .withValues(alpha: isDark ? 0.3 : 0.5),
+                  ),
+              ],
+            ],
           ),
         ),
-        VersoCard(
-          shadow: AppShadows.md,
-          padding: EdgeInsets.zero,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadii.lg),
-            child: AnimatedSize(
-              duration: const Duration(milliseconds: 350),
-              curve: Curves.easeOutCubic,
-              alignment: Alignment.topCenter,
-              child: Column(
-                children: [
-                  for (int i = 0; i < children.length; i++) ...[
-                    children[i],
-                    if (i < children.length - 1)
-                      Divider(
-                        height: 1,
-                        thickness: 1,
-                        indent: 16,
-                        endIndent: 16,
-                        color: scheme.outlineVariant
-                            .withValues(alpha: isDark ? 0.3 : 0.5),
-                      ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -1260,7 +1176,7 @@ class _SettingsSectionCard extends StatelessWidget {
 class _SettingsSwitchTile extends StatelessWidget {
   const _SettingsSwitchTile({
     required this.title,
-    required this.subtitle,
+    this.subtitle,
     required this.icon,
     required this.iconColor,
     required this.value,
@@ -1268,7 +1184,7 @@ class _SettingsSwitchTile extends StatelessWidget {
   });
 
   final String title;
-  final String subtitle;
+  final String? subtitle;
   final IconData icon;
   final Color iconColor;
   final bool value;
@@ -1289,14 +1205,16 @@ class _SettingsSwitchTile extends StatelessWidget {
             color: scheme.onSurface,
           ),
         ),
-        subtitle: Text(
-          subtitle,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 13,
-            fontWeight: FontWeight.w400,
-            color: scheme.onSurfaceVariant,
-          ),
-        ),
+        subtitle: subtitle != null
+            ? Text(
+                subtitle!,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  color: scheme.onSurfaceVariant,
+                ),
+              )
+            : null,
         secondary: Container(
           width: 36,
           height: 36,
