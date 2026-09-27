@@ -813,11 +813,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _showSettingsSheet(
       context: context,
       title: 'Text Size',
-      child: _FontSizeSettingsTile(
-        currentScale: settings.fontScaleFactor,
-        onChanged: (scale) => ref
-            .read(currentSettingsProvider.notifier)
-            .setFontScaleFactor(scale),
+      child: Consumer(
+        builder: (context, ref, _) {
+          final currentSettings =
+              ref.watch(currentSettingsProvider).value ?? settings;
+          return _FontSizeSettingsTile(
+            currentScale: currentSettings.fontScaleFactor,
+            onChanged: (scale) => ref
+                .read(currentSettingsProvider.notifier)
+                .setFontScaleFactor(scale),
+          );
+        },
       ),
     );
   }
