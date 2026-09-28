@@ -52,6 +52,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   bool _isSignUp = false;
   bool _isLoading = false;
   bool _isPasswordVisible = false;
+  bool _showAllAccounts = false;
 
   // "Remember me" state - true means we save the email for next time
   bool _rememberMe = false;
@@ -354,6 +355,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     final colorScheme = Theme.of(context).colorScheme;
     final savedAccountsAsync = ref.watch(savedAccountsListProvider);
     final savedAccounts = savedAccountsAsync.value ?? [];
+    final displayedAccounts = _showAllAccounts ? savedAccounts : savedAccounts.take(2).toList();
 
     return Scaffold(
       body: Container(
@@ -456,7 +458,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                   ),
                                 ),
                                 const Gap(Spacing.xs),
-                                ...savedAccounts.map((account) {
+                                ...displayedAccounts.map((account) {
                                   return Padding(
                                     padding: const EdgeInsets.only(bottom: 8),
                                     child: SavedAccountTile(
@@ -468,6 +470,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                     ),
                                   );
                                 }),
+                                if (savedAccounts.length > 2)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Center(
+                                      child: TextButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            _showAllAccounts = !_showAllAccounts;
+                                          });
+                                        },
+                                        style: TextButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: Spacing.sm,
+                                            vertical: Spacing.xs,
+                                          ),
+                                          minimumSize: Size.zero,
+                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                        child: Text(
+                                          _showAllAccounts
+                                              ? 'Show less'
+                                              : 'Show ${savedAccounts.length - 2} more',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: colorScheme.primary,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 const Gap(Spacing.xs),
                                 Row(
                                   children: [
