@@ -147,27 +147,36 @@ class _AccountSwitchBottomSheetState
                   ),
                   data: (accounts) {
                     var displayAccounts = accounts;
-                    final session = Supabase.instance.client.auth.currentSession;
-                    
+                    final session =
+                        Supabase.instance.client.auth.currentSession;
+
                     if (session != null) {
-                      final hasCurrent = displayAccounts.any((a) => a.userId == session.user.id);
+                      final hasCurrent = displayAccounts
+                          .any((a) => a.userId == session.user.id);
                       if (!hasCurrent) {
                         final user = session.user;
-                        final fullName = (user.userMetadata?['full_name'] as String?)?.trim();
-                        final displayName = (fullName != null && fullName.isNotEmpty)
-                            ? fullName
-                            : (user.email?.split('@').first ?? 'User');
-                        
+                        final fullName =
+                            (user.userMetadata?['full_name'] as String?)
+                                ?.trim();
+                        final displayName =
+                            (fullName != null && fullName.isNotEmpty)
+                                ? fullName
+                                : (user.email?.split('@').first ?? 'User');
+
                         final synthesizedAccount = SavedAccount(
                           userId: user.id,
                           email: user.email ?? '',
                           displayName: displayName,
-                          avatarUrl: user.userMetadata?['avatar_url'] as String?,
+                          avatarUrl:
+                              user.userMetadata?['avatar_url'] as String?,
                           refreshToken: session.refreshToken ?? '',
                           lastActive: DateTime.now(),
                         );
-                        
-                        displayAccounts = [synthesizedAccount, ...displayAccounts];
+
+                        displayAccounts = [
+                          synthesizedAccount,
+                          ...displayAccounts
+                        ];
                       }
                     }
 

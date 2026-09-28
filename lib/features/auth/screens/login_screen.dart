@@ -355,7 +355,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     final colorScheme = Theme.of(context).colorScheme;
     final savedAccountsAsync = ref.watch(savedAccountsListProvider);
     final savedAccounts = savedAccountsAsync.value ?? [];
-    final displayedAccounts = _showAllAccounts ? savedAccounts : savedAccounts.take(2).toList();
+    final displayedAccounts =
+        _showAllAccounts ? savedAccounts : savedAccounts.take(2).toList();
 
     return Scaffold(
       body: Container(
@@ -477,7 +478,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                       child: TextButton(
                                         onPressed: () {
                                           setState(() {
-                                            _showAllAccounts = !_showAllAccounts;
+                                            _showAllAccounts =
+                                                !_showAllAccounts;
                                           });
                                         },
                                         style: TextButton.styleFrom(
@@ -486,7 +488,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                             vertical: Spacing.xs,
                                           ),
                                           minimumSize: Size.zero,
-                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                          tapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
                                         ),
                                         child: Text(
                                           _showAllAccounts
