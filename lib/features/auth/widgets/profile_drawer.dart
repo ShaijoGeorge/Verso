@@ -13,7 +13,6 @@ import 'package:verso/core/providers/package_info_provider.dart';
 import 'package:verso/core/router.dart';
 import 'package:verso/core/widgets/verso_avatar.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
-import 'package:verso/features/auth/services/saved_accounts_service.dart';
 import 'package:verso/features/auth/widgets/account_switch_bottom_sheet.dart';
 import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';

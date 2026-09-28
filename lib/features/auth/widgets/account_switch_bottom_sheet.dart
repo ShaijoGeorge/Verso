@@ -394,7 +394,7 @@ class _AccountSwitchBottomSheetState
       if (mounted) {
         final container = ProviderScope.containerOf(context);
         Navigator.of(context).pop();
-        
+
         VersoSnackbar.show(
           context,
           message: 'Removed ${account.displayName} from this device',
