@@ -196,11 +196,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _ => 'English',
       };
 
-  String _bibleLanguageSubtitle(String langCode) => switch (langCode) {
-        'ml' => 'Book names & navigation in Malayalam',
-        _ => 'Book names & navigation in English',
-      };
-
   Future<void> _pickBibleLanguage(UserSettings settings) async {
     final currentLang = settings.bibleLanguage;
 
@@ -759,20 +754,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ButtonSegment(
                         value: AppThemeMode.system,
                         icon: Icon(Icons.brightness_auto_outlined, size: 18),
-                        label: Text('System',
-                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                        label: Text(
+                          'System',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       ButtonSegment(
                         value: AppThemeMode.light,
                         icon: Icon(Icons.light_mode_outlined, size: 18),
-                        label: Text('Light',
-                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                        label: Text(
+                          'Light',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       ButtonSegment(
                         value: AppThemeMode.dark,
                         icon: Icon(Icons.dark_mode_outlined, size: 18),
-                        label: Text('Dark',
-                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                        label: Text(
+                          'Dark',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                     selected: {currentSettings.themeMode},
@@ -1176,7 +1180,6 @@ class _SettingsSectionCard extends StatelessWidget {
 class _SettingsSwitchTile extends StatelessWidget {
   const _SettingsSwitchTile({
     required this.title,
-    this.subtitle,
     required this.icon,
     required this.iconColor,
     required this.value,
@@ -1184,7 +1187,6 @@ class _SettingsSwitchTile extends StatelessWidget {
   });
 
   final String title;
-  final String? subtitle;
   final IconData icon;
   final Color iconColor;
   final bool value;
@@ -1205,16 +1207,6 @@ class _SettingsSwitchTile extends StatelessWidget {
             color: scheme.onSurface,
           ),
         ),
-        subtitle: subtitle != null
-            ? Text(
-                subtitle!,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
-                  color: scheme.onSurfaceVariant,
-                ),
-              )
-            : null,
         secondary: Container(
           width: 36,
           height: 36,
@@ -1237,12 +1229,10 @@ class _SettingsActionTile extends StatelessWidget {
     required this.icon,
     required this.iconColor,
     required this.onTap,
-    this.subtitle,
     this.trailing,
   });
 
   final String title;
-  final String? subtitle;
   final IconData icon;
   final Color iconColor;
   final Widget? trailing;
@@ -1281,17 +1271,6 @@ class _SettingsActionTile extends StatelessWidget {
                         color: scheme.onSurface,
                       ),
                     ),
-                    if (subtitle != null) ...[
-                      const Gap(2),
-                      Text(
-                        subtitle!,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w400,
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
