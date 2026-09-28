@@ -390,6 +390,23 @@ class _AccountSwitchBottomSheetState
       await ref
           .read(savedAccountsListProvider.notifier)
           .removeAccount(account.userId);
+
+      if (mounted) {
+        final container = ProviderScope.containerOf(context);
+        Navigator.of(context).pop();
+        
+        VersoSnackbar.show(
+          context,
+          message: 'Removed ${account.displayName} from this device',
+          actionLabel: 'Undo',
+          onAction: () async {
+            await container
+                .read(savedAccountsServiceProvider)
+                .saveOrUpdateAccount(account);
+            await container.read(savedAccountsListProvider.notifier).refresh();
+          },
+        );
+      }
     }
   }
 
