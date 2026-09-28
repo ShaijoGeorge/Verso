@@ -146,17 +146,71 @@ class _AccountSwitchBottomSheetState
                     ),
                   ),
                   data: (accounts) {
-                    if (accounts.isEmpty) {
+                    var displayAccounts = accounts;
+                    final session = Supabase.instance.client.auth.currentSession;
+                    
+                    if (session != null) {
+                      final hasCurrent = displayAccounts.any((a) => a.userId == session.user.id);
+                      if (!hasCurrent) {
+                        final user = session.user;
+                        final fullName = (user.userMetadata?['full_name'] as String?)?.trim();
+                        final displayName = (fullName != null && fullName.isNotEmpty)
+                            ? fullName
+                            : (user.email?.split('@').first ?? 'User');
+                        
+                        final synthesizedAccount = SavedAccount(
+                          userId: user.id,
+                          email: user.email ?? '',
+                          displayName: displayName,
+                          avatarUrl: user.userMetadata?['avatar_url'] as String?,
+                          refreshToken: session.refreshToken ?? '',
+                          lastActive: DateTime.now(),
+                        );
+                        
+                        displayAccounts = [synthesizedAccount, ...displayAccounts];
+                      }
+                    }
+
+                    if (displayAccounts.isEmpty) {
                       return Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: Spacing.xl,
-                          vertical: Spacing.lg,
+                          vertical: Spacing.xl,
                         ),
-                        child: Text(
-                          'No saved accounts found.',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: scheme.onSurfaceVariant,
-                          ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(Spacing.lg),
+                              decoration: BoxDecoration(
+                                color: scheme.surfaceContainerHighest,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.group_off_rounded,
+                                size: 32,
+                                color: scheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const Gap(Spacing.md),
+                            Text(
+                              'No saved accounts',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: scheme.onSurface,
+                              ),
+                            ),
+                            const Gap(Spacing.xs),
+                            Text(
+                              'Accounts you sign into will appear here for quick switching.',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14,
+                                color: scheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     }
@@ -167,10 +221,10 @@ class _AccountSwitchBottomSheetState
                         horizontal: Spacing.lg,
                         vertical: Spacing.md,
                       ),
-                      itemCount: accounts.length,
+                      itemCount: displayAccounts.length,
                       separatorBuilder: (_, __) => const Gap(Spacing.sm),
                       itemBuilder: (context, index) {
-                        final account = accounts[index];
+                        final account = displayAccounts[index];
                         final isCurrent = account.userId == currentUserId;
                         final isSwitching = _switchingUserId == account.userId;
                         final isBusy =
