@@ -65,6 +65,9 @@ class AccountSwitchService {
     try {
       final currentUserId = Supabase.instance.client.auth.currentUser?.id;
       if (currentUserId == targetAccount.userId) {
+        await _ref
+            .read(savedAccountsServiceProvider)
+            .touchAccount(targetAccount.userId);
         return SwitchSuccess(targetAccount);
       }
 
@@ -130,11 +133,16 @@ class AccountSwitchService {
       // 6. Invalidate all user-scoped providers to re-render for new user
       _invalidateUserProviders();
 
-      // 7. Refresh the saved accounts list state
-      await _ref.read(savedAccountsListProvider.notifier).refresh();
+      // 7. (Moved to step 9)
 
       // 8. Trigger cloud sync to pull latest reading progress for this account
       unawaited(_ref.read(readingServiceProvider).syncOnResume(force: true));
+
+      await _ref
+          .read(savedAccountsServiceProvider)
+          .touchAccount(targetAccount.userId);
+      // 9. Refresh the saved accounts list state again to ensure UI has the latest touch time
+      await _ref.read(savedAccountsListProvider.notifier).refresh();
 
       return SwitchSuccess(targetAccount);
     } catch (e) {
