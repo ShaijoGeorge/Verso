@@ -1357,6 +1357,8 @@ class _EditNameSheetState extends ConsumerState<_EditNameSheet> {
             .syncCurrentSession(session);
         ref.invalidate(savedAccountsListProvider);
       }
+      ref.invalidate(authUserProvider);
+      ref.invalidate(userNameProvider);
 
       if (mounted) {
         Navigator.pop(context);
