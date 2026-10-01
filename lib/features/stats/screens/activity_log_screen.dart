@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
+import 'package:verso/core/design/components/verso_bottom_sheet.dart';
 import 'package:verso/core/design/components/verso_card.dart';
 import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
@@ -387,90 +388,60 @@ class _FilterBar extends StatelessWidget {
     String bibleLanguage,
     CanonType canon,
   ) {
-    showModalBottomSheet<void>(
+    VersoBottomSheet.show<void>(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return DraggableScrollableSheet(
-          maxChildSize: 0.8,
-          minChildSize: 0.3,
-          expand: false,
-          builder: (_, controller) {
-            return Column(
+      title: 'Filter by Book',
+      contentPadding: EdgeInsets.zero,
+      child: Builder(
+        builder: (ctx) {
+          return ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+            ),
+            child: ListView(
               children: [
-                const Gap(8),
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade400,
-                    borderRadius: BorderRadius.circular(2),
+                // "All Books" option
+                ListTile(
+                  leading: Icon(
+                    Icons.library_books_rounded,
+                    color: filter.bookId == null ? colorScheme.primary : null,
                   ),
+                  title: const Text('All Books'),
+                  selected: filter.bookId == null,
+                  selectedColor: colorScheme.primary,
+                  onTap: () {
+                    ref
+                        .read(activityFilterStateProvider.notifier)
+                        .setBookFilter(null);
+                    Navigator.pop(ctx);
+                  },
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    'Filter by Book',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                ),
-                Expanded(
-                  child: ListView(
-                    controller: controller,
-                    children: [
-                      // "All Books" option
-                      ListTile(
-                        leading: Icon(
-                          Icons.library_books_rounded,
-                          color: filter.bookId == null
-                              ? colorScheme.primary
-                              : null,
-                        ),
-                        title: const Text('All Books'),
-                        selected: filter.bookId == null,
-                        selectedColor: colorScheme.primary,
-                        onTap: () {
-                          ref
-                              .read(activityFilterStateProvider.notifier)
-                              .setBookFilter(null);
-                          Navigator.pop(ctx);
-                        },
-                      ),
-                      const Divider(),
-                      ...books.map(
-                        (book) => ListTile(
-                          leading: Icon(
-                            Icons.book_rounded,
-                            color: filter.bookId == book.id
-                                ? colorScheme.primary
-                                : null,
-                          ),
-                          title: Text(
-                            book.getLocalizedName(bibleLanguage, canon),
-                          ),
-                          selected: filter.bookId == book.id,
-                          selectedColor: colorScheme.primary,
-                          onTap: () {
-                            ref
-                                .read(activityFilterStateProvider.notifier)
-                                .setBookFilter(book.id);
-                            Navigator.pop(ctx);
-                          },
-                        ),
-                      ),
-                    ],
+                const Divider(),
+                ...books.map(
+                  (book) => ListTile(
+                    leading: Icon(
+                      Icons.book_rounded,
+                      color:
+                          filter.bookId == book.id ? colorScheme.primary : null,
+                    ),
+                    title: Text(
+                      book.getLocalizedName(bibleLanguage, canon),
+                    ),
+                    selected: filter.bookId == book.id,
+                    selectedColor: colorScheme.primary,
+                    onTap: () {
+                      ref
+                          .read(activityFilterStateProvider.notifier)
+                          .setBookFilter(book.id);
+                      Navigator.pop(ctx);
+                    },
                   ),
                 ),
               ],
-            );
-          },
-        );
-      },
+            ),
+          );
+        },
+      ),
     );
   }
 

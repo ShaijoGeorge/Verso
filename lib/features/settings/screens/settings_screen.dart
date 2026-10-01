@@ -86,70 +86,46 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     AppearanceStyle current,
     String title,
   ) async {
-    return showModalBottomSheet<AppearanceStyle>(
+    return VersoBottomSheet.show<AppearanceStyle>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        final scheme = Theme.of(ctx).colorScheme;
-        final bottomPadding = MediaQuery.paddingOf(ctx).bottom;
-        return SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.only(top: 12, bottom: 4),
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: scheme.onSurfaceVariant.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-                child: Text(
-                  title,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: scheme.onSurface,
-                  ),
-                ),
-              ),
-              for (final style in AppearanceStyle.values)
-                ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-                  leading:
-                      Icon(_styleIcon(style), color: scheme.onSurfaceVariant),
-                  title: Text(
-                    _styleLabel(style),
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: scheme.onSurface,
+      title: title,
+      contentPadding: EdgeInsets.zero,
+      child: Builder(
+        builder: (ctx) {
+          final scheme = Theme.of(ctx).colorScheme;
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final style in AppearanceStyle.values)
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                    leading:
+                        Icon(_styleIcon(style), color: scheme.onSurfaceVariant),
+                    title: Text(
+                      _styleLabel(style),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: scheme.onSurface,
+                      ),
                     ),
+                    trailing: current == style
+                        ? Icon(
+                            Icons.check_circle_rounded,
+                            color: scheme.primary,
+                          )
+                        : null,
+                    onTap: () => Navigator.pop(ctx, style),
                   ),
-                  trailing: current == style
-                      ? Icon(
-                          Icons.check_circle_rounded,
-                          color: scheme.primary,
-                        )
-                      : null,
-                  onTap: () => Navigator.pop(ctx, style),
-                ),
-              Gap(20 + bottomPadding),
-            ],
-          ),
-        );
-      },
+                const Gap(20),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -199,124 +175,100 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _pickBibleLanguage(UserSettings settings) async {
     final currentLang = settings.bibleLanguage;
 
-    final picked = await showModalBottomSheet<String>(
+    final picked = await VersoBottomSheet.show<String>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        final scheme = Theme.of(ctx).colorScheme;
-        final bottomPadding = MediaQuery.paddingOf(ctx).bottom;
+      title: 'Select Bible Language',
+      contentPadding: EdgeInsets.zero,
+      child: Builder(
+        builder: (ctx) {
+          final scheme = Theme.of(ctx).colorScheme;
 
-        final languages = [
-          (
-            'en',
-            'English',
-            'Standard English book names (Genesis, Matthew...)',
-          ),
-          (
-            'ml',
-            'മലയാളം (Malayalam)',
-            'Kerala Malayalam book names (ഉല്പത്തി, മത്തായി...)',
-          ),
-        ];
+          final languages = [
+            (
+              'en',
+              'English',
+              'Standard English book names (Genesis, Matthew...)',
+            ),
+            (
+              'ml',
+              'മലയാളം (Malayalam)',
+              'Kerala Malayalam book names (ഉല്പത്തി, മത്തായി...)',
+            ),
+          ];
 
-        return SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.only(top: 12, bottom: 4),
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: scheme.onSurfaceVariant.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                child: Text(
-                  'Select Bible Language',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: scheme.onSurface,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                child: Text(
-                  'Choose the language for Bible book names, categories, and chapter navigation.',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-              const Divider(height: 1),
-              for (final lang in languages)
-                ListTile(
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: currentLang == lang.$1
-                          ? scheme.primary.withValues(alpha: 0.15)
-                          : scheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(10),
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                  child: Text(
+                    'Choose the language for Bible book names, categories, and chapter navigation.',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      color: scheme.onSurfaceVariant,
                     ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      lang.$1.toUpperCase(),
-                      style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
+                  ),
+                ),
+                const Divider(height: 1),
+                for (final lang in languages)
+                  ListTile(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
                         color: currentLang == lang.$1
-                            ? scheme.primary
-                            : scheme.onSurfaceVariant,
+                            ? scheme.primary.withValues(alpha: 0.15)
+                            : scheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        lang.$1.toUpperCase(),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: currentLang == lang.$1
+                              ? scheme.primary
+                              : scheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
-                  ),
-                  title: Text(
-                    lang.$2,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15,
-                      fontWeight: currentLang == lang.$1
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                      color: scheme.onSurface,
+                    title: Text(
+                      lang.$2,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: currentLang == lang.$1
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: scheme.onSurface,
+                      ),
                     ),
-                  ),
-                  subtitle: Text(
-                    lang.$3,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+                    subtitle: Text(
+                      lang.$3,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+                      ),
                     ),
+                    trailing: currentLang == lang.$1
+                        ? Icon(
+                            Icons.check_circle_rounded,
+                            color: scheme.primary,
+                          )
+                        : null,
+                    onTap: () => Navigator.pop(ctx, lang.$1),
                   ),
-                  trailing: currentLang == lang.$1
-                      ? Icon(
-                          Icons.check_circle_rounded,
-                          color: scheme.primary,
-                        )
-                      : null,
-                  onTap: () => Navigator.pop(ctx, lang.$1),
-                ),
-              Gap(24 + bottomPadding),
-            ],
-          ),
-        );
-      },
+                const Gap(24),
+              ],
+            ),
+          );
+        },
+      ),
     );
 
     if (picked != null && picked != currentLang && mounted) {
@@ -336,158 +288,133 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       orElse: () => CanonType.catholic,
     );
 
-    final picked = await showModalBottomSheet<CanonType>(
+    final picked = await VersoBottomSheet.show<CanonType>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        final scheme = Theme.of(ctx).colorScheme;
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        final bottomPadding = MediaQuery.paddingOf(ctx).bottom;
-        final warningBg = isDark
-            ? const Color(0xFF452B00).withValues(alpha: 0.6)
-            : const Color(0xFFFFF7ED);
-        final warningBorder = isDark
-            ? const Color(0xFFB45309).withValues(alpha: 0.5)
-            : const Color(0xFFFDBA74);
-        final warningText =
-            isDark ? const Color(0xFFFDE68A) : const Color(0xFF9A3412);
-        final warningIcon =
-            isDark ? const Color(0xFFFBBF24) : const Color(0xFFEA580C);
+      title: 'Select Bible Tradition',
+      contentPadding: EdgeInsets.zero,
+      child: Builder(
+        builder: (ctx) {
+          final scheme = Theme.of(ctx).colorScheme;
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
+          final warningBg = isDark
+              ? const Color(0xFF452B00).withValues(alpha: 0.6)
+              : const Color(0xFFFFF7ED);
+          final warningBorder = isDark
+              ? const Color(0xFFB45309).withValues(alpha: 0.5)
+              : const Color(0xFFFDBA74);
+          final warningText =
+              isDark ? const Color(0xFFFDE68A) : const Color(0xFF9A3412);
+          final warningIcon =
+              isDark ? const Color(0xFFFBBF24) : const Color(0xFFEA580C);
 
-        return SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Drag handle
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.only(top: 12, bottom: 4),
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: scheme.onSurfaceVariant.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                child: Text(
-                  'Select Bible Tradition',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: scheme.onSurface,
-                  ),
-                ),
-              ),
-              // Prominent warning banner right when clicking canon
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: warningBg,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: warningBorder),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.warning_amber_rounded,
-                        color: warningIcon,
-                        size: 22,
-                      ),
-                      const Gap(10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Tradition Warning',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: warningText,
-                              ),
-                            ),
-                            const Gap(3),
-                            Text(
-                              'Switching canons alters visible books and resets completion denominators. Your reading history is safely preserved and will never be deleted.',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12,
-                                height: 1.4,
-                                color: warningText,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const Gap(4),
-              for (final canon in CanonType.values)
-                ListTile(
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                  leading: Container(
-                    width: 40,
-                    height: 40,
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Prominent warning banner right when clicking canon
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: currentCanon == canon
-                          ? scheme.primary.withValues(alpha: 0.12)
-                          : scheme.surfaceContainerHighest
-                              .withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(10),
+                      color: warningBg,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: warningBorder),
                     ),
-                    child: Icon(
-                      Icons.auto_stories_rounded,
-                      color: currentCanon == canon
-                          ? scheme.primary
-                          : scheme.onSurfaceVariant,
-                      size: 20,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: warningIcon,
+                          size: 22,
+                        ),
+                        const Gap(10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Tradition Warning',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: warningText,
+                                ),
+                              ),
+                              const Gap(3),
+                              Text(
+                                'Switching canons alters visible books and resets completion denominators. Your reading history is safely preserved and will never be deleted.',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  height: 1.4,
+                                  color: warningText,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  title: Text(
-                    _canonLabel(canon),
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15,
-                      fontWeight: currentCanon == canon
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                      color: scheme.onSurface,
-                    ),
-                  ),
-                  subtitle: Text(
-                    _canonSubtitle(canon),
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
-                    ),
-                  ),
-                  trailing: currentCanon == canon
-                      ? Icon(
-                          Icons.check_circle_rounded,
-                          color: scheme.primary,
-                        )
-                      : null,
-                  onTap: () => Navigator.pop(ctx, canon),
                 ),
-              Gap(24 + bottomPadding),
-            ],
-          ),
-        );
-      },
+                const Gap(4),
+                for (final canon in CanonType.values)
+                  ListTile(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: currentCanon == canon
+                            ? scheme.primary.withValues(alpha: 0.12)
+                            : scheme.surfaceContainerHighest
+                                .withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.auto_stories_rounded,
+                        color: currentCanon == canon
+                            ? scheme.primary
+                            : scheme.onSurfaceVariant,
+                        size: 20,
+                      ),
+                    ),
+                    title: Text(
+                      _canonLabel(canon),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: currentCanon == canon
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                    subtitle: Text(
+                      _canonSubtitle(canon),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+                      ),
+                    ),
+                    trailing: currentCanon == canon
+                        ? Icon(
+                            Icons.check_circle_rounded,
+                            color: scheme.primary,
+                          )
+                        : null,
+                    onTap: () => Navigator.pop(ctx, canon),
+                  ),
+                const Gap(24),
+              ],
+            ),
+          );
+        },
+      ),
     );
 
     if (picked != null && picked != currentCanon && mounted) {
@@ -659,51 +586,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     required String title,
     required Widget child,
   }) {
-    showModalBottomSheet<void>(
+    VersoBottomSheet.show<void>(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => Consumer(
+      title: title,
+      contentPadding: EdgeInsets.zero,
+      child: Consumer(
         builder: (context, ref, _) {
           // Force a rebuild of the bottom sheet when settings (e.g. theme mode) change.
           ref.watch(currentSettingsProvider);
-          final scheme = Theme.of(context).colorScheme;
-
-          return Container(
-            decoration: BoxDecoration(
-              color: scheme.surface,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).padding.bottom + 24,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Gap(12),
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const Gap(16),
-                Text(
-                  title,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: scheme.onSurface,
-                  ),
-                ),
-                const Gap(16),
-                child,
-              ],
-            ),
-          );
+          return child;
         },
       ),
     );
@@ -1034,12 +925,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         icon: Icons.notifications_active_outlined,
                         iconColor: const Color(0xFF10B981),
                         onTap: () {
-                          showModalBottomSheet<void>(
+                          VersoBottomSheet.show<void>(
                             context: context,
-                            backgroundColor: Colors.transparent,
-                            isScrollControlled: true,
-                            builder: (context) =>
-                                const NotificationsBottomSheet(),
+                            title: 'Notifications',
+                            contentPadding: EdgeInsets.zero,
+                            child: const NotificationsBottomSheet(),
                           );
                         },
                       ),

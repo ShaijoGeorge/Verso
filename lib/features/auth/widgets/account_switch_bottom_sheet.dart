@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:verso/core/design/components/verso_bottom_sheet.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
@@ -17,11 +18,10 @@ class AccountSwitchBottomSheet extends ConsumerStatefulWidget {
   const AccountSwitchBottomSheet({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showModalBottomSheet<void>(
+    return VersoBottomSheet.show<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const AccountSwitchBottomSheet(),
+      contentPadding: EdgeInsets.zero,
+      child: const AccountSwitchBottomSheet(),
     );
   }
 
@@ -41,264 +41,233 @@ class _AccountSwitchBottomSheetState
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
     final accountsAsync = ref.watch(savedAccountsListProvider);
 
-    return Container(
+    return ConstrainedBox(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(AppRadii.xl),
-          topRight: Radius.circular(AppRadii.xl),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Gap(Spacing.sm),
-              // Drag handle
-              Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: scheme.onSurfaceVariant.withValues(alpha: 0.3),
-                  borderRadius: AppRadii.borderRadiusFull,
-                ),
-              ),
-              const Gap(Spacing.md),
-
-              // Header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF3B82F6).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(AppRadii.md),
-                      ),
-                      child: const Icon(
-                        Icons.swap_horiz_rounded,
-                        color: Color(0xFF3B82F6),
-                        size: 22,
-                      ),
-                    ),
-                    const Gap(12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Switch Account',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: scheme.onSurface,
-                            ),
-                          ),
-                          Text(
-                            'Accounts saved on this device',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w400,
-                              color: scheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded),
-                      color: scheme.onSurfaceVariant,
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-              ),
-
-              const Gap(Spacing.md),
-              const Divider(height: 1, thickness: 1),
-
-              // Account list
-              Flexible(
-                child: accountsAsync.when(
-                  loading: () => const Padding(
-                    padding: EdgeInsets.symmetric(vertical: Spacing.xl),
-                    child: Center(child: CircularProgressIndicator()),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3B82F6).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(AppRadii.md),
                   ),
-                  error: (error, _) => Padding(
-                    padding: const EdgeInsets.all(Spacing.lg),
-                    child: Center(
-                      child: Text(
-                        'Could not load accounts',
+                  child: const Icon(
+                    Icons.swap_horiz_rounded,
+                    color: Color(0xFF3B82F6),
+                    size: 22,
+                  ),
+                ),
+                const Gap(12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Switch Account',
                         style: GoogleFonts.plusJakartaSans(
-                          color: scheme.error,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: scheme.onSurface,
                         ),
                       ),
+                      Text(
+                        'Accounts saved on this device',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  color: scheme.onSurfaceVariant,
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+          ),
+
+          const Gap(Spacing.md),
+          const Divider(height: 1, thickness: 1),
+
+          // Account list
+          Flexible(
+            child: accountsAsync.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.symmetric(vertical: Spacing.xl),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (error, _) => Padding(
+                padding: const EdgeInsets.all(Spacing.lg),
+                child: Center(
+                  child: Text(
+                    'Could not load accounts',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: scheme.error,
                     ),
                   ),
-                  data: (accounts) {
-                    var displayAccounts = accounts;
-                    final session =
-                        Supabase.instance.client.auth.currentSession;
+                ),
+              ),
+              data: (accounts) {
+                var displayAccounts = accounts;
+                final session = Supabase.instance.client.auth.currentSession;
 
-                    if (session != null) {
-                      final hasCurrent = displayAccounts
-                          .any((a) => a.userId == session.user.id);
-                      if (!hasCurrent) {
-                        final user = session.user;
-                        final fullName =
-                            (user.userMetadata?['full_name'] as String?)
-                                ?.trim();
-                        final displayName =
-                            (fullName != null && fullName.isNotEmpty)
-                                ? fullName
-                                : (user.email?.split('@').first ?? 'User');
+                if (session != null) {
+                  final hasCurrent =
+                      displayAccounts.any((a) => a.userId == session.user.id);
+                  if (!hasCurrent) {
+                    final user = session.user;
+                    final fullName =
+                        (user.userMetadata?['full_name'] as String?)?.trim();
+                    final displayName =
+                        (fullName != null && fullName.isNotEmpty)
+                            ? fullName
+                            : (user.email?.split('@').first ?? 'User');
 
-                        final synthesizedAccount = SavedAccount(
-                          userId: user.id,
-                          email: user.email ?? '',
-                          displayName: displayName,
-                          avatarUrl:
-                              user.userMetadata?['avatar_url'] as String?,
-                          refreshToken: session.refreshToken ?? '',
-                          lastActive: DateTime.now(),
-                        );
+                    final synthesizedAccount = SavedAccount(
+                      userId: user.id,
+                      email: user.email ?? '',
+                      displayName: displayName,
+                      avatarUrl: user.userMetadata?['avatar_url'] as String?,
+                      refreshToken: session.refreshToken ?? '',
+                      lastActive: DateTime.now(),
+                    );
 
-                        displayAccounts = [
-                          synthesizedAccount,
-                          ...displayAccounts,
-                        ];
-                      }
-                    }
+                    displayAccounts = [
+                      synthesizedAccount,
+                      ...displayAccounts,
+                    ];
+                  }
+                }
 
-                    if (displayAccounts.isEmpty) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: Spacing.xl,
-                          vertical: Spacing.xl,
+                if (displayAccounts.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: Spacing.xl,
+                      vertical: Spacing.xl,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(Spacing.lg),
+                          decoration: BoxDecoration(
+                            color: scheme.surfaceContainerHighest,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.group_off_rounded,
+                            size: 32,
+                            color: scheme.onSurfaceVariant,
+                          ),
                         ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(Spacing.lg),
-                              decoration: BoxDecoration(
-                                color: scheme.surfaceContainerHighest,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.group_off_rounded,
-                                size: 32,
-                                color: scheme.onSurfaceVariant,
-                              ),
-                            ),
-                            const Gap(Spacing.md),
-                            Text(
-                              'No saved accounts',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: scheme.onSurface,
-                              ),
-                            ),
-                            const Gap(Spacing.xs),
-                            Text(
-                              'Accounts you sign into will appear here for quick switching.',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 14,
-                                color: scheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
+                        const Gap(Spacing.md),
+                        Text(
+                          'No saved accounts',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: scheme.onSurface,
+                          ),
                         ),
-                      );
-                    }
+                        const Gap(Spacing.xs),
+                        Text(
+                          'Accounts you sign into will appear here for quick switching.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 14,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
 
-                    return ListView.separated(
-                      shrinkWrap: true,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: Spacing.lg,
-                        vertical: Spacing.md,
-                      ),
-                      itemCount: displayAccounts.length,
-                      separatorBuilder: (_, __) => const Gap(Spacing.sm),
-                      itemBuilder: (context, index) {
-                        final account = displayAccounts[index];
-                        final isCurrent = account.userId == currentUserId;
-                        final isSwitching = _switchingUserId == account.userId;
-                        final isBusy =
-                            _switchingUserId != null || _isAddingAccount;
+                return ListView.separated(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Spacing.lg,
+                    vertical: Spacing.md,
+                  ),
+                  itemCount: displayAccounts.length,
+                  separatorBuilder: (_, __) => const Gap(Spacing.sm),
+                  itemBuilder: (context, index) {
+                    final account = displayAccounts[index];
+                    final isCurrent = account.userId == currentUserId;
+                    final isSwitching = _switchingUserId == account.userId;
+                    final isBusy = _switchingUserId != null || _isAddingAccount;
 
-                        return SavedAccountTile(
-                          account: account,
-                          isCurrent: isCurrent,
-                          isLoading: isSwitching,
-                          onTap: isBusy || isCurrent
-                              ? null
-                              : () => _handleSwitchTo(account),
-                          onRemove: isBusy || isCurrent
-                              ? null
-                              : () => _handleRemoveAccount(account),
-                        );
-                      },
+                    return SavedAccountTile(
+                      account: account,
+                      isCurrent: isCurrent,
+                      isLoading: isSwitching,
+                      onTap: isBusy || isCurrent
+                          ? null
+                          : () => _handleSwitchTo(account),
+                      onRemove: isBusy || isCurrent
+                          ? null
+                          : () => _handleRemoveAccount(account),
                     );
                   },
+                );
+              },
+            ),
+          ),
+
+          const Divider(height: 1, thickness: 1),
+          const Gap(Spacing.md),
+
+          // Add Account Button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _isAddingAccount || _switchingUserId != null
+                    ? null
+                    : _handleAddAccount,
+                icon: _isAddingAccount
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.person_add_outlined, size: 20),
+                label: Text(
+                  'Add another account',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-
-              const Divider(height: 1, thickness: 1),
-              const Gap(Spacing.md),
-
-              // Add Account Button
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: _isAddingAccount || _switchingUserId != null
-                        ? null
-                        : _handleAddAccount,
-                    icon: _isAddingAccount
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.person_add_outlined, size: 20),
-                    label: Text(
-                      'Add another account',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: BorderSide(
-                        color: scheme.outline.withValues(alpha: 0.3),
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: AppRadii.borderRadiusMD,
-                      ),
-                    ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: BorderSide(
+                    color: scheme.outline.withValues(alpha: 0.3),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: AppRadii.borderRadiusMD,
                   ),
                 ),
               ),
-
-              const Gap(Spacing.lg),
-            ],
+            ),
           ),
-        ),
+
+          const Gap(Spacing.lg),
+        ],
       ),
     );
   }

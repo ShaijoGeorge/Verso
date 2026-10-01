@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 
@@ -16,26 +16,35 @@ class VersoBottomSheet extends StatelessWidget {
     required this.child,
     super.key,
     this.title,
+    this.contentPadding,
   });
   final String? title;
   final Widget child;
+  final EdgeInsetsGeometry? contentPadding;
 
   /// Shows this bottom sheet as a modal.
   static Future<T?> show<T>({
     required BuildContext context,
     required Widget child,
     String? title,
+    Color? backgroundColor,
+    EdgeInsetsGeometry? contentPadding,
   }) {
     return showModalBottomSheet<T>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: backgroundColor ?? Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(AppRadii.xl),
           topRight: Radius.circular(AppRadii.xl),
         ),
       ),
-      builder: (_) => VersoBottomSheet(title: title, child: child),
+      builder: (_) => VersoBottomSheet(
+        title: title,
+        contentPadding: contentPadding,
+        child: child,
+      ),
     );
   }
 
@@ -70,7 +79,7 @@ class VersoBottomSheet extends StatelessWidget {
           const SizedBox(height: Spacing.md),
           Flexible(
             child: Padding(
-              padding: Spacing.horizontalLG,
+              padding: contentPadding ?? Spacing.horizontalLG,
               child: child,
             ),
           ),

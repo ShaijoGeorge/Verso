@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:verso/core/design/components/verso_bottom_sheet.dart';
 import 'package:verso/core/design/components/verso_card.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
 import 'package:verso/core/design/components/verso_text_field.dart';
@@ -94,22 +95,18 @@ class ProfileScreen extends ConsumerWidget {
                         icon: Icons.email_outlined,
                         iconColor: const Color(0xFF3B82F6),
                         label: 'Change Email',
-                        onTap: () => showModalBottomSheet<void>(
+                        onTap: () => VersoBottomSheet.show<void>(
                           context: context,
-                          isScrollControlled: true,
-                          useSafeArea: true,
-                          builder: (_) => const _ChangeEmailSheet(),
+                          child: const _ChangeEmailSheet(),
                         ),
                       ),
                       _SettingsItem(
                         icon: Icons.lock_outline_rounded,
                         iconColor: const Color(0xFF8B5CF6),
                         label: 'Change Password',
-                        onTap: () => showModalBottomSheet<void>(
+                        onTap: () => VersoBottomSheet.show<void>(
                           context: context,
-                          isScrollControlled: true,
-                          useSafeArea: true,
-                          builder: (_) => const _ChangePasswordSheet(),
+                          child: const _ChangePasswordSheet(),
                         ),
                       ),
                     ],
@@ -253,11 +250,9 @@ class _ProfileHeroHeader extends StatelessWidget {
 
               // Name with edit icon
               GestureDetector(
-                onTap: () => showModalBottomSheet<void>(
+                onTap: () => VersoBottomSheet.show<void>(
                   context: context,
-                  isScrollControlled: true,
-                  useSafeArea: true,
-                  builder: (_) => _EditNameSheet(currentName: name),
+                  child: _EditNameSheet(currentName: name),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -1022,22 +1017,6 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Drag Handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurfaceVariant
-                        .withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const Gap(24),
-
               Text(
                 'Change Email',
                 style: Theme.of(context)
@@ -1047,7 +1026,6 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
                 textAlign: TextAlign.center,
               ),
               const Gap(24),
-
               VersoTextField(
                 controller: _emailController,
                 label: 'New Email Address',
@@ -1170,40 +1148,13 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Drag Handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurfaceVariant
-                        .withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const Gap(24),
-
-              Text(
-                'Change Password',
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-              const Gap(24),
-
               VersoTextField(
                 controller: _oldPassController,
                 label: 'Current Password',
                 icon: Icons.lock_outline,
                 obscureText: _obsOld,
                 suffixIcon: IconButton(
-                  icon:
-                      Icon(_obsOld ? Icons.visibility : Icons.visibility_off),
+                  icon: Icon(_obsOld ? Icons.visibility : Icons.visibility_off),
                   onPressed: () => setState(() => _obsOld = !_obsOld),
                 ),
                 validator: (value) {
@@ -1234,8 +1185,7 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
                 icon: Icons.key,
                 obscureText: _obsNew,
                 suffixIcon: IconButton(
-                  icon:
-                      Icon(_obsNew ? Icons.visibility : Icons.visibility_off),
+                  icon: Icon(_obsNew ? Icons.visibility : Icons.visibility_off),
                   onPressed: () => setState(() => _obsNew = !_obsNew),
                 ),
                 validator: (value) {
@@ -1374,22 +1324,6 @@ class _EditNameSheetState extends ConsumerState<_EditNameSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Drag Handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurfaceVariant
-                        .withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const Gap(24),
-
               Text(
                 'Edit Name',
                 style: Theme.of(context)
@@ -1399,7 +1333,6 @@ class _EditNameSheetState extends ConsumerState<_EditNameSheet> {
                 textAlign: TextAlign.center,
               ),
               const Gap(24),
-
               VersoTextField(
                 controller: _nameController,
                 label: 'Full Name',

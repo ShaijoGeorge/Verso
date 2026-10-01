@@ -145,7 +145,7 @@ class _BibliaAppState extends ConsumerState<BibliaApp>
   Future<void> _initializeReminders() async {
     try {
       final settings = await ref.read(currentSettingsProvider.future);
-      
+
       if (settings.isReminderEnabled) {
         await NotificationService().scheduleDailyReminder(
           settings.reminderHour,
