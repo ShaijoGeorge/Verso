@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:verso/core/design/design.dart';
 import 'package:verso/core/utils/app_error_handler.dart';
+import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
 import 'package:verso/features/settings/services/notification_service.dart';
 
@@ -265,7 +266,13 @@ class _NotificationsBottomSheetState
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => const SizedBox(),
+      error: (err, _) => Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: ErrorStateWidget(
+          error: err,
+          onRetry: () => ref.invalidate(currentSettingsProvider),
+        ),
+      ),
     );
   }
 }
