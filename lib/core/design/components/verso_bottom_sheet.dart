@@ -33,7 +33,7 @@ class VersoBottomSheet extends StatelessWidget {
     return showModalBottomSheet<T>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: backgroundColor ?? Theme.of(context).colorScheme.surface,
+      backgroundColor: backgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(AppRadii.xl),
@@ -73,17 +73,16 @@ class VersoBottomSheet extends StatelessWidget {
             ),
           ),
           if (title != null) ...[
-            const SizedBox(height: Spacing.md),
+            const SizedBox(height: Spacing.sm),
             Text(title!, style: textTheme.titleMedium),
           ],
-          const SizedBox(height: Spacing.md),
+          const SizedBox(height: Spacing.sm),
           Flexible(
             child: Padding(
               padding: contentPadding ?? Spacing.horizontalLG,
               child: child,
             ),
           ),
-          const SizedBox(height: Spacing.lg),
         ],
       ),
     );
