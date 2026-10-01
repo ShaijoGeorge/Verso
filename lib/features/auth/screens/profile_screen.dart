@@ -1123,6 +1123,7 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
   final _oldPassController = TextEditingController();
   final _newPassController = TextEditingController();
   final _confirmPassController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
   bool _isLoading = false;
   bool _obsOld = true;
@@ -1130,18 +1131,10 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
   bool _obsConfirm = true;
 
   Future<void> _update() async {
+    if (!_formKey.currentState!.validate()) return;
+
     final oldPass = _oldPassController.text.trim();
     final newPass = _newPassController.text.trim();
-    final confirmPass = _confirmPassController.text.trim();
-
-    if (newPass.length < 6) {
-      VersoSnackbar.error(context, message: 'New password is too short');
-      return;
-    }
-    if (newPass != confirmPass) {
-      VersoSnackbar.error(context, message: 'Passwords do not match');
-      return;
-    }
 
     setState(() => _isLoading = true);
     try {
@@ -1173,111 +1166,143 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomPadding),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Drag Handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurfaceVariant
-                      .withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const Gap(24),
-
-            Text(
-              'Change Password',
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const Gap(24),
-
-            TextField(
-              controller: _oldPassController,
-              obscureText: _obsOld,
-              decoration: InputDecoration(
-                labelText: 'Current Password',
-                prefixIcon: const Icon(Icons.lock_outline),
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: Icon(_obsOld ? Icons.visibility : Icons.visibility_off),
-                  onPressed: () => setState(() => _obsOld = !_obsOld),
-                ),
-              ),
-            ),
-
-            // --- NEW: FORGOT PASSWORD BUTTON ---
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () {
-                  // Close the bottom sheet first
-                  Navigator.pop(context);
-                  // Navigate to the Forgot Password screen
-                  GoRouter.of(context).push('/forgot-password');
-                },
-                child: const Text('Forgot Password?'),
-              ),
-            ),
-
-            TextField(
-              controller: _newPassController,
-              obscureText: _obsNew,
-              decoration: InputDecoration(
-                labelText: 'New Password',
-                prefixIcon: const Icon(Icons.key),
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: Icon(_obsNew ? Icons.visibility : Icons.visibility_off),
-                  onPressed: () => setState(() => _obsNew = !_obsNew),
-                ),
-              ),
-            ),
-            const Gap(16),
-            TextField(
-              controller: _confirmPassController,
-              obscureText: _obsConfirm,
-              decoration: InputDecoration(
-                labelText: 'Confirm New Password',
-                prefixIcon: const Icon(Icons.check_circle_outline),
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obsConfirm ? Icons.visibility : Icons.visibility_off,
+      child: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Drag Handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
+                        .withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                  onPressed: () => setState(() => _obsConfirm = !_obsConfirm),
                 ),
               ),
-            ),
-            const Gap(32),
-            FilledButton(
-              onPressed: _isLoading ? null : _update,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
+              const Gap(24),
+
+              Text(
+                'Change Password',
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
               ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Update Password'),
-            ),
-            const Gap(16),
-          ],
+              const Gap(24),
+
+              TextFormField(
+                controller: _oldPassController,
+                obscureText: _obsOld,
+                decoration: InputDecoration(
+                  labelText: 'Current Password',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon:
+                        Icon(_obsOld ? Icons.visibility : Icons.visibility_off),
+                    onPressed: () => setState(() => _obsOld = !_obsOld),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter your current password';
+                  }
+                  return null;
+                },
+              ),
+
+              // --- NEW: FORGOT PASSWORD BUTTON ---
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {
+                    // Close the bottom sheet first
+                    Navigator.pop(context);
+                    // Navigate to the Forgot Password screen
+                    GoRouter.of(context).push('/forgot-password');
+                  },
+                  child: const Text('Forgot Password?'),
+                ),
+              ),
+
+              TextFormField(
+                controller: _newPassController,
+                obscureText: _obsNew,
+                decoration: InputDecoration(
+                  labelText: 'New Password',
+                  prefixIcon: const Icon(Icons.key),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon:
+                        Icon(_obsNew ? Icons.visibility : Icons.visibility_off),
+                    onPressed: () => setState(() => _obsNew = !_obsNew),
+                  ),
+                ),
+                validator: (value) {
+                  final newPass = value?.trim() ?? '';
+                  if (newPass.isEmpty) {
+                    return 'Please enter a new password';
+                  }
+                  if (newPass.length < 6) {
+                    return 'New password must be at least 6 characters';
+                  }
+                  return null;
+                },
+              ),
+              const Gap(16),
+              TextFormField(
+                controller: _confirmPassController,
+                obscureText: _obsConfirm,
+                decoration: InputDecoration(
+                  labelText: 'Confirm New Password',
+                  prefixIcon: const Icon(Icons.check_circle_outline),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obsConfirm ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () => setState(() => _obsConfirm = !_obsConfirm),
+                  ),
+                ),
+                validator: (value) {
+                  final confirm = value?.trim() ?? '';
+                  final newPass = _newPassController.text.trim();
+                  if (confirm.isEmpty) {
+                    return 'Please confirm your new password';
+                  }
+                  if (confirm != newPass) {
+                    return 'Passwords do not match';
+                  }
+                  return null;
+                },
+              ),
+              const Gap(32),
+              FilledButton(
+                onPressed: _isLoading ? null : _update,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Update Password'),
+              ),
+              const Gap(16),
+            ],
+          ),
         ),
       ),
     );
