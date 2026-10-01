@@ -24,8 +24,9 @@ class SavedAccountTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final initial = account.displayName.isNotEmpty
-        ? account.displayName[0].toUpperCase()
+    final trimmedName = account.displayName.trim();
+    final initial = trimmedName.isNotEmpty
+        ? trimmedName[0].toUpperCase()
         : '?';
 
     final activeColor = scheme.primary;
@@ -49,30 +50,37 @@ class SavedAccountTile extends StatelessWidget {
           child: Row(
             children: [
               // Avatar circle
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: isCurrent
-                        ? [activeColor, activeColor.withValues(alpha: 0.7)]
-                        : [
-                            scheme.onSurfaceVariant.withValues(alpha: 0.2),
-                            scheme.onSurfaceVariant.withValues(alpha: 0.35),
-                          ],
+              if (account.avatarUrl != null && account.avatarUrl!.isNotEmpty)
+                CircleAvatar(
+                  radius: 21,
+                  backgroundImage: NetworkImage(account.avatarUrl!),
+                  backgroundColor: scheme.surfaceContainerHighest,
+                )
+              else
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isCurrent
+                          ? [activeColor, activeColor.withValues(alpha: 0.7)]
+                          : [
+                              scheme.onSurfaceVariant.withValues(alpha: 0.2),
+                              scheme.onSurfaceVariant.withValues(alpha: 0.35),
+                            ],
+                    ),
+                    shape: BoxShape.circle,
                   ),
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  initial,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: isCurrent ? Colors.white : scheme.onSurface,
+                  alignment: Alignment.center,
+                  child: Text(
+                    initial,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: isCurrent ? Colors.white : scheme.onSurface,
+                    ),
                   ),
                 ),
-              ),
 
               const Gap(14),
 
