@@ -9,7 +9,7 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
+android {
     namespace = "com.example.biblia"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
