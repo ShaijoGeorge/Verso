@@ -972,17 +972,15 @@ class _ChangeEmailSheet extends ConsumerStatefulWidget {
 class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   bool _isObscure = true;
 
   Future<void> _update() async {
+    if (!_formKey.currentState!.validate()) return;
+
     final email = _emailController.text.trim();
     final pass = _passwordController.text.trim();
-
-    if (email.isEmpty || !email.contains('@') || pass.isEmpty) {
-      VersoSnackbar.error(context, message: 'Invalid input');
-      return;
-    }
 
     setState(() => _isLoading = true);
     try {
@@ -1015,78 +1013,97 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomPadding),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Drag Handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurfaceVariant
-                      .withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const Gap(24),
-
-            Text(
-              'Change Email',
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const Gap(24),
-
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: 'New Email Address',
-                prefixIcon: Icon(Icons.email_outlined),
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const Gap(16),
-            TextField(
-              controller: _passwordController,
-              obscureText: _isObscure,
-              decoration: InputDecoration(
-                labelText: 'Current Password',
-                prefixIcon: const Icon(Icons.lock_outline),
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _isObscure ? Icons.visibility : Icons.visibility_off,
+      child: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Drag Handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
+                        .withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                  onPressed: () => setState(() => _isObscure = !_isObscure),
                 ),
               ),
-            ),
-            const Gap(32),
-            FilledButton(
-              onPressed: _isLoading ? null : _update,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
+              const Gap(24),
+
+              Text(
+                'Change Email',
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
               ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Update Email'),
-            ),
-            const Gap(16),
-          ],
+              const Gap(24),
+
+              TextFormField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'New Email Address',
+                  prefixIcon: Icon(Icons.email_outlined),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  final email = value?.trim() ?? '';
+                  if (email.isEmpty) return 'Please enter a valid email';
+                  if (!email.contains('@')) return 'Please enter a valid email';
+                  return null;
+                },
+              ),
+              const Gap(16),
+              TextFormField(
+                controller: _passwordController,
+                obscureText: _isObscure,
+                decoration: InputDecoration(
+                  labelText: 'Current Password',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isObscure ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () => setState(() => _isObscure = !_isObscure),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your password';
+                  }
+                  if (value.length < 6) {
+                    return 'Password must be at least 6 characters';
+                  }
+                  return null;
+                },
+              ),
+              const Gap(32),
+              FilledButton(
+                onPressed: _isLoading ? null : _update,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Update Email'),
+              ),
+              const Gap(16),
+            ],
+          ),
         ),
       ),
     );
