@@ -567,9 +567,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 icon: Icons.mail_outline_rounded,
                                 keyboardType: TextInputType.emailAddress,
                                 autocorrect: false,
-                                validator: (value) => value!.contains('@')
-                                    ? null
-                                    : 'Please enter a valid email',
+                                validator: (value) =>
+                                    RegExp(r'^.+@.+\..+$').hasMatch(value ?? '')
+                                        ? null
+                                        : 'Please enter a valid email',
                               ),
                               const Gap(Spacing.md),
 
