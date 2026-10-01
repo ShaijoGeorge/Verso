@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/design/components/verso_card.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
+import 'package:verso/core/design/components/verso_text_field.dart';
 import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/core/design/tokens/radii.dart';
@@ -1047,35 +1048,30 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
               ),
               const Gap(24),
 
-              TextFormField(
+              VersoTextField(
                 controller: _emailController,
+                label: 'New Email Address',
+                icon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'New Email Address',
-                  prefixIcon: Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(),
-                ),
                 validator: (value) {
                   final email = value?.trim() ?? '';
-                  if (email.isEmpty) return 'Please enter a valid email';
-                  if (!email.contains('@')) return 'Please enter a valid email';
+                  if (!RegExp(r'^.+@.+\..+$').hasMatch(email)) {
+                    return 'Please enter a valid email';
+                  }
                   return null;
                 },
               ),
               const Gap(16),
-              TextFormField(
+              VersoTextField(
                 controller: _passwordController,
+                label: 'Current Password',
+                icon: Icons.lock_outline,
                 obscureText: _isObscure,
-                decoration: InputDecoration(
-                  labelText: 'Current Password',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  border: const OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _isObscure ? Icons.visibility : Icons.visibility_off,
-                    ),
-                    onPressed: () => setState(() => _isObscure = !_isObscure),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _isObscure ? Icons.visibility : Icons.visibility_off,
                   ),
+                  onPressed: () => setState(() => _isObscure = !_isObscure),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -1200,18 +1196,15 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
               ),
               const Gap(24),
 
-              TextFormField(
+              VersoTextField(
                 controller: _oldPassController,
+                label: 'Current Password',
+                icon: Icons.lock_outline,
                 obscureText: _obsOld,
-                decoration: InputDecoration(
-                  labelText: 'Current Password',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  border: const OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon:
-                        Icon(_obsOld ? Icons.visibility : Icons.visibility_off),
-                    onPressed: () => setState(() => _obsOld = !_obsOld),
-                  ),
+                suffixIcon: IconButton(
+                  icon:
+                      Icon(_obsOld ? Icons.visibility : Icons.visibility_off),
+                  onPressed: () => setState(() => _obsOld = !_obsOld),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -1235,18 +1228,15 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
                 ),
               ),
 
-              TextFormField(
+              VersoTextField(
                 controller: _newPassController,
+                label: 'New Password',
+                icon: Icons.key,
                 obscureText: _obsNew,
-                decoration: InputDecoration(
-                  labelText: 'New Password',
-                  prefixIcon: const Icon(Icons.key),
-                  border: const OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon:
-                        Icon(_obsNew ? Icons.visibility : Icons.visibility_off),
-                    onPressed: () => setState(() => _obsNew = !_obsNew),
-                  ),
+                suffixIcon: IconButton(
+                  icon:
+                      Icon(_obsNew ? Icons.visibility : Icons.visibility_off),
+                  onPressed: () => setState(() => _obsNew = !_obsNew),
                 ),
                 validator: (value) {
                   final newPass = value?.trim() ?? '';
@@ -1260,19 +1250,16 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
                 },
               ),
               const Gap(16),
-              TextFormField(
+              VersoTextField(
                 controller: _confirmPassController,
+                label: 'Confirm New Password',
+                icon: Icons.check_circle_outline,
                 obscureText: _obsConfirm,
-                decoration: InputDecoration(
-                  labelText: 'Confirm New Password',
-                  prefixIcon: const Icon(Icons.check_circle_outline),
-                  border: const OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obsConfirm ? Icons.visibility : Icons.visibility_off,
-                    ),
-                    onPressed: () => setState(() => _obsConfirm = !_obsConfirm),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obsConfirm ? Icons.visibility : Icons.visibility_off,
                   ),
+                  onPressed: () => setState(() => _obsConfirm = !_obsConfirm),
                 ),
                 validator: (value) {
                   final confirm = value?.trim() ?? '';
@@ -1321,6 +1308,7 @@ class _EditNameSheet extends ConsumerStatefulWidget {
 
 class _EditNameSheetState extends ConsumerState<_EditNameSheet> {
   late final TextEditingController _nameController;
+  final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
   @override
@@ -1338,12 +1326,8 @@ class _EditNameSheetState extends ConsumerState<_EditNameSheet> {
   }
 
   Future<void> _update() async {
+    if (!_formKey.currentState!.validate()) return;
     final name = _nameController.text.trim();
-
-    if (name.isEmpty) {
-      VersoSnackbar.error(context, message: 'Name cannot be empty');
-      return;
-    }
 
     setState(() => _isLoading = true);
     try {
@@ -1382,63 +1366,69 @@ class _EditNameSheetState extends ConsumerState<_EditNameSheet> {
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomPadding),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Drag Handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurfaceVariant
-                      .withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
+      child: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Drag Handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
+                        .withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            const Gap(24),
+              const Gap(24),
 
-            Text(
-              'Edit Name',
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const Gap(24),
+              Text(
+                'Edit Name',
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const Gap(24),
 
-            TextField(
-              controller: _nameController,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                hintText: 'Full Name',
-                prefixIcon: Icon(Icons.person_outline_rounded),
-                border: OutlineInputBorder(),
+              VersoTextField(
+                controller: _nameController,
+                label: 'Full Name',
+                icon: Icons.person_outline_rounded,
+                textCapitalization: TextCapitalization.words,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Name cannot be empty';
+                  }
+                  return null;
+                },
               ),
-            ),
-            const Gap(32),
-            FilledButton(
-              onPressed: _isLoading ? null : _update,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
+              const Gap(32),
+              FilledButton(
+                onPressed: _isLoading ? null : _update,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Update Name'),
               ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Update Name'),
-            ),
-            const Gap(16),
-          ],
+              const Gap(16),
+            ],
+          ),
         ),
       ),
     );
