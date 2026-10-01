@@ -1310,7 +1310,9 @@ class _EditNameSheetState extends ConsumerState<_EditNameSheet> {
 
       final session = Supabase.instance.client.auth.currentSession;
       if (session != null) {
-        await ref.read(savedAccountsServiceProvider).syncCurrentSession(session);
+        await ref
+            .read(savedAccountsServiceProvider)
+            .syncCurrentSession(session);
         ref.invalidate(savedAccountsListProvider);
       }
 

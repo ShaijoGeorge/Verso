@@ -25,9 +25,7 @@ class SavedAccountTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final trimmedName = account.displayName.trim();
-    final initial = trimmedName.isNotEmpty
-        ? trimmedName[0].toUpperCase()
-        : '?';
+    final initial = trimmedName.isNotEmpty ? trimmedName[0].toUpperCase() : '?';
 
     final activeColor = scheme.primary;
 
