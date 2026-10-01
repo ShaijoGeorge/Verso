@@ -7,8 +7,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:verso/core/design/components/verso_bottom_sheet.dart';
 import 'package:verso/core/design/components/verso_card.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
+import 'package:verso/core/design/components/verso_text_field.dart';
 import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/core/design/tokens/radii.dart';
@@ -93,22 +95,18 @@ class ProfileScreen extends ConsumerWidget {
                         icon: Icons.email_outlined,
                         iconColor: const Color(0xFF3B82F6),
                         label: 'Change Email',
-                        onTap: () => showModalBottomSheet<void>(
+                        onTap: () => VersoBottomSheet.show<void>(
                           context: context,
-                          isScrollControlled: true,
-                          useSafeArea: true,
-                          builder: (_) => const _ChangeEmailSheet(),
+                          child: const _ChangeEmailSheet(),
                         ),
                       ),
                       _SettingsItem(
                         icon: Icons.lock_outline_rounded,
                         iconColor: const Color(0xFF8B5CF6),
                         label: 'Change Password',
-                        onTap: () => showModalBottomSheet<void>(
+                        onTap: () => VersoBottomSheet.show<void>(
                           context: context,
-                          isScrollControlled: true,
-                          useSafeArea: true,
-                          builder: (_) => const _ChangePasswordSheet(),
+                          child: const _ChangePasswordSheet(),
                         ),
                       ),
                     ],
@@ -252,11 +250,9 @@ class _ProfileHeroHeader extends StatelessWidget {
 
               // Name with edit icon
               GestureDetector(
-                onTap: () => showModalBottomSheet<void>(
+                onTap: () => VersoBottomSheet.show<void>(
                   context: context,
-                  isScrollControlled: true,
-                  useSafeArea: true,
-                  builder: (_) => _EditNameSheet(currentName: name),
+                  child: _EditNameSheet(currentName: name),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -972,17 +968,15 @@ class _ChangeEmailSheet extends ConsumerStatefulWidget {
 class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   bool _isObscure = true;
 
   Future<void> _update() async {
+    if (!_formKey.currentState!.validate()) return;
+
     final email = _emailController.text.trim();
     final pass = _passwordController.text.trim();
-
-    if (email.isEmpty || !email.contains('@') || pass.isEmpty) {
-      VersoSnackbar.error(context, message: 'Invalid input');
-      return;
-    }
 
     setState(() => _isLoading = true);
     try {
@@ -1015,78 +1009,75 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomPadding),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Drag Handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurfaceVariant
-                      .withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
-                ),
+      child: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Change Email',
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
               ),
-            ),
-            const Gap(24),
-
-            Text(
-              'Change Email',
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const Gap(24),
-
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: 'New Email Address',
-                prefixIcon: Icon(Icons.email_outlined),
-                border: OutlineInputBorder(),
+              const Gap(24),
+              VersoTextField(
+                controller: _emailController,
+                label: 'New Email Address',
+                icon: Icons.email_outlined,
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  final email = value?.trim() ?? '';
+                  if (!RegExp(r'^.+@.+\..+$').hasMatch(email)) {
+                    return 'Please enter a valid email';
+                  }
+                  return null;
+                },
               ),
-            ),
-            const Gap(16),
-            TextField(
-              controller: _passwordController,
-              obscureText: _isObscure,
-              decoration: InputDecoration(
-                labelText: 'Current Password',
-                prefixIcon: const Icon(Icons.lock_outline),
-                border: const OutlineInputBorder(),
+              const Gap(16),
+              VersoTextField(
+                controller: _passwordController,
+                label: 'Current Password',
+                icon: Icons.lock_outline,
+                obscureText: _isObscure,
                 suffixIcon: IconButton(
                   icon: Icon(
                     _isObscure ? Icons.visibility : Icons.visibility_off,
                   ),
                   onPressed: () => setState(() => _isObscure = !_isObscure),
                 ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your password';
+                  }
+                  if (value.length < 6) {
+                    return 'Password must be at least 6 characters';
+                  }
+                  return null;
+                },
               ),
-            ),
-            const Gap(32),
-            FilledButton(
-              onPressed: _isLoading ? null : _update,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
+              const Gap(32),
+              FilledButton(
+                onPressed: _isLoading ? null : _update,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Update Email'),
               ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Update Email'),
-            ),
-            const Gap(16),
-          ],
+              const Gap(16),
+            ],
+          ),
         ),
       ),
     );
@@ -1106,6 +1097,7 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
   final _oldPassController = TextEditingController();
   final _newPassController = TextEditingController();
   final _confirmPassController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
   bool _isLoading = false;
   bool _obsOld = true;
@@ -1113,18 +1105,10 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
   bool _obsConfirm = true;
 
   Future<void> _update() async {
+    if (!_formKey.currentState!.validate()) return;
+
     final oldPass = _oldPassController.text.trim();
     final newPass = _newPassController.text.trim();
-    final confirmPass = _confirmPassController.text.trim();
-
-    if (newPass.length < 6) {
-      VersoSnackbar.error(context, message: 'New password is too short');
-      return;
-    }
-    if (newPass != confirmPass) {
-      VersoSnackbar.error(context, message: 'Passwords do not match');
-      return;
-    }
 
     setState(() => _isLoading = true);
     try {
@@ -1156,111 +1140,106 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomPadding),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Drag Handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurfaceVariant
-                      .withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const Gap(24),
-
-            Text(
-              'Change Password',
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const Gap(24),
-
-            TextField(
-              controller: _oldPassController,
-              obscureText: _obsOld,
-              decoration: InputDecoration(
-                labelText: 'Current Password',
-                prefixIcon: const Icon(Icons.lock_outline),
-                border: const OutlineInputBorder(),
+      child: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              VersoTextField(
+                controller: _oldPassController,
+                label: 'Current Password',
+                icon: Icons.lock_outline,
+                obscureText: _obsOld,
                 suffixIcon: IconButton(
                   icon: Icon(_obsOld ? Icons.visibility : Icons.visibility_off),
                   onPressed: () => setState(() => _obsOld = !_obsOld),
                 ),
-              ),
-            ),
-
-            // --- NEW: FORGOT PASSWORD BUTTON ---
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () {
-                  // Close the bottom sheet first
-                  Navigator.pop(context);
-                  // Navigate to the Forgot Password screen
-                  GoRouter.of(context).push('/forgot-password');
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter your current password';
+                  }
+                  return null;
                 },
-                child: const Text('Forgot Password?'),
               ),
-            ),
 
-            TextField(
-              controller: _newPassController,
-              obscureText: _obsNew,
-              decoration: InputDecoration(
-                labelText: 'New Password',
-                prefixIcon: const Icon(Icons.key),
-                border: const OutlineInputBorder(),
+              // --- NEW: FORGOT PASSWORD BUTTON ---
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {
+                    // Close the bottom sheet first
+                    Navigator.pop(context);
+                    // Navigate to the Forgot Password screen
+                    GoRouter.of(context).push('/forgot-password');
+                  },
+                  child: const Text('Forgot Password?'),
+                ),
+              ),
+
+              VersoTextField(
+                controller: _newPassController,
+                label: 'New Password',
+                icon: Icons.key,
+                obscureText: _obsNew,
                 suffixIcon: IconButton(
                   icon: Icon(_obsNew ? Icons.visibility : Icons.visibility_off),
                   onPressed: () => setState(() => _obsNew = !_obsNew),
                 ),
+                validator: (value) {
+                  final newPass = value?.trim() ?? '';
+                  if (newPass.isEmpty) {
+                    return 'Please enter a new password';
+                  }
+                  if (newPass.length < 6) {
+                    return 'New password must be at least 6 characters';
+                  }
+                  return null;
+                },
               ),
-            ),
-            const Gap(16),
-            TextField(
-              controller: _confirmPassController,
-              obscureText: _obsConfirm,
-              decoration: InputDecoration(
-                labelText: 'Confirm New Password',
-                prefixIcon: const Icon(Icons.check_circle_outline),
-                border: const OutlineInputBorder(),
+              const Gap(16),
+              VersoTextField(
+                controller: _confirmPassController,
+                label: 'Confirm New Password',
+                icon: Icons.check_circle_outline,
+                obscureText: _obsConfirm,
                 suffixIcon: IconButton(
                   icon: Icon(
                     _obsConfirm ? Icons.visibility : Icons.visibility_off,
                   ),
                   onPressed: () => setState(() => _obsConfirm = !_obsConfirm),
                 ),
+                validator: (value) {
+                  final confirm = value?.trim() ?? '';
+                  final newPass = _newPassController.text.trim();
+                  if (confirm.isEmpty) {
+                    return 'Please confirm your new password';
+                  }
+                  if (confirm != newPass) {
+                    return 'Passwords do not match';
+                  }
+                  return null;
+                },
               ),
-            ),
-            const Gap(32),
-            FilledButton(
-              onPressed: _isLoading ? null : _update,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
+              const Gap(32),
+              FilledButton(
+                onPressed: _isLoading ? null : _update,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Update Password'),
               ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Update Password'),
-            ),
-            const Gap(16),
-          ],
+              const Gap(16),
+            ],
+          ),
         ),
       ),
     );
@@ -1279,6 +1258,7 @@ class _EditNameSheet extends ConsumerStatefulWidget {
 
 class _EditNameSheetState extends ConsumerState<_EditNameSheet> {
   late final TextEditingController _nameController;
+  final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
   @override
@@ -1296,12 +1276,8 @@ class _EditNameSheetState extends ConsumerState<_EditNameSheet> {
   }
 
   Future<void> _update() async {
+    if (!_formKey.currentState!.validate()) return;
     final name = _nameController.text.trim();
-
-    if (name.isEmpty) {
-      VersoSnackbar.error(context, message: 'Name cannot be empty');
-      return;
-    }
 
     setState(() => _isLoading = true);
     try {
@@ -1315,6 +1291,8 @@ class _EditNameSheetState extends ConsumerState<_EditNameSheet> {
             .syncCurrentSession(session);
         ref.invalidate(savedAccountsListProvider);
       }
+      ref.invalidate(authUserProvider);
+      ref.invalidate(userNameProvider);
 
       if (mounted) {
         Navigator.pop(context);
@@ -1338,63 +1316,52 @@ class _EditNameSheetState extends ConsumerState<_EditNameSheet> {
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomPadding),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Drag Handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurfaceVariant
-                      .withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
+      child: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Edit Name',
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const Gap(24),
+              VersoTextField(
+                controller: _nameController,
+                label: 'Full Name',
+                icon: Icons.person_outline_rounded,
+                textCapitalization: TextCapitalization.words,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Name cannot be empty';
+                  }
+                  return null;
+                },
+              ),
+              const Gap(32),
+              FilledButton(
+                onPressed: _isLoading ? null : _update,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
                 ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Update Name'),
               ),
-            ),
-            const Gap(24),
-
-            Text(
-              'Edit Name',
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const Gap(24),
-
-            TextField(
-              controller: _nameController,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                hintText: 'Full Name',
-                prefixIcon: Icon(Icons.person_outline_rounded),
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const Gap(32),
-            FilledButton(
-              onPressed: _isLoading ? null : _update,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Update Name'),
-            ),
-            const Gap(16),
-          ],
+              const Gap(16),
+            ],
+          ),
         ),
       ),
     );

@@ -58,7 +58,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
 
   Future<void> _submit() async {
     final email = _emailController.text.trim();
-    if (email.isEmpty || !email.contains('@')) {
+    if (!RegExp(r'^.+@.+\..+$').hasMatch(email)) {
       VersoSnackbar.error(context, message: 'Please enter a valid email');
       return;
     }

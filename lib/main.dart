@@ -143,11 +143,9 @@ class _BibliaAppState extends ConsumerState<BibliaApp>
   }
 
   Future<void> _initializeReminders() async {
-    // Wait for settings to load
-    await Future<void>.delayed(const Duration(milliseconds: 500));
+    try {
+      final settings = await ref.read(currentSettingsProvider.future);
 
-    final settingsAsync = ref.read(currentSettingsProvider);
-    settingsAsync.whenData((settings) async {
       if (settings.isReminderEnabled) {
         await NotificationService().scheduleDailyReminder(
           settings.reminderHour,
@@ -157,7 +155,9 @@ class _BibliaAppState extends ConsumerState<BibliaApp>
       if (settings.isDailyVerseEnabled) {
         await NotificationService().scheduleDailyVerseNotification();
       }
-    });
+    } catch (e) {
+      // Silently ignore if settings fail to load
+    }
   }
 
   @override

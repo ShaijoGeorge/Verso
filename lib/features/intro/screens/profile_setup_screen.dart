@@ -6,6 +6,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:verso/core/design/components/verso_snackbar.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/core/widgets/verso_avatar.dart';
@@ -185,6 +186,13 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen>
       ref.invalidate(userSettingsProvider);
 
       if (mounted) context.go('/home');
+    } catch (e) {
+      if (mounted) {
+        VersoSnackbar.error(
+          context,
+          message: 'Could not save your profile. Please check your connection.',
+        );
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
