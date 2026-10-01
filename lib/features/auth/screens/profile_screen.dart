@@ -1308,6 +1308,12 @@ class _EditNameSheetState extends ConsumerState<_EditNameSheet> {
       final repo = ref.read(authRepositoryProvider);
       await repo.updateUserMetadata({'full_name': name});
 
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session != null) {
+        await ref.read(savedAccountsServiceProvider).syncCurrentSession(session);
+        ref.invalidate(savedAccountsListProvider);
+      }
+
       if (mounted) {
         Navigator.pop(context);
         VersoSnackbar.success(
