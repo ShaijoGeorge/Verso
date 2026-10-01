@@ -631,13 +631,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         builder: (context, ref, _) {
           final currentSettings =
               ref.watch(currentSettingsProvider).value ?? settings;
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: SizedBox(
+          return AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: SizedBox(
                   width: double.infinity,
                   child: SegmentedButton<AppThemeMode>(
                     showSelectedIcon: false,
@@ -698,6 +702,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       .setUseAmoledForDark(v),
                 ),
             ],
+          ),
           );
         },
       ),
@@ -1346,58 +1351,14 @@ class _FontSizeSettingsTile extends StatelessWidget {
     final activePreset = AppFontSize.fromScale(currentScale);
 
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header Row
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF3B82F6)
-                      .withValues(alpha: isDark ? 0.2 : 0.1),
-                  borderRadius: BorderRadius.circular(AppRadii.md),
-                ),
-                child: const Icon(
-                  Icons.format_size_rounded,
-                  size: 20,
-                  color: Color(0xFF3B82F6),
-                ),
-              ),
-              const Gap(14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'In-App Font Size',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: scheme.onSurface,
-                      ),
-                    ),
-                    const Gap(2),
-                    Text(
-                      '${activePreset.label} (${activePreset.percentage})',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13,
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const Gap(16),
-
           // Live Preview Box
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: scheme.surfaceContainerHighest
                   .withValues(alpha: isDark ? 0.35 : 0.45),
@@ -1412,21 +1373,17 @@ class _FontSizeSettingsTile extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Flexible(
-                      child: Text(
-                        'LIVE PREVIEW',
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                          color: scheme.primary,
-                        ),
+                    Text(
+                      'LIVE PREVIEW',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                        color: scheme.primary,
                       ),
                     ),
-                    const Gap(8),
                     Text(
-                      'Psalm 119:105',
+                      '${activePreset.label} (${activePreset.percentage})',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -1435,28 +1392,28 @@ class _FontSizeSettingsTile extends StatelessWidget {
                     ),
                   ],
                 ),
-                const Gap(10),
+                const Gap(8),
                 Text(
                   'Your word is a lamp to my feet and a light to my path.',
                   style: GoogleFonts.dmSerifDisplay(
-                    fontSize: 18 * currentScale,
+                    fontSize: 16 * currentScale,
                     height: 1.35,
                     color: scheme.onSurface,
                   ),
                 ),
-                const Gap(6),
+                const Gap(4),
                 Text(
                   'Read daily to build your streak and stay consistent.',
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13 * currentScale,
-                    height: 1.45,
+                    fontSize: 12 * currentScale,
+                    height: 1.4,
                     color: scheme.onSurfaceVariant,
                   ),
                 ),
               ],
             ),
           ),
-          const Gap(16),
+          const Gap(12),
 
           // Preset Selection Buttons
           Row(
@@ -1464,13 +1421,13 @@ class _FontSizeSettingsTile extends StatelessWidget {
               final isSelected = (preset.scale - currentScale).abs() < 0.01;
               return Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 2.5),
                   child: InkWell(
                     onTap: () => onChanged(preset.scale),
                     borderRadius: BorderRadius.circular(AppRadii.sm),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
                         color: isSelected
                             ? scheme.primary
@@ -1489,7 +1446,7 @@ class _FontSizeSettingsTile extends StatelessWidget {
                           Text(
                             preset.label,
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: isSelected
                                   ? FontWeight.w700
                                   : FontWeight.w500,
@@ -1500,11 +1457,11 @@ class _FontSizeSettingsTile extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const Gap(2),
+                          const Gap(1),
                           Text(
                             preset.percentage,
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 11,
+                              fontSize: 10,
                               fontWeight: FontWeight.w600,
                               color: isSelected
                                   ? scheme.onPrimary.withValues(alpha: 0.85)
@@ -1519,11 +1476,12 @@ class _FontSizeSettingsTile extends StatelessWidget {
               );
             }).toList(),
           ),
-          const Gap(10),
+          const Gap(8),
           Text(
             'In-app font size applies across all books and screens, independent of phone settings.',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 11,
+              height: 1.3,
               color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
             ),
             textAlign: TextAlign.center,

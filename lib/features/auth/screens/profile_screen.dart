@@ -97,6 +97,7 @@ class ProfileScreen extends ConsumerWidget {
                         label: 'Change Email',
                         onTap: () => VersoBottomSheet.show<void>(
                           context: context,
+                          title: 'Change Email',
                           child: const _ChangeEmailSheet(),
                         ),
                       ),
@@ -106,6 +107,7 @@ class ProfileScreen extends ConsumerWidget {
                         label: 'Change Password',
                         onTap: () => VersoBottomSheet.show<void>(
                           context: context,
+                          title: 'Change Password',
                           child: const _ChangePasswordSheet(),
                         ),
                       ),
@@ -252,6 +254,7 @@ class _ProfileHeroHeader extends StatelessWidget {
               GestureDetector(
                 onTap: () => VersoBottomSheet.show<void>(
                   context: context,
+                  title: 'Edit Name',
                   child: _EditNameSheet(currentName: name),
                 ),
                 child: Row(
@@ -1004,80 +1007,65 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
 
   @override
   Widget build(BuildContext context) {
-    // This padding handles the keyboard automatically
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomPadding),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Change Email',
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-              const Gap(24),
-              VersoTextField(
-                controller: _emailController,
-                label: 'New Email Address',
-                icon: Icons.email_outlined,
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  final email = value?.trim() ?? '';
-                  if (!RegExp(r'^.+@.+\..+$').hasMatch(email)) {
-                    return 'Please enter a valid email';
-                  }
-                  return null;
-                },
-              ),
-              const Gap(16),
-              VersoTextField(
-                controller: _passwordController,
-                label: 'Current Password',
-                icon: Icons.lock_outline,
-                obscureText: _isObscure,
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _isObscure ? Icons.visibility : Icons.visibility_off,
-                  ),
-                  onPressed: () => setState(() => _isObscure = !_isObscure),
+    return Form(
+      key: _formKey,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            VersoTextField(
+              controller: _emailController,
+              label: 'New Email Address',
+              icon: Icons.email_outlined,
+              keyboardType: TextInputType.emailAddress,
+              validator: (value) {
+                final email = value?.trim() ?? '';
+                if (!RegExp(r'^.+@.+\..+$').hasMatch(email)) {
+                  return 'Please enter a valid email';
+                }
+                return null;
+              },
+            ),
+            const Gap(16),
+            VersoTextField(
+              controller: _passwordController,
+              label: 'Current Password',
+              icon: Icons.lock_outline,
+              obscureText: _isObscure,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _isObscure ? Icons.visibility : Icons.visibility_off,
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your password';
-                  }
-                  if (value.length < 6) {
-                    return 'Password must be at least 6 characters';
-                  }
-                  return null;
-                },
+                onPressed: () => setState(() => _isObscure = !_isObscure),
               ),
-              const Gap(32),
-              FilledButton(
-                onPressed: _isLoading ? null : _update,
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(50),
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Update Email'),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter your password';
+                }
+                if (value.length < 6) {
+                  return 'Password must be at least 6 characters';
+                }
+                return null;
+              },
+            ),
+            const Gap(24),
+            FilledButton(
+              onPressed: _isLoading ? null : _update,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
               ),
-              const Gap(16),
-            ],
-          ),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Update Email'),
+            ),
+            const Gap(8),
+          ],
         ),
       ),
     );
@@ -1136,110 +1124,103 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+    return Form(
+      key: _formKey,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            VersoTextField(
+              controller: _oldPassController,
+              label: 'Current Password',
+              icon: Icons.lock_outline,
+              obscureText: _obsOld,
+              suffixIcon: IconButton(
+                icon: Icon(_obsOld ? Icons.visibility : Icons.visibility_off),
+                onPressed: () => setState(() => _obsOld = !_obsOld),
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Please enter your current password';
+                }
+                return null;
+              },
+            ),
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomPadding),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              VersoTextField(
-                controller: _oldPassController,
-                label: 'Current Password',
-                icon: Icons.lock_outline,
-                obscureText: _obsOld,
-                suffixIcon: IconButton(
-                  icon: Icon(_obsOld ? Icons.visibility : Icons.visibility_off),
-                  onPressed: () => setState(() => _obsOld = !_obsOld),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your current password';
-                  }
-                  return null;
+            // --- FORGOT PASSWORD BUTTON ---
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  GoRouter.of(context).push('/forgot-password');
                 },
+                child: const Text('Forgot Password?'),
               ),
+            ),
 
-              // --- NEW: FORGOT PASSWORD BUTTON ---
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {
-                    // Close the bottom sheet first
-                    Navigator.pop(context);
-                    // Navigate to the Forgot Password screen
-                    GoRouter.of(context).push('/forgot-password');
-                  },
-                  child: const Text('Forgot Password?'),
-                ),
+            VersoTextField(
+              controller: _newPassController,
+              label: 'New Password',
+              icon: Icons.key,
+              obscureText: _obsNew,
+              suffixIcon: IconButton(
+                icon: Icon(_obsNew ? Icons.visibility : Icons.visibility_off),
+                onPressed: () => setState(() => _obsNew = !_obsNew),
               ),
-
-              VersoTextField(
-                controller: _newPassController,
-                label: 'New Password',
-                icon: Icons.key,
-                obscureText: _obsNew,
-                suffixIcon: IconButton(
-                  icon: Icon(_obsNew ? Icons.visibility : Icons.visibility_off),
-                  onPressed: () => setState(() => _obsNew = !_obsNew),
+              validator: (value) {
+                final newPass = value?.trim() ?? '';
+                if (newPass.isEmpty) {
+                  return 'Please enter a new password';
+                }
+                if (newPass.length < 6) {
+                  return 'New password must be at least 6 characters';
+                }
+                return null;
+              },
+            ),
+            const Gap(16),
+            VersoTextField(
+              controller: _confirmPassController,
+              label: 'Confirm New Password',
+              icon: Icons.check_circle_outline,
+              obscureText: _obsConfirm,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obsConfirm ? Icons.visibility : Icons.visibility_off,
                 ),
-                validator: (value) {
-                  final newPass = value?.trim() ?? '';
-                  if (newPass.isEmpty) {
-                    return 'Please enter a new password';
-                  }
-                  if (newPass.length < 6) {
-                    return 'New password must be at least 6 characters';
-                  }
-                  return null;
-                },
+                onPressed: () => setState(() => _obsConfirm = !_obsConfirm),
               ),
-              const Gap(16),
-              VersoTextField(
-                controller: _confirmPassController,
-                label: 'Confirm New Password',
-                icon: Icons.check_circle_outline,
-                obscureText: _obsConfirm,
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obsConfirm ? Icons.visibility : Icons.visibility_off,
-                  ),
-                  onPressed: () => setState(() => _obsConfirm = !_obsConfirm),
-                ),
-                validator: (value) {
-                  final confirm = value?.trim() ?? '';
-                  final newPass = _newPassController.text.trim();
-                  if (confirm.isEmpty) {
-                    return 'Please confirm your new password';
-                  }
-                  if (confirm != newPass) {
-                    return 'Passwords do not match';
-                  }
-                  return null;
-                },
+              validator: (value) {
+                final confirm = value?.trim() ?? '';
+                final newPass = _newPassController.text.trim();
+                if (confirm.isEmpty) {
+                  return 'Please confirm your new password';
+                }
+                if (confirm != newPass) {
+                  return 'Passwords do not match';
+                }
+                return null;
+              },
+            ),
+            const Gap(24),
+            FilledButton(
+              onPressed: _isLoading ? null : _update,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
               ),
-              const Gap(32),
-              FilledButton(
-                onPressed: _isLoading ? null : _update,
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(50),
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Update Password'),
-              ),
-              const Gap(16),
-            ],
-          ),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Update Password'),
+            ),
+            const Gap(8),
+          ],
         ),
       ),
     );
@@ -1312,56 +1293,42 @@ class _EditNameSheetState extends ConsumerState<_EditNameSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomPadding),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Edit Name',
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
+    return Form(
+      key: _formKey,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            VersoTextField(
+              controller: _nameController,
+              label: 'Full Name',
+              icon: Icons.person_outline_rounded,
+              textCapitalization: TextCapitalization.words,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Name cannot be empty';
+                }
+                return null;
+              },
+            ),
+            const Gap(24),
+            FilledButton(
+              onPressed: _isLoading ? null : _update,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
               ),
-              const Gap(24),
-              VersoTextField(
-                controller: _nameController,
-                label: 'Full Name',
-                icon: Icons.person_outline_rounded,
-                textCapitalization: TextCapitalization.words,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Name cannot be empty';
-                  }
-                  return null;
-                },
-              ),
-              const Gap(32),
-              FilledButton(
-                onPressed: _isLoading ? null : _update,
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(50),
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Update Name'),
-              ),
-              const Gap(16),
-            ],
-          ),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Update Name'),
+            ),
+            const Gap(8),
+          ],
         ),
       ),
     );
