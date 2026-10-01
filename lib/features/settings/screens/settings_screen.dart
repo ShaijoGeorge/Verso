@@ -642,67 +642,67 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: SizedBox(
-                  width: double.infinity,
-                  child: SegmentedButton<AppThemeMode>(
-                    showSelectedIcon: false,
-                    segments: const [
-                      ButtonSegment(
-                        value: AppThemeMode.system,
-                        icon: Icon(Icons.brightness_auto_outlined, size: 18),
-                        label: Text(
-                          'System',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                    width: double.infinity,
+                    child: SegmentedButton<AppThemeMode>(
+                      showSelectedIcon: false,
+                      segments: const [
+                        ButtonSegment(
+                          value: AppThemeMode.system,
+                          icon: Icon(Icons.brightness_auto_outlined, size: 18),
+                          label: Text(
+                            'System',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                      ButtonSegment(
-                        value: AppThemeMode.light,
-                        icon: Icon(Icons.light_mode_outlined, size: 18),
-                        label: Text(
-                          'Light',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        ButtonSegment(
+                          value: AppThemeMode.light,
+                          icon: Icon(Icons.light_mode_outlined, size: 18),
+                          label: Text(
+                            'Light',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                      ButtonSegment(
-                        value: AppThemeMode.dark,
-                        icon: Icon(Icons.dark_mode_outlined, size: 18),
-                        label: Text(
-                          'Dark',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        ButtonSegment(
+                          value: AppThemeMode.dark,
+                          icon: Icon(Icons.dark_mode_outlined, size: 18),
+                          label: Text(
+                            'Dark',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                    ],
-                    selected: {currentSettings.themeMode},
-                    onSelectionChanged: (s) => ref
-                        .read(currentSettingsProvider.notifier)
-                        .setThemeMode(s.first),
-                    style: ButtonStyle(
-                      visualDensity: VisualDensity.compact,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      textStyle: WidgetStatePropertyAll(
-                        GoogleFonts.plusJakartaSans(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                      ],
+                      selected: {currentSettings.themeMode},
+                      onSelectionChanged: (s) => ref
+                          .read(currentSettingsProvider.notifier)
+                          .setThemeMode(s.first),
+                      style: ButtonStyle(
+                        visualDensity: VisualDensity.compact,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        textStyle: WidgetStatePropertyAll(
+                          GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              if (currentSettings.themeMode != AppThemeMode.light)
-                _SettingsSwitchTile(
-                  title: 'Pure Black (AMOLED)',
-                  icon: Icons.brightness_1_outlined,
-                  iconColor: const Color(0xFF8B5CF6),
-                  value: currentSettings.useAmoledForDark,
-                  onChanged: (v) => ref
-                      .read(currentSettingsProvider.notifier)
-                      .setUseAmoledForDark(v),
-                ),
-            ],
-          ),
+                if (currentSettings.themeMode != AppThemeMode.light)
+                  _SettingsSwitchTile(
+                    title: 'Pure Black (AMOLED)',
+                    icon: Icons.brightness_1_outlined,
+                    iconColor: const Color(0xFF8B5CF6),
+                    value: currentSettings.useAmoledForDark,
+                    onChanged: (v) => ref
+                        .read(currentSettingsProvider.notifier)
+                        .setUseAmoledForDark(v),
+                  ),
+              ],
+            ),
           );
         },
       ),
