@@ -147,6 +147,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen>
 
   // ── Save & Navigate ────────────────────────────────────────────────────────
   Future<void> _continue() async {
+    if (_isSaving) return;
     if (_selectedGender == null || _selectedBirthday == null) return;
 
     setState(() => _isSaving = true);
