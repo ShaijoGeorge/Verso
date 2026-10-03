@@ -1023,6 +1023,13 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
   bool _isLoading = false;
   bool _isObscure = true;
 
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   Future<void> _update() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -1139,6 +1146,14 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
   bool _obsOld = true;
   bool _obsNew = true;
   bool _obsConfirm = true;
+
+  @override
+  void dispose() {
+    _oldPassController.dispose();
+    _newPassController.dispose();
+    _confirmPassController.dispose();
+    super.dispose();
+  }
 
   Future<void> _update() async {
     if (!_formKey.currentState!.validate()) return;
