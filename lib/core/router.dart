@@ -112,7 +112,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         if ((isLoginRoute && !isAddAccountLogin) ||
             isResetCallback ||
             isOnboardingRoute ||
-            isProfileSetupRoute) {
+            (hasProfileData && isProfileSetupRoute)) {
           return '/home';
         }
       }
@@ -323,14 +323,17 @@ final routerProvider = Provider<GoRouter>((ref) {
 
 // Helper class to make Stream listenable for GoRouter
 class GoRouterRefreshStream extends ChangeNotifier {
-  GoRouterRefreshStream(Stream<dynamic> stream) {
+  GoRouterRefreshStream(Stream<AuthState> stream) {
     notifyListeners();
-    _subscription = stream.listen((dynamic _) {
+    _subscription = stream.listen((authState) {
+      if (authState.event == AuthChangeEvent.userUpdated) {
+        return; // Ignore user updates to prevent unexpected redirects (e.g. during profile setup)
+      }
       notifyListeners();
     });
   }
 
-  late final StreamSubscription<dynamic> _subscription;
+  late final StreamSubscription<AuthState> _subscription;
 
   @override
   void dispose() {
