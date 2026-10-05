@@ -1169,7 +1169,15 @@ class _SettingsActionTile extends StatelessWidget {
                   ],
                 ),
               ),
-              if (trailing != null) trailing!,
+              if (trailing != null) ...[
+                trailing!,
+                const Gap(8),
+              ],
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20,
+                color: scheme.onSurfaceVariant.withValues(alpha: 0.5),
+              ),
             ],
           ),
         ),
