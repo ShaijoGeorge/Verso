@@ -121,44 +121,98 @@ class HomeScreen extends ConsumerWidget {
               const Gap(Spacing.xl),
 
               // THIS WEEK
-              if (detailedAsync.hasValue) ...[
-                VersoSectionHeader(
-                  title: 'This week',
-                  action: 'Details',
-                  onAction: () => context.go('/stats?tab=weekly'),
+              detailedAsync.when(
+                data: (detailed) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    VersoSectionHeader(
+                      title: 'This week',
+                      action: 'Details',
+                      onAction: () => context.go('/stats?tab=weekly'),
+                    ),
+                    const Gap(Spacing.md),
+                    _WeeklyChart(
+                      counts: detailed.last7DaysCounts,
+                      dates: detailed.last7DaysDates,
+                    ),
+                    const Gap(Spacing.xl),
+                  ],
                 ),
-                const Gap(Spacing.md),
-                _WeeklyChart(
-                  counts: detailedAsync.value!.last7DaysCounts,
-                  dates: detailedAsync.value!.last7DaysDates,
+                error: (err, _) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const VersoSectionHeader(title: 'This week'),
+                    const Gap(Spacing.md),
+                    _InlineErrorCard(
+                      title: 'weekly stats',
+                      onRetry: () => ref.invalidate(detailedStatsProvider),
+                    ),
+                    const Gap(Spacing.xl),
+                  ],
                 ),
-                const Gap(Spacing.xl),
-              ],
+                loading: () => const SizedBox.shrink(),
+              ),
 
               // CONTINUE READING
-              if (continueAsync.hasValue && continueAsync.value != null) ...[
-                const VersoSectionHeader(title: 'Continue reading'),
-                const Gap(Spacing.md),
-                _ContinueReadingCard(info: continueAsync.value!),
-                const Gap(Spacing.xl),
-              ],
+              continueAsync.when(
+                data: (info) => info != null
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const VersoSectionHeader(title: 'Continue reading'),
+                          const Gap(Spacing.md),
+                          _ContinueReadingCard(info: info),
+                          const Gap(Spacing.xl),
+                        ],
+                      )
+                    : const SizedBox.shrink(),
+                error: (err, _) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const VersoSectionHeader(title: 'Continue reading'),
+                    const Gap(Spacing.md),
+                    _InlineErrorCard(
+                      title: 'reading progress',
+                      onRetry: () => ref.invalidate(continueReadingProvider),
+                    ),
+                    const Gap(Spacing.xl),
+                  ],
+                ),
+                loading: () => const SizedBox.shrink(),
+              ),
 
               // RECENT ACTIVITY
-              if (activityAsync.hasValue &&
-                  activityAsync.value!.isNotEmpty) ...[
-                VersoSectionHeader(
-                  title: 'Recent activity',
-                  action: 'See all',
-                  onAction: () => context.go('/history'),
+              activityAsync.when(
+                data: (groups) => groups.isNotEmpty
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          VersoSectionHeader(
+                            title: 'Recent activity',
+                            action: 'See all',
+                            onAction: () => context.go('/history'),
+                          ),
+                          const Gap(Spacing.md),
+                          _RecentActivityList(
+                            groups:
+                                groups.values.expand((g) => g).take(3).toList(),
+                          ),
+                        ],
+                      )
+                    : const SizedBox.shrink(),
+                error: (err, _) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const VersoSectionHeader(title: 'Recent activity'),
+                    const Gap(Spacing.md),
+                    _InlineErrorCard(
+                      title: 'activity log',
+                      onRetry: () => ref.invalidate(activityLogProvider),
+                    ),
+                  ],
                 ),
-                const Gap(Spacing.md),
-                _RecentActivityList(
-                  groups: activityAsync.value!.values
-                      .expand((g) => g)
-                      .take(3)
-                      .toList(),
-                ),
-              ],
+                loading: () => const SizedBox.shrink(),
+              ),
 
               // Extra space so content isn't hidden behind the floating nav bar
               const Gap(100),
@@ -1235,6 +1289,46 @@ class _QuickStatCardSkeleton extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INLINE ERROR CARD
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _InlineErrorCard extends StatelessWidget {
+  const _InlineErrorCard({required this.title, required this.onRetry});
+  final String title;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return VersoCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline_rounded, color: scheme.error, size: 20),
+          const Gap(12),
+          Expanded(
+            child: Text(
+              'Could not load $title',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+            ),
+          ),
+          TextButton(
+            onPressed: onRetry,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              minimumSize: Size.zero,
+            ),
+            child: const Text('Retry'),
+          ),
+        ],
       ),
     );
   }

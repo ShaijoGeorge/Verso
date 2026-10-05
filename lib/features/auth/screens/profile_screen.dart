@@ -780,183 +780,231 @@ class _SignOutTile extends ConsumerWidget {
 
     final errorColor = ctx.palette.danger;
 
-    final confirmed = await showDialog<bool>(
+    await showDialog<void>(
       context: ctx,
       barrierColor: Colors.black54,
+      barrierDismissible: false,
       builder: (dialogContext) {
         final dialogScheme = Theme.of(dialogContext).colorScheme;
         final hasPending = pendingCount > 0;
+        var isLoading = false;
 
-        return Dialog(
-          backgroundColor: dialogScheme.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: AppRadii.borderRadiusXL,
-          ),
-          insetPadding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              Spacing.lg,
-              Spacing.xl,
-              Spacing.lg,
-              Spacing.lg,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: errorColor.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.logout_rounded,
-                    color: errorColor,
-                    size: 26,
-                  ),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return PopScope(
+              canPop: !isLoading,
+              child: Dialog(
+                backgroundColor: dialogScheme.surface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppRadii.borderRadiusXL,
                 ),
-                const Gap(Spacing.md),
-                Text(
-                  'Sign out of Verso?',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w700,
-                    color: dialogScheme.onSurface,
+                insetPadding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    Spacing.lg,
+                    Spacing.xl,
+                    Spacing.lg,
+                    Spacing.lg,
                   ),
-                ),
-                const Gap(Spacing.xs),
-                Text(
-                  hasPending
-                      ? 'Signing out will remove your local data from this device.'
-                      : 'Your reading progress is synced. You can sign back in at any time.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: dialogScheme.onSurfaceVariant,
-                    height: 1.5,
-                  ),
-                ),
-                if (hasPending) ...[
-                  const Gap(Spacing.md),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: errorColor.withValues(alpha: 0.08),
-                      borderRadius: AppRadii.borderRadiusMD,
-                      border: Border.all(
-                        color: errorColor.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.warning_amber_rounded,
-                          size: 18,
-                          color: errorColor,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: errorColor.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
                         ),
-                        const Gap(8),
-                        Expanded(
-                          child: Text(
-                            '$pendingCount unsynced ${pendingCount == 1 ? 'record' : 'records'} will be lost',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: errorColor,
+                        child: Icon(
+                          Icons.logout_rounded,
+                          color: errorColor,
+                          size: 26,
+                        ),
+                      ),
+                      const Gap(Spacing.md),
+                      Text(
+                        'Sign out of Verso?',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w700,
+                          color: dialogScheme.onSurface,
+                        ),
+                      ),
+                      const Gap(Spacing.xs),
+                      Text(
+                        hasPending
+                            ? 'Signing out will remove your local data from this device.'
+                            : 'Your reading progress is synced. You can sign back in at any time.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          color: dialogScheme.onSurfaceVariant,
+                          height: 1.5,
+                        ),
+                      ),
+                      if (hasPending) ...[
+                        const Gap(Spacing.md),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: errorColor.withValues(alpha: 0.08),
+                            borderRadius: AppRadii.borderRadiusMD,
+                            border: Border.all(
+                              color: errorColor.withValues(alpha: 0.2),
                             ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                size: 18,
+                                color: errorColor,
+                              ),
+                              const Gap(8),
+                              Expanded(
+                                child: Text(
+                                  '$pendingCount unsynced ${pendingCount == 1 ? 'record' : 'records'} will be lost',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: errorColor,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                ],
-                const Gap(Spacing.lg),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: () => Navigator.pop(dialogContext, true),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: errorColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: AppRadii.borderRadiusMD,
+                      const Gap(Spacing.lg),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: isLoading
+                              ? null
+                              : () async {
+                                  setState(() {
+                                    isLoading = true;
+                                  });
+
+                                  try {
+                                    final currentUserId = Supabase
+                                        .instance.client.auth.currentUser?.id;
+                                    if (currentUserId != null &&
+                                        currentUserId.isNotEmpty) {
+                                      await widgetRef
+                                          .read(savedAccountsServiceProvider)
+                                          .removeAccount(currentUserId);
+                                      await cacheService
+                                          .clearUserCache(currentUserId);
+                                    }
+
+                                    await cacheService.clearWriteQueue();
+                                    widgetRef
+                                        .invalidate(globalProgressProvider);
+                                    widgetRef.invalidate(userStatsProvider);
+                                    widgetRef.invalidate(detailedStatsProvider);
+                                    widgetRef
+                                        .invalidate(currentSettingsProvider);
+                                    widgetRef.invalidate(userSettingsProvider);
+                                    widgetRef.invalidate(activityLogProvider);
+                                    widgetRef.invalidate(todayChaptersProvider);
+                                    widgetRef
+                                        .invalidate(continueReadingProvider);
+                                    widgetRef.invalidate(userNameProvider);
+                                    await widgetRef
+                                        .read(authRepositoryProvider)
+                                        .signOut();
+
+                                    final router =
+                                        widgetRef.read(routerProvider);
+
+                                    if (dialogContext.mounted) {
+                                      Navigator.pop(dialogContext);
+                                    }
+
+                                    Future.delayed(
+                                        const Duration(milliseconds: 150), () {
+                                      final rootContext = router.routerDelegate
+                                          .navigatorKey.currentContext;
+                                      if (rootContext != null &&
+                                          rootContext.mounted) {
+                                        VersoSnackbar.success(
+                                          rootContext,
+                                          message: 'Signed out successfully',
+                                        );
+                                      }
+                                    });
+                                  } finally {
+                                    if (context.mounted && isLoading) {
+                                      setState(() {
+                                        isLoading = false;
+                                      });
+                                    }
+                                  }
+                                },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: errorColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppRadii.borderRadiusMD,
+                            ),
+                          ),
+                          child: isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text(
+                                  'Sign Out',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      'Sign Out',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                      const Gap(Spacing.sm),
+                      SizedBox(
+                        width: double.infinity,
+                        child: TextButton(
+                          onPressed: isLoading
+                              ? null
+                              : () => Navigator.pop(dialogContext),
+                          style: TextButton.styleFrom(
+                            foregroundColor: dialogScheme.onSurfaceVariant,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppRadii.borderRadiusMD,
+                            ),
+                          ),
+                          child: Text(
+                            'Cancel',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
-                const Gap(Spacing.sm),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(dialogContext, false),
-                    style: TextButton.styleFrom(
-                      foregroundColor: dialogScheme.onSurfaceVariant,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: AppRadii.borderRadiusMD,
-                      ),
-                    ),
-                    child: Text(
-                      'Cancel',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
-
-    if (confirmed != true) return;
-
-    final router = widgetRef.read(routerProvider);
-
-    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
-    if (currentUserId != null && currentUserId.isNotEmpty) {
-      await widgetRef
-          .read(savedAccountsServiceProvider)
-          .removeAccount(currentUserId);
-      await cacheService.clearUserCache(currentUserId);
-    }
-
-    await cacheService.clearWriteQueue();
-    widgetRef.invalidate(globalProgressProvider);
-    widgetRef.invalidate(userStatsProvider);
-    widgetRef.invalidate(detailedStatsProvider);
-    widgetRef.invalidate(currentSettingsProvider);
-    widgetRef.invalidate(userSettingsProvider);
-    widgetRef.invalidate(activityLogProvider);
-    widgetRef.invalidate(todayChaptersProvider);
-    widgetRef.invalidate(continueReadingProvider);
-    widgetRef.invalidate(userNameProvider);
-    await widgetRef.read(authRepositoryProvider).signOut();
-
-    Future.delayed(const Duration(milliseconds: 150), () {
-      final rootContext = router.routerDelegate.navigatorKey.currentContext;
-      if (rootContext != null && rootContext.mounted) {
-        VersoSnackbar.success(
-          rootContext,
-          message: 'Signed out successfully',
-        );
-      }
-    });
   }
 }
 
@@ -974,6 +1022,13 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   bool _isObscure = true;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   Future<void> _update() async {
     if (!_formKey.currentState!.validate()) return;
@@ -1091,6 +1146,14 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
   bool _obsOld = true;
   bool _obsNew = true;
   bool _obsConfirm = true;
+
+  @override
+  void dispose() {
+    _oldPassController.dispose();
+    _newPassController.dispose();
+    _confirmPassController.dispose();
+    super.dispose();
+  }
 
   Future<void> _update() async {
     if (!_formKey.currentState!.validate()) return;

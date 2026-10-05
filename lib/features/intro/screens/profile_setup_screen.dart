@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
+import 'package:verso/core/widgets/confirmation_view.dart';
 import 'package:verso/core/widgets/verso_avatar.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
@@ -35,6 +36,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen>
   DateTime? _selectedBirthday;
   CanonType _selectedCanon = CanonType.catholic;
   bool _isSaving = false;
+  bool _isComplete = false;
 
   // ── Animation Controllers ──────────────────────────────────────────────────
   late final AnimationController _entryController;
@@ -145,6 +147,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen>
 
   // ── Save & Navigate ────────────────────────────────────────────────────────
   Future<void> _continue() async {
+    if (_isSaving) return;
     if (_selectedGender == null || _selectedBirthday == null) return;
 
     setState(() => _isSaving = true);
@@ -185,7 +188,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen>
           .updateCanonType(_selectedCanon);
       ref.invalidate(userSettingsProvider);
 
-      if (mounted) context.go('/home');
+      if (mounted) setState(() => _isComplete = true);
     } catch (e) {
       if (mounted) {
         VersoSnackbar.error(
@@ -234,71 +237,82 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen>
             stops: const [0.0, 0.5, 1.0],
           ),
         ),
-        child: Stack(
-          children: [
-            // ── Floating particles (background) ──────────────────────────
-            ..._buildFloatingParticles(),
+        child: _isComplete
+            ? SafeArea(
+                child: ConfirmationView(
+                  icon: Icons.celebration_rounded,
+                  title: "You're all set!",
+                  subtitle:
+                      'Your profile is ready. Start tracking your Bible journey today.',
+                  buttonText: "Let's Go",
+                  onPressed: () => context.go('/home'),
+                ),
+              )
+            : Stack(
+                children: [
+                  // ── Floating particles (background) ──────────────────────────
+                  ..._buildFloatingParticles(),
 
-            // ── Main content ─────────────────────────────────────────────
-            SafeArea(
-              child: FadeTransition(
-                opacity: _fadeIn,
-                child: SlideTransition(
-                  position: _slideUp,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: Spacing.xl,
-                    ),
-                    child: Column(
-                      children: [
-                        Gap(MediaQuery.of(context).size.height * 0.04),
+                  // ── Main content ─────────────────────────────────────────────
+                  SafeArea(
+                    child: FadeTransition(
+                      opacity: _fadeIn,
+                      child: SlideTransition(
+                        position: _slideUp,
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: Spacing.xl,
+                          ),
+                          child: Column(
+                            children: [
+                              Gap(MediaQuery.of(context).size.height * 0.04),
 
-                        // Header
-                        _buildHeader(),
-                        Gap(MediaQuery.of(context).size.height * 0.04),
+                              // Header
+                              _buildHeader(),
+                              Gap(MediaQuery.of(context).size.height * 0.04),
 
-                        // Gender Selection
-                        _buildSectionLabel('Who are you?'),
-                        const Gap(Spacing.lg),
-                        _buildGenderCards(),
-                        Gap(MediaQuery.of(context).size.height * 0.035),
+                              // Gender Selection
+                              _buildSectionLabel('Who are you?'),
+                              const Gap(Spacing.lg),
+                              _buildGenderCards(),
+                              Gap(MediaQuery.of(context).size.height * 0.035),
 
-                        // Birthday
-                        _buildSectionLabel('When is your birthday?'),
-                        const Gap(Spacing.md),
-                        _buildBirthdayCard(),
-                        Gap(MediaQuery.of(context).size.height * 0.035),
+                              // Birthday
+                              _buildSectionLabel('When is your birthday?'),
+                              const Gap(Spacing.md),
+                              _buildBirthdayCard(),
+                              Gap(MediaQuery.of(context).size.height * 0.035),
 
-                        // Bible Tradition / Canon
-                        _buildSectionLabel(
-                          'Which Bible tradition do you follow?',
-                        ),
-                        const Gap(Spacing.xs),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Sets the correct books and chapters for your reading tracker.',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13,
-                              color: Colors.white.withValues(alpha: 0.55),
-                            ),
+                              // Bible Tradition / Canon
+                              _buildSectionLabel(
+                                'Which Bible tradition do you follow?',
+                              ),
+                              const Gap(Spacing.xs),
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  'Sets the correct books and chapters for your reading tracker.',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 13,
+                                    color: Colors.white.withValues(alpha: 0.55),
+                                  ),
+                                ),
+                              ),
+                              const Gap(Spacing.md),
+                              _buildCanonCards(),
+                              Gap(MediaQuery.of(context).size.height * 0.05),
+
+                              // Continue Button
+                              _buildContinueButton(),
+                              const Gap(Spacing.xxl),
+                            ],
                           ),
                         ),
-                        const Gap(Spacing.md),
-                        _buildCanonCards(),
-                        Gap(MediaQuery.of(context).size.height * 0.05),
-
-                        // Continue Button
-                        _buildContinueButton(),
-                        const Gap(Spacing.xxl),
-                      ],
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }

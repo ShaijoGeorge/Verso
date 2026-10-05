@@ -468,14 +468,20 @@ class _ChapterTileState extends State<_ChapterTile>
   BoxDecoration? _cachedDecoration;
   bool? _cachedIsRead;
   Brightness? _cachedBrightness;
+  Color? _cachedPrimary;
+  Color? _cachedSurface;
 
   BoxDecoration _getDecoration(ColorScheme scheme, bool isLight) {
     if (_cachedIsRead == _isRead &&
-        _cachedBrightness == (isLight ? Brightness.light : Brightness.dark)) {
+        _cachedBrightness == (isLight ? Brightness.light : Brightness.dark) &&
+        _cachedPrimary == context.palette.primary &&
+        _cachedSurface == scheme.surface) {
       return _cachedDecoration!;
     }
     _cachedIsRead = _isRead;
     _cachedBrightness = isLight ? Brightness.light : Brightness.dark;
+    _cachedPrimary = context.palette.primary;
+    _cachedSurface = scheme.surface;
     _cachedDecoration = BoxDecoration(
       color: _isRead ? context.palette.primary : scheme.surface,
       borderRadius: AppRadii.borderRadiusMD,

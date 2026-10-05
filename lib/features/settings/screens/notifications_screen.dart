@@ -120,6 +120,12 @@ class _NotificationsBottomSheetState
                     }
                   } else {
                     await NotificationService().cancelDailyVerseNotification();
+                    if (mounted) {
+                      VersoSnackbar.success(
+                        context,
+                        message: 'Daily verse alert disabled',
+                      );
+                    }
                   }
                 } catch (e) {
                   if (mounted) {
@@ -177,6 +183,12 @@ class _NotificationsBottomSheetState
                     }
                   } else {
                     await NotificationService().cancelDailyReminder();
+                    if (mounted) {
+                      VersoSnackbar.success(
+                        context,
+                        message: 'Daily reminder disabled',
+                      );
+                    }
                   }
                 } catch (e) {
                   if (mounted) {

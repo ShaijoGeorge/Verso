@@ -67,7 +67,7 @@ class VersoTextField extends StatelessWidget {
       enabledBorder: OutlineInputBorder(
         borderRadius: AppRadii.borderRadiusMD,
         borderSide: BorderSide(
-          color: colorScheme.outline.withValues(alpha: isDark ? 0.15 : 0.3),
+          color: colorScheme.outline.withValues(alpha: isDark ? 0.3 : 0.4),
         ),
       ),
       focusedBorder: OutlineInputBorder(

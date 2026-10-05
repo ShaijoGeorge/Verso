@@ -73,20 +73,20 @@ void main() async {
         packageInfoProvider.overrideWithValue(packageInfo),
       ],
       observers: [VersoErrorObserver(crashReporter)],
-      child: const BibliaApp(),
+      child: const VersoApp(),
     ),
   );
 }
 
 // Converted to ConsumerStatefulWidget to listen for Auth Events
-class BibliaApp extends ConsumerStatefulWidget {
-  const BibliaApp({super.key});
+class VersoApp extends ConsumerStatefulWidget {
+  const VersoApp({super.key});
 
   @override
-  ConsumerState<BibliaApp> createState() => _BibliaAppState();
+  ConsumerState<VersoApp> createState() => _VersoAppState();
 }
 
-class _BibliaAppState extends ConsumerState<BibliaApp>
+class _VersoAppState extends ConsumerState<VersoApp>
     with WidgetsBindingObserver {
   Brightness _systemBrightness =
       SchedulerBinding.instance.platformDispatcher.platformBrightness;

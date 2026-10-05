@@ -32,12 +32,14 @@ final routerProvider = Provider<GoRouter>((ref) {
   // This ensures a fresh key is generated whenever the Router is rebuilt.
   final rootNavigatorKey = GlobalKey<NavigatorState>();
 
-  return GoRouter(
+  final refreshStream = GoRouterRefreshStream(authStream);
+
+  final router = GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: '/',
 
     // Refresh the router whenever Auth State changes (Login, Logout, Recovery)
-    refreshListenable: GoRouterRefreshStream(authStream),
+    refreshListenable: refreshStream,
 
     // Debug Log to help us see errors
     errorBuilder: (context, state) {
@@ -112,7 +114,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         if ((isLoginRoute && !isAddAccountLogin) ||
             isResetCallback ||
             isOnboardingRoute ||
-            isProfileSetupRoute) {
+            (hasProfileData && isProfileSetupRoute)) {
           return '/home';
         }
       }
@@ -285,7 +287,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/book/:bookId',
         parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) {
-          final bookId = int.parse(state.pathParameters['bookId']!);
+          final bookIdStr = state.pathParameters['bookId'];
+          final bookId =
+              bookIdStr != null ? (int.tryParse(bookIdStr) ?? -1) : -1;
           final book =
               BibleData.findBookById(bookId) ?? BibleData.catholicCanon.first;
           return AppPageTransitions.slideFromRight(
@@ -319,18 +323,28 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Stats are now consolidated into the tabbed StatsScreen on Home
     ],
   );
+
+  ref.onDispose(() {
+    refreshStream.dispose();
+    router.dispose();
+  });
+
+  return router;
 });
 
 // Helper class to make Stream listenable for GoRouter
 class GoRouterRefreshStream extends ChangeNotifier {
-  GoRouterRefreshStream(Stream<dynamic> stream) {
+  GoRouterRefreshStream(Stream<AuthState> stream) {
     notifyListeners();
-    _subscription = stream.listen((dynamic _) {
+    _subscription = stream.listen((authState) {
+      if (authState.event == AuthChangeEvent.userUpdated) {
+        return; // Ignore user updates to prevent unexpected redirects (e.g. during profile setup)
+      }
       notifyListeners();
     });
   }
 
-  late final StreamSubscription<dynamic> _subscription;
+  late final StreamSubscription<AuthState> _subscription;
 
   @override
   void dispose() {
