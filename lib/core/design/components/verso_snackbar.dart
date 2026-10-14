@@ -20,6 +20,7 @@ abstract final class VersoSnackbar {
     _show(
       context,
       message: message,
+      icon: Icons.info_outline_rounded,
       actionLabel: actionLabel,
       onAction: onAction,
     );
@@ -30,6 +31,7 @@ abstract final class VersoSnackbar {
     _show(
       context,
       message: message,
+      icon: Icons.check_circle_rounded,
       backgroundColor: context.appColors.success,
       textColor: Colors.white,
     );
@@ -41,6 +43,7 @@ abstract final class VersoSnackbar {
     _show(
       context,
       message: message,
+      icon: Icons.error_outline_rounded,
       backgroundColor: scheme.error,
       textColor: scheme.onError,
     );
@@ -49,25 +52,45 @@ abstract final class VersoSnackbar {
   static void _show(
     BuildContext context, {
     required String message,
+    IconData? icon,
     String? actionLabel,
     VoidCallback? onAction,
     Color? backgroundColor,
     Color? textColor,
   }) {
+    final scheme = Theme.of(context).colorScheme;
+    final fg = textColor ?? scheme.onInverseSurface;
+
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          message,
-          style: textColor != null ? TextStyle(color: textColor) : null,
+        content: Row(
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 18, color: fg),
+              const SizedBox(width: 10),
+            ],
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(
+                  color: fg,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13.5,
+                ),
+              ),
+            ),
+          ],
         ),
-        backgroundColor: backgroundColor,
+        backgroundColor: backgroundColor ?? scheme.inverseSurface,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: AppRadii.borderRadiusSM),
+        elevation: 6,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        shape: RoundedRectangleBorder(borderRadius: AppRadii.borderRadiusMD),
         action: actionLabel != null && onAction != null
             ? SnackBarAction(
                 label: actionLabel,
-                textColor: textColor,
+                textColor: fg,
                 onPressed: onAction,
               )
             : null,

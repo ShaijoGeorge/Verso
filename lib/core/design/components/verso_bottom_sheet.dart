@@ -36,8 +36,8 @@ class VersoBottomSheet extends StatelessWidget {
       backgroundColor: backgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(AppRadii.xl),
-          topRight: Radius.circular(AppRadii.xl),
+          topLeft: Radius.circular(AppRadii.xxl),
+          topRight: Radius.circular(AppRadii.xxl),
         ),
       ),
       builder: (_) => VersoBottomSheet(
@@ -62,19 +62,34 @@ class VersoBottomSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: Spacing.sm),
+          const SizedBox(height: 12),
           // Drag handle
           Container(
-            width: 36,
+            width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: scheme.onSurfaceVariant.withValues(alpha: 0.3),
+              color: scheme.onSurfaceVariant.withValues(alpha: 0.25),
               borderRadius: AppRadii.borderRadiusFull,
             ),
           ),
           if (title != null) ...[
-            const SizedBox(height: Spacing.sm),
-            Text(title!, style: textTheme.titleMedium),
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+              child: Text(
+                title!,
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.2,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Divider(
+              height: 1,
+              color: scheme.outline.withValues(alpha: 0.15),
+            ),
           ],
           const SizedBox(height: Spacing.sm),
           Flexible(

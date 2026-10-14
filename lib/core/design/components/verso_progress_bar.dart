@@ -39,7 +39,8 @@ class VersoProgressBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final fillColor = color ?? scheme.primary;
-    final bgColor = trackColor ?? scheme.surfaceContainerHighest;
+    final bgColor =
+        trackColor ?? scheme.surfaceContainerHighest.withValues(alpha: 0.75);
 
     final bar = TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: value.clamp(0.0, 1.0)),
@@ -57,8 +58,22 @@ class VersoProgressBar extends StatelessWidget {
             widthFactor: animatedValue,
             child: Container(
               decoration: BoxDecoration(
-                color: fillColor,
+                gradient: LinearGradient(
+                  colors: [
+                    fillColor.withValues(alpha: 0.85),
+                    fillColor,
+                  ],
+                ),
                 borderRadius: AppRadii.borderRadiusFull,
+                boxShadow: animatedValue > 0.02
+                    ? [
+                        BoxShadow(
+                          color: fillColor.withValues(alpha: 0.25),
+                          blurRadius: 6,
+                          offset: const Offset(0, 1),
+                        ),
+                      ]
+                    : null,
               ),
             ),
           ),
@@ -71,11 +86,12 @@ class VersoProgressBar extends StatelessWidget {
     return Row(
       children: [
         Expanded(child: bar),
-        const SizedBox(width: 8),
+        const SizedBox(width: 10),
         Text(
           label!,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
               ),
         ),
       ],

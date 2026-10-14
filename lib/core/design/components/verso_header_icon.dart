@@ -11,8 +11,8 @@ class VersoHeaderIcon extends StatelessWidget {
   const VersoHeaderIcon({
     required this.icon,
     super.key,
-    this.size = 72,
-    this.iconSize = 32,
+    this.size = 76,
+    this.iconSize = 34,
   });
   final IconData icon;
   final double size;
@@ -23,24 +23,41 @@ class VersoHeaderIcon extends StatelessWidget {
     final palette = context.palette;
 
     return Container(
-      width: size,
-      height: size,
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [palette.primary, palette.primaryHover],
+        color: palette.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppRadii.xl + 6),
+        border: Border.all(
+          color: palette.primary.withValues(alpha: 0.16),
         ),
-        borderRadius: AppRadii.borderRadiusXL,
-        boxShadow: [
-          BoxShadow(
-            color: palette.primary.withValues(alpha: 0.3),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
-      child: Icon(icon, size: iconSize, color: Colors.white),
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [palette.primary, palette.primaryHover],
+          ),
+          borderRadius: AppRadii.borderRadiusXL,
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.2),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: palette.primary.withValues(alpha: 0.32),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Icon(
+          icon,
+          size: iconSize,
+          color: Theme.of(context).colorScheme.onPrimary,
+        ),
+      ),
     );
   }
 }
