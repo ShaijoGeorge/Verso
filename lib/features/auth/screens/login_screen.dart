@@ -12,8 +12,8 @@ import 'package:verso/core/design/components/verso_gradient_button.dart';
 import 'package:verso/core/design/components/verso_header_icon.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
 import 'package:verso/core/design/components/verso_text_field.dart';
-import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/core/design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/shadows.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/core/utils/app_error_handler.dart';
 import 'package:verso/features/auth/models/saved_account.dart';
@@ -53,7 +53,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   bool _isLoading = false;
   bool _isPasswordVisible = false;
   bool _showAllAccounts = false;
-
   // "Remember me" state - true means we save the email for next time
   bool _rememberMe = false;
 
@@ -361,366 +360,427 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(gradient: VersoAuthGradient.of(context)),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: Spacing.pagePadding,
-              child: FadeTransition(
-                opacity: _fadeIn,
-                child: SlideTransition(
-                  position: _slideUp,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Logo and branding
-                      Column(
-                        children: [
-                          const VersoHeaderIcon(
-                            icon: Icons.auto_stories_rounded,
-                            iconSize: 36,
-                          ),
-                          const Gap(Spacing.md),
-                          Text(
-                            'Verso',
-                            style: GoogleFonts.dmSerifDisplay(
-                              fontSize: 32,
-                              color: colorScheme.onSurface,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Gap(Spacing.xxl),
-
-                      // Form card
-                      Container(
-                        decoration: BoxDecoration(
-                          color: colorScheme.surface,
-                          borderRadius: AppRadii.borderRadiusXL,
-                          border: Border.all(
-                            color: colorScheme.outline
-                                .withValues(alpha: isDark ? 0.15 : 0.4),
-                          ),
-                          boxShadow: isDark
-                              ? []
-                              : [
-                                  BoxShadow(
-                                    color: AppColors.primaryLight
-                                        .withValues(alpha: 0.06),
-                                    blurRadius: 40,
-                                    offset: const Offset(0, 16),
-                                  ),
-                                ],
-                        ),
-                        padding: const EdgeInsets.all(Spacing.lg),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Form title
-                              AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 300),
-                                child: Text(
-                                  _isSignUp ? 'Create Account' : 'Welcome Back',
-                                  key: ValueKey(_isSignUp),
-                                  style: GoogleFonts.dmSerifDisplay(
-                                    fontSize: 26,
-                                    color: colorScheme.onSurface,
-                                    height: 1.2,
-                                  ),
-                                ),
-                              ),
-                              const Gap(4),
-                              AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 300),
-                                child: Text(
-                                  _isSignUp
-                                      ? 'Start your Bible reading journey'
-                                      : 'Sign in to continue reading',
-                                  key: ValueKey('sub_$_isSignUp'),
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 14,
-                                    color: colorScheme.onSurfaceVariant,
-                                    height: 1.5,
-                                  ),
-                                ),
-                              ),
-                              const Gap(Spacing.lg),
-
-                              // Quick Sign In with saved accounts
-                              if (!_isSignUp && savedAccounts.isNotEmpty) ...[
-                                Text(
-                                  'Saved Accounts',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: colorScheme.onSurfaceVariant,
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                                const Gap(Spacing.xs),
-                                ...displayedAccounts.map((account) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 8),
-                                    child: SavedAccountTile(
-                                      account: account,
-                                      isLoading: _isLoading,
-                                      onTap: () => _quickSignIn(account),
-                                      onRemove: () =>
-                                          _handleRemoveAccount(account),
-                                    ),
-                                  );
-                                }),
-                                if (savedAccounts.length > 2)
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 8),
-                                    child: Center(
-                                      child: TextButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            _showAllAccounts =
-                                                !_showAllAccounts;
-                                          });
-                                        },
-                                        style: TextButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: Spacing.sm,
-                                            vertical: Spacing.xs,
-                                          ),
-                                          minimumSize: Size.zero,
-                                          tapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        child: Text(
-                                          _showAllAccounts
-                                              ? 'Show less'
-                                              : 'Show ${savedAccounts.length - 2} more',
-                                          style: GoogleFonts.plusJakartaSans(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                            color: colorScheme.primary,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                const Gap(Spacing.xs),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Divider(
-                                        color: colorScheme.outline
-                                            .withValues(alpha: 0.2),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                      ),
-                                      child: Text(
-                                        'or sign in with password',
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 12,
-                                          color: colorScheme.onSurfaceVariant
-                                              .withValues(alpha: 0.7),
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Divider(
-                                        color: colorScheme.outline
-                                            .withValues(alpha: 0.2),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const Gap(Spacing.md),
-                              ],
-
-                              // Name Field (Sign Up only)
-                              AnimatedSize(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeOutCubic,
-                                child: _isSignUp
-                                    ? Column(
-                                        children: [
-                                          VersoTextField(
-                                            controller: _nameController,
-                                            label: 'Full Name',
-                                            icon: Icons.person_outline_rounded,
-                                            textCapitalization:
-                                                TextCapitalization.words,
-                                            validator: (value) => value!.isEmpty
-                                                ? 'Please enter your name'
-                                                : null,
-                                          ),
-                                          const Gap(Spacing.md),
-                                        ],
-                                      )
-                                    : const SizedBox.shrink(),
-                              ),
-
-                              // Email
-                              VersoTextField(
-                                controller: _emailController,
-                                label: 'Email',
-                                icon: Icons.mail_outline_rounded,
-                                keyboardType: TextInputType.emailAddress,
-                                autocorrect: false,
-                                validator: (value) =>
-                                    RegExp(r'^.+@.+\..+$').hasMatch(value ?? '')
-                                        ? null
-                                        : 'Please enter a valid email',
-                              ),
-                              const Gap(Spacing.md),
-
-                              // Password
-                              VersoTextField(
-                                controller: _passwordController,
-                                label: 'Password',
-                                icon: Icons.lock_outline_rounded,
-                                obscureText: !_isPasswordVisible,
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _isPasswordVisible
-                                        ? Icons.visibility_outlined
-                                        : Icons.visibility_off_outlined,
-                                    size: 20,
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                  onPressed: () {
-                                    setState(
-                                      () => _isPasswordVisible =
-                                          !_isPasswordVisible,
-                                    );
-                                  },
-                                ),
-                                validator: (value) => value!.length < 6
-                                    ? 'Password must be at least 6 characters'
-                                    : null,
-                              ),
-
-                              if (!_isSignUp) ...[
-                                const Gap(Spacing.sm),
-                                // Responsive Wrap holds both "Remember me" and "Forgot password?"
-                                Wrap(
-                                  alignment: WrapAlignment.spaceBetween,
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  spacing: 8,
-                                  runSpacing: 4,
-                                  children: [
-                                    // Remember Me checkbox
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: Checkbox(
-                                            value: _rememberMe,
-                                            // Toggle the flag on tap
-                                            onChanged: (value) => setState(
-                                              () =>
-                                                  _rememberMe = value ?? false,
-                                            ),
-                                            materialTapTargetSize:
-                                                MaterialTapTargetSize
-                                                    .shrinkWrap,
-                                            visualDensity:
-                                                VisualDensity.compact,
-                                          ),
-                                        ),
-                                        const Gap(Spacing.xs),
-                                        Text(
-                                          'Remember me',
-                                          style: GoogleFonts.plusJakartaSans(
-                                            fontSize: 13,
-                                            color: colorScheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-
-                                    // Forgot Password link
-                                    TextButton(
-                                      onPressed: () => GoRouter.of(context)
-                                          .push('/forgot-password'),
-                                      style: TextButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: Spacing.sm,
-                                          vertical: Spacing.xs,
-                                        ),
-                                        minimumSize: Size.zero,
-                                        tapTargetSize:
-                                            MaterialTapTargetSize.shrinkWrap,
-                                      ),
-                                      child: Text(
-                                        'Forgot password?',
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
-                                          color: colorScheme.primary,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-
-                              const Gap(Spacing.lg),
-
-                              // Submit button
-                              VersoGradientButton(
-                                label: _isSignUp ? 'Create Account' : 'Sign In',
-                                isLoading: _isLoading,
-                                onPressed: _submit,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      const Gap(Spacing.lg),
-
-                      // Toggle sign up / sign in
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            _isSignUp
-                                ? 'Already have an account?'
-                                : 'New to Verso?',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 14,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: _toggleMode,
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: Spacing.sm,
-                              ),
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: Text(
-                              _isSignUp ? 'Sign In' : 'Create Account',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+        child: Stack(
+          children: [
+            // Ambient top-right light orb
+            Positioned(
+              top: -80,
+              right: -60,
+              child: Container(
+                width: 240,
+                height: 240,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      colorScheme.primary.withValues(alpha: 0.14),
+                      colorScheme.primary.withValues(alpha: 0),
                     ],
                   ),
                 ),
               ),
             ),
-          ),
+            SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: Spacing.pagePadding,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 440),
+                    child: FadeTransition(
+                      opacity: _fadeIn,
+                      child: SlideTransition(
+                        position: _slideUp,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Logo and branding
+                            Column(
+                              children: [
+                                const VersoHeaderIcon(
+                                  icon: Icons.auto_stories_rounded,
+                                ),
+                                const Gap(Spacing.md),
+                                Text(
+                                  'Verso',
+                                  style: GoogleFonts.dmSerifDisplay(
+                                    fontSize: 36,
+                                    color: colorScheme.onSurface,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                const Gap(4),
+                                Text(
+                                  'SACRED SCRIPTURE COMPANION',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 2,
+                                    color: colorScheme.primary
+                                        .withValues(alpha: 0.8),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Gap(Spacing.xl),
+
+                            // Form card
+                            Container(
+                              decoration: BoxDecoration(
+                                color: colorScheme.surface,
+                                borderRadius: AppRadii.borderRadiusXL,
+                                border: Border.all(
+                                  color: colorScheme.outline.withValues(
+                                    alpha: isDark ? 0.25 : 0.65,
+                                  ),
+                                ),
+                                boxShadow:
+                                    isDark ? AppShadows.md : AppShadows.lg,
+                              ),
+                              padding: const EdgeInsets.all(Spacing.lg),
+                              child: Form(
+                                key: _formKey,
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    AnimatedSwitcher(
+                                      duration:
+                                          const Duration(milliseconds: 300),
+                                      child: Align(
+                                        key: ValueKey(_isSignUp),
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          _isSignUp
+                                              ? 'Create Account'
+                                              : 'Welcome Back',
+                                          style: GoogleFonts.dmSerifDisplay(
+                                            fontSize: 26,
+                                            color: colorScheme.onSurface,
+                                            height: 1.2,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const Gap(4),
+                                    AnimatedSwitcher(
+                                      duration:
+                                          const Duration(milliseconds: 300),
+                                      child: Align(
+                                        key: ValueKey('sub_$_isSignUp'),
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          _isSignUp
+                                              ? 'Start your Bible reading journey'
+                                              : 'Sign in to continue reading',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 14,
+                                            color: colorScheme.onSurfaceVariant,
+                                            height: 1.5,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const Gap(Spacing.lg),
+
+                                    // Quick Sign In with saved accounts
+                                    if (!_isSignUp &&
+                                        savedAccounts.isNotEmpty) ...[
+                                      Text(
+                                        'SAVED ACCOUNTS',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: colorScheme.onSurfaceVariant,
+                                          letterSpacing: 1.1,
+                                        ),
+                                      ),
+                                      const Gap(Spacing.sm),
+                                      ...displayedAccounts.map((account) {
+                                        return Padding(
+                                          padding:
+                                              const EdgeInsets.only(bottom: 8),
+                                          child: SavedAccountTile(
+                                            account: account,
+                                            isLoading: _isLoading,
+                                            onTap: () => _quickSignIn(account),
+                                            onRemove: () =>
+                                                _handleRemoveAccount(account),
+                                          ),
+                                        );
+                                      }),
+                                      if (savedAccounts.length > 2)
+                                        Padding(
+                                          padding:
+                                              const EdgeInsets.only(bottom: 8),
+                                          child: Center(
+                                            child: TextButton(
+                                              onPressed: () {
+                                                setState(() {
+                                                  _showAllAccounts =
+                                                      !_showAllAccounts;
+                                                });
+                                              },
+                                              style: TextButton.styleFrom(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: Spacing.sm,
+                                                  vertical: Spacing.xs,
+                                                ),
+                                                minimumSize: Size.zero,
+                                                tapTargetSize:
+                                                    MaterialTapTargetSize
+                                                        .shrinkWrap,
+                                              ),
+                                              child: Text(
+                                                _showAllAccounts
+                                                    ? 'Show less'
+                                                    : 'Show ${savedAccounts.length - 2} more',
+                                                style:
+                                                    GoogleFonts.plusJakartaSans(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: colorScheme.primary,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      const Gap(Spacing.xs),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Divider(
+                                              color: colorScheme.outline
+                                                  .withValues(alpha: 0.2),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                            ),
+                                            child: Text(
+                                              'or sign in with password',
+                                              style:
+                                                  GoogleFonts.plusJakartaSans(
+                                                fontSize: 12,
+                                                color: colorScheme
+                                                    .onSurfaceVariant
+                                                    .withValues(alpha: 0.7),
+                                              ),
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Divider(
+                                              color: colorScheme.outline
+                                                  .withValues(alpha: 0.2),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const Gap(Spacing.md),
+                                    ],
+
+                                    // Name Field (Sign Up only)
+                                    AnimatedSize(
+                                      duration:
+                                          const Duration(milliseconds: 300),
+                                      curve: Curves.easeOutCubic,
+                                      child: _isSignUp
+                                          ? Column(
+                                              children: [
+                                                VersoTextField(
+                                                  controller: _nameController,
+                                                  label: 'Full Name',
+                                                  icon: Icons
+                                                      .person_outline_rounded,
+                                                  textCapitalization:
+                                                      TextCapitalization.words,
+                                                  validator: (value) => value!
+                                                          .isEmpty
+                                                      ? 'Please enter your name'
+                                                      : null,
+                                                ),
+                                                const Gap(Spacing.md),
+                                              ],
+                                            )
+                                          : const SizedBox.shrink(),
+                                    ),
+
+                                    // Email
+                                    VersoTextField(
+                                      controller: _emailController,
+                                      label: 'Email',
+                                      icon: Icons.mail_outline_rounded,
+                                      keyboardType: TextInputType.emailAddress,
+                                      autocorrect: false,
+                                      validator: (value) =>
+                                          RegExp(r'^.+@.+\..+$')
+                                                  .hasMatch(value ?? '')
+                                              ? null
+                                              : 'Please enter a valid email',
+                                    ),
+                                    const Gap(Spacing.md),
+
+                                    // Password
+                                    VersoTextField(
+                                      controller: _passwordController,
+                                      label: 'Password',
+                                      icon: Icons.lock_outline_rounded,
+                                      obscureText: !_isPasswordVisible,
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          _isPasswordVisible
+                                              ? Icons.visibility_outlined
+                                              : Icons.visibility_off_outlined,
+                                          size: 20,
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
+                                        onPressed: () {
+                                          setState(
+                                            () => _isPasswordVisible =
+                                                !_isPasswordVisible,
+                                          );
+                                        },
+                                      ),
+                                      validator: (value) => value!.length < 6
+                                          ? 'Password must be at least 6 characters'
+                                          : null,
+                                    ),
+
+                                    if (!_isSignUp) ...[
+                                      const Gap(Spacing.sm),
+                                      // Responsive Wrap holds both "Remember me" and "Forgot password?"
+                                      Wrap(
+                                        alignment: WrapAlignment.spaceBetween,
+                                        crossAxisAlignment:
+                                            WrapCrossAlignment.center,
+                                        spacing: 8,
+                                        runSpacing: 4,
+                                        children: [
+                                          // Remember Me checkbox
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child: Checkbox(
+                                                  value: _rememberMe,
+                                                  onChanged: (value) =>
+                                                      setState(
+                                                    // Toggle the flag on tap
+                                                    () => _rememberMe =
+                                                        value ?? false,
+                                                  ),
+                                                  materialTapTargetSize:
+                                                      MaterialTapTargetSize
+                                                          .shrinkWrap,
+                                                  visualDensity:
+                                                      VisualDensity.compact,
+                                                ),
+                                              ),
+                                              const Gap(Spacing.xs),
+                                              Text(
+                                                'Remember me',
+                                                style:
+                                                    GoogleFonts.plusJakartaSans(
+                                                  fontSize: 13,
+                                                  color: colorScheme
+                                                      .onSurfaceVariant,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          // Forgot Password link
+                                          TextButton(
+                                            onPressed: () =>
+                                                GoRouter.of(context)
+                                                    .push('/forgot-password'),
+                                            style: TextButton.styleFrom(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: Spacing.sm,
+                                                vertical: Spacing.xs,
+                                              ),
+                                              minimumSize: Size.zero,
+                                              tapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
+                                            ),
+                                            child: Text(
+                                              'Forgot password?',
+                                              style:
+                                                  GoogleFonts.plusJakartaSans(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700,
+                                                color: colorScheme.primary,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+
+                                    const Gap(Spacing.lg),
+
+                                    // Submit button
+                                    VersoGradientButton(
+                                      label: _isSignUp
+                                          ? 'Create Account'
+                                          : 'Sign In',
+                                      isLoading: _isLoading,
+                                      onPressed: _submit,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            const Gap(Spacing.lg),
+
+                            // Toggle sign up / sign in
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  _isSignUp
+                                      ? 'Already have an account?'
+                                      : 'New to Verso?',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 14,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: _toggleMode,
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: Spacing.sm,
+                                    ),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text(
+                                    _isSignUp ? 'Sign In' : 'Create Account',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                      color: colorScheme.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

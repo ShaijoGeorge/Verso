@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/design/components/verso_bottom_sheet.dart';
 import 'package:verso/core/design/components/verso_card.dart';
+import 'package:verso/core/design/components/verso_gradient_button.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
 import 'package:verso/core/design/components/verso_text_field.dart';
 import 'package:verso/core/design/extensions.dart';
@@ -60,6 +61,7 @@ class ProfileScreen extends ConsumerWidget {
 
         return Scaffold(
           body: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
             slivers: [
               // Hero Header
               SliverToBoxAdapter(
@@ -80,14 +82,14 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
 
-              const SliverToBoxAdapter(child: Gap(28)),
+              const SliverToBoxAdapter(child: Gap(26)),
 
               // Account Settings Group
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: _SettingsGroup(
-                    label: 'Account',
+                    label: 'Security & Account',
                     isDark: isDark,
                     scheme: scheme,
                     items: [
@@ -95,6 +97,7 @@ class ProfileScreen extends ConsumerWidget {
                         icon: Icons.email_outlined,
                         iconColor: const Color(0xFF3B82F6),
                         label: 'Change Email',
+                        subtitle: email,
                         onTap: () => VersoBottomSheet.show<void>(
                           context: context,
                           title: 'Change Email',
@@ -105,6 +108,7 @@ class ProfileScreen extends ConsumerWidget {
                         icon: Icons.lock_outline_rounded,
                         iconColor: const Color(0xFF8B5CF6),
                         label: 'Change Password',
+                        subtitle: 'Update your account password',
                         onTap: () => VersoBottomSheet.show<void>(
                           context: context,
                           title: 'Change Password',
@@ -116,27 +120,29 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
 
-              const SliverToBoxAdapter(child: Gap(16)),
+              const SliverToBoxAdapter(child: Gap(18)),
 
               // App Settings Group
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: _SettingsGroup(
-                    label: 'App',
+                    label: 'Preferences & Community',
                     isDark: isDark,
                     scheme: scheme,
                     items: [
                       _SettingsItem(
-                        icon: Icons.settings_outlined,
-                        iconColor: const Color(0xFF6B7280),
-                        label: 'Settings',
+                        icon: Icons.tune_rounded,
+                        iconColor: scheme.primary,
+                        label: 'App Settings',
+                        subtitle: 'Themes, Bible canon, language & alerts',
                         onTap: () => GoRouter.of(context).push('/settings'),
                       ),
                       _SettingsItem(
                         icon: Icons.share_outlined,
                         iconColor: const Color(0xFF10B981),
                         label: 'Share Verso with a friend',
+                        subtitle: 'Invite friends to build a daily habit',
                         onTap: () {
                           HapticFeedback.lightImpact();
                           SharePlus.instance.share(
@@ -146,7 +152,7 @@ class ProfileScreen extends ConsumerWidget {
                                   "and track my daily progress. It's been a "
                                   'game changer for my Bible reading habit.\n\n'
                                   'Join me on the journey: '
-                                  'https://play.google.com/store/apps/details?id=com.shaijo.verso', // Placeholder link
+                                  'https://play.google.com/store/apps/details?id=com.shaijo.verso',
                             ),
                           );
                         },
@@ -176,7 +182,7 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
 
-              const SliverToBoxAdapter(child: Gap(40)),
+              const SliverToBoxAdapter(child: Gap(110)),
             ],
           ),
         );
@@ -215,131 +221,163 @@ class _ProfileHeroHeader extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            palette.accentSoft.withValues(alpha: isDark ? 0.9 : 1.0),
+            palette.accentSoft.withValues(alpha: isDark ? 0.85 : 1.0),
             scaffoldBg,
           ],
         ),
       ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
-          child: Column(
-            children: [
-              // Avatar with ring
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      primaryColor,
-                      palette.secondary,
-                    ],
-                  ),
-                ),
-                child: Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: palette.accentSoft,
-                  ),
-                  child: const VersoAvatar(size: 104, borderWidth: 0),
-                ),
-              ),
-
-              const Gap(20),
-
-              // Name with edit icon
-              GestureDetector(
-                onTap: () => VersoBottomSheet.show<void>(
-                  context: context,
-                  title: 'Edit Name',
-                  child: _EditNameSheet(currentName: name),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        name,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          color: scheme.onSurface,
-                          letterSpacing: -0.3,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const Gap(8),
-                    Icon(
-                      Icons.edit_rounded,
-                      size: 18,
-                      color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
-                    ),
+      child: Stack(
+        alignment: Alignment.topCenter,
+        children: [
+          // Ambient radial glow behind avatar
+          Positioned(
+            top: -40,
+            child: Container(
+              width: 220,
+              height: 220,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    primaryColor.withValues(alpha: isDark ? 0.18 : 0.14),
+                    primaryColor.withValues(alpha: 0),
                   ],
                 ),
               ),
-
-              const Gap(4),
-
-              // Email
-              Text(
-                email,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-
-              const Gap(14),
-
-              // "Reading since" badge
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 7,
-                ),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      primaryColor.withValues(alpha: isDark ? 0.15 : 0.10),
-                      palette.secondary.withValues(alpha: isDark ? 0.10 : 0.08),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(AppRadii.full),
-                  border: Border.all(
-                    color: primaryColor.withValues(alpha: isDark ? 0.25 : 0.18),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.calendar_month_rounded,
-                      size: 14,
-                      color: primaryColor,
-                    ),
-                    const Gap(6),
-                    Text(
-                      'Reading since $readingSince',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: scheme.onSurfaceVariant,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+              child: Column(
+                children: [
+                  // Avatar with ring
+                  Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          primaryColor,
+                          palette.secondary,
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: primaryColor.withValues(alpha: 0.25),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.all(3.5),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: scheme.surface,
+                      ),
+                      child: const VersoAvatar(size: 100, borderWidth: 0),
+                    ),
+                  ),
+
+                  const Gap(18),
+
+                  // Name with edit icon
+                  GestureDetector(
+                    onTap: () => VersoBottomSheet.show<void>(
+                      context: context,
+                      title: 'Edit Name',
+                      child: _EditNameSheet(currentName: name),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            name,
+                            style: GoogleFonts.dmSerifDisplay(
+                              fontSize: 28,
+                              color: scheme.onSurface,
+                              height: 1.15,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const Gap(8),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: primaryColor.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.edit_rounded,
+                            size: 14,
+                            color: primaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const Gap(4),
+
+                  // Email
+                  Text(
+                    email,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w500,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+
+                  const Gap(14),
+
+                  // "Reading since" badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: scheme.surface.withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(AppRadii.full),
+                      border: Border.all(
+                        color:
+                            primaryColor.withValues(alpha: isDark ? 0.28 : 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.verified_rounded,
+                          size: 14,
+                          color: palette.secondary,
+                        ),
+                        const Gap(6),
+                        Text(
+                          'Reading since $readingSince',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: scheme.onSurface,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -393,7 +431,7 @@ class _ProfileStatsStrip extends ConsumerWidget {
                 isDark ? AppColors.chaptersDark : AppColors.chaptersLight,
             value: isLoading ? '–' : '$chaptersRead',
             totalScope: isLoading ? null : '/ $totalChapters',
-            label: 'Chapters\nRead',
+            label: 'Chapters Read',
             isDark: isDark,
             scheme: scheme,
           ),
@@ -401,11 +439,11 @@ class _ProfileStatsStrip extends ConsumerWidget {
         const Gap(12),
         Expanded(
           child: _StatCard(
-            icon: Icons.library_books_rounded,
+            icon: Icons.emoji_events_rounded,
             iconColor: isDark ? AppColors.booksDark : AppColors.booksLight,
             value: isLoading ? '–' : '$booksCompleted',
             totalScope: isLoading ? null : '/ $totalBooks',
-            label: 'Books\nCompleted',
+            label: 'Books Completed',
             isDark: isDark,
             scheme: scheme,
           ),
@@ -437,15 +475,18 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return VersoCard(
-      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
               color: iconColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(AppRadii.md),
+              borderRadius: BorderRadius.circular(AppRadii.sm),
+              border: Border.all(
+                color: iconColor.withValues(alpha: 0.22),
+              ),
             ),
             child: Icon(icon, size: 20, color: iconColor),
           ),
@@ -463,8 +504,8 @@ class _StatCard extends StatelessWidget {
                           TextSpan(
                             text: value,
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 21,
+                              fontWeight: FontWeight.w800,
                               color: scheme.onSurface,
                               height: 1,
                             ),
@@ -472,10 +513,9 @@ class _StatCard extends StatelessWidget {
                               TextSpan(
                                 text: ' $totalScope',
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 13,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: scheme.onSurfaceVariant
-                                      .withValues(alpha: 0.8),
+                                  color: scheme.onSurfaceVariant,
                                   height: 1,
                                 ),
                               ),
@@ -485,22 +525,23 @@ class _StatCard extends StatelessWidget {
                       : Text(
                           value,
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 21,
+                            fontWeight: FontWeight.w800,
                             color: scheme.onSurface,
                             height: 1,
                           ),
                         ),
                 ),
-                const Gap(3),
+                const Gap(4),
                 Text(
                   label,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
                     color: scheme.onSurfaceVariant,
-                    height: 1.3,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -519,11 +560,13 @@ class _SettingsItem {
     required this.iconColor,
     required this.label,
     required this.onTap,
+    this.subtitle,
   });
 
   final IconData icon;
   final Color iconColor;
   final String label;
+  final String? subtitle;
   final VoidCallback onTap;
 }
 
@@ -550,10 +593,10 @@ class _SettingsGroup extends StatelessWidget {
           child: Text(
             label.toUpperCase(),
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
               color: scheme.onSurfaceVariant,
-              letterSpacing: 1.1,
+              letterSpacing: 1.2,
             ),
           ),
         ),
@@ -572,9 +615,10 @@ class _SettingsGroup extends StatelessWidget {
                     Divider(
                       height: 1,
                       thickness: 1,
-                      indent: 60,
+                      indent: 66,
+                      endIndent: 16,
                       color: scheme.outlineVariant
-                          .withValues(alpha: isDark ? 0.3 : 0.5),
+                          .withValues(alpha: isDark ? 0.3 : 0.6),
                     ),
                 ],
               ],
@@ -603,13 +647,16 @@ class _SettingsRow extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   color: item.iconColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(AppRadii.sm),
+                  border: Border.all(
+                    color: item.iconColor.withValues(alpha: 0.2),
+                  ),
                 ),
-                child: Icon(item.icon, size: 18, color: item.iconColor),
+                child: Icon(item.icon, size: 19, color: item.iconColor),
               ),
               const Gap(14),
               Expanded(
@@ -620,10 +667,22 @@ class _SettingsRow extends StatelessWidget {
                       item.label,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 15,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                         color: scheme.onSurface,
                       ),
                     ),
+                    if (item.subtitle != null) ...[
+                      const Gap(2),
+                      Text(
+                        item.subtitle!,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -658,50 +717,44 @@ class _SwitchAccountTile extends StatelessWidget {
     return VersoCard(
       padding: EdgeInsets.zero,
       color: switchColor.withValues(alpha: 0.06),
-      border: Border.all(color: switchColor.withValues(alpha: 0.2)),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadii.lg),
-          onTap: () {
-            HapticFeedback.lightImpact();
-            AccountSwitchBottomSheet.show(context);
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: switchColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(AppRadii.sm),
-                  ),
-                  child: const Icon(
-                    Icons.swap_horiz_rounded,
-                    size: 18,
-                    color: switchColor,
-                  ),
-                ),
-                const Gap(14),
-                Text(
-                  'Switch Account',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: switchColor,
-                  ),
-                ),
-                const Spacer(),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  size: 20,
-                  color: switchColor.withValues(alpha: 0.5),
-                ),
-              ],
+      border: Border.all(color: switchColor.withValues(alpha: 0.22)),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        AccountSwitchBottomSheet.show(context);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: switchColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppRadii.sm),
+              ),
+              child: const Icon(
+                Icons.swap_horiz_rounded,
+                size: 19,
+                color: switchColor,
+              ),
             ),
-          ),
+            const Gap(14),
+            Text(
+              'Switch Account',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: switchColor,
+              ),
+            ),
+            const Spacer(),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: switchColor.withValues(alpha: 0.6),
+            ),
+          ],
         ),
       ),
     );
@@ -726,47 +779,41 @@ class _SignOutTile extends ConsumerWidget {
     return VersoCard(
       padding: EdgeInsets.zero,
       color: errorColor.withValues(alpha: 0.06),
-      border: Border.all(color: errorColor.withValues(alpha: 0.2)),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadii.lg),
-          onTap: () => _handleSignOut(ctx, widgetRef),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: errorColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(AppRadii.sm),
-                  ),
-                  child: Icon(
-                    Icons.logout_rounded,
-                    size: 18,
-                    color: errorColor,
-                  ),
-                ),
-                const Gap(14),
-                Text(
-                  'Sign Out',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: errorColor,
-                  ),
-                ),
-                const Spacer(),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  size: 20,
-                  color: errorColor.withValues(alpha: 0.5),
-                ),
-              ],
+      border: Border.all(color: errorColor.withValues(alpha: 0.22)),
+      onTap: () => _handleSignOut(ctx, widgetRef),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: errorColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppRadii.sm),
+              ),
+              child: Icon(
+                Icons.logout_rounded,
+                size: 19,
+                color: errorColor,
+              ),
             ),
-          ),
+            const Gap(14),
+            Text(
+              'Sign Out',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: errorColor,
+              ),
+            ),
+            const Spacer(),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: errorColor.withValues(alpha: 0.6),
+            ),
+          ],
         ),
       ),
     );
@@ -1106,18 +1153,10 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
               },
             ),
             const Gap(24),
-            FilledButton(
-              onPressed: _isLoading ? null : _update,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Update Email'),
+            VersoGradientButton(
+              label: 'Update Email',
+              isLoading: _isLoading,
+              onPressed: _update,
             ),
             const Gap(8),
           ],
@@ -1211,7 +1250,6 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
                 return null;
               },
             ),
-
             // --- FORGOT PASSWORD BUTTON ---
             Align(
               alignment: Alignment.centerRight,
@@ -1223,7 +1261,6 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
                 child: const Text('Forgot Password?'),
               ),
             ),
-
             VersoTextField(
               controller: _newPassController,
               label: 'New Password',
@@ -1269,18 +1306,10 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
               },
             ),
             const Gap(24),
-            FilledButton(
-              onPressed: _isLoading ? null : _update,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Update Password'),
+            VersoGradientButton(
+              label: 'Update Password',
+              isLoading: _isLoading,
+              onPressed: _update,
             ),
             const Gap(8),
           ],
@@ -1377,18 +1406,10 @@ class _EditNameSheetState extends ConsumerState<_EditNameSheet> {
               },
             ),
             const Gap(24),
-            FilledButton(
-              onPressed: _isLoading ? null : _update,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Update Name'),
+            VersoGradientButton(
+              label: 'Update Name',
+              isLoading: _isLoading,
+              onPressed: _update,
             ),
             const Gap(8),
           ],

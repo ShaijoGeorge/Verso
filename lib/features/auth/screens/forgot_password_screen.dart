@@ -7,8 +7,8 @@ import 'package:verso/core/design/components/verso_gradient_button.dart';
 import 'package:verso/core/design/components/verso_header_icon.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
 import 'package:verso/core/design/components/verso_text_field.dart';
-import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/core/design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/shadows.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/core/utils/app_error_handler.dart';
 import 'package:verso/core/widgets/confirmation_view.dart';
@@ -120,78 +120,74 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                       child: Center(
                         child: SingleChildScrollView(
                           padding: Spacing.pagePadding,
-                          child: FadeTransition(
-                            opacity: _fadeIn,
-                            child: SlideTransition(
-                              position: _slideUp,
-                              child: Column(
-                                children: [
-                                  const VersoHeaderIcon(
-                                    icon: Icons.lock_reset_rounded,
-                                  ),
-                                  const Gap(Spacing.lg),
-                                  Text(
-                                    'Reset Password',
-                                    style: GoogleFonts.dmSerifDisplay(
-                                      fontSize: 28,
-                                      color: colorScheme.onSurface,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 440),
+                            child: FadeTransition(
+                              opacity: _fadeIn,
+                              child: SlideTransition(
+                                position: _slideUp,
+                                child: Column(
+                                  children: [
+                                    const VersoHeaderIcon(
+                                      icon: Icons.lock_reset_rounded,
                                     ),
-                                  ),
-                                  const Gap(Spacing.sm),
-                                  Text(
-                                    "Enter your email and we'll send you\na link to reset your password.",
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 14,
-                                      color: colorScheme.onSurfaceVariant,
-                                      height: 1.6,
-                                    ),
-                                  ),
-                                  const Gap(Spacing.xl),
-
-                                  // Form card
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: colorScheme.surface,
-                                      borderRadius: AppRadii.borderRadiusXL,
-                                      border: Border.all(
-                                        color: colorScheme.outline.withValues(
-                                          alpha: isDark ? 0.15 : 0.4,
-                                        ),
+                                    const Gap(Spacing.lg),
+                                    Text(
+                                      'Reset Password',
+                                      style: GoogleFonts.dmSerifDisplay(
+                                        fontSize: 30,
+                                        color: colorScheme.onSurface,
                                       ),
-                                      boxShadow: isDark
-                                          ? []
-                                          : [
-                                              BoxShadow(
-                                                color: AppColors.primaryLight
-                                                    .withValues(alpha: 0.06),
-                                                blurRadius: 40,
-                                                offset: const Offset(0, 16),
-                                              ),
-                                            ],
                                     ),
-                                    padding: const EdgeInsets.all(Spacing.lg),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: [
-                                        VersoTextField(
-                                          controller: _emailController,
-                                          label: 'Email',
-                                          icon: Icons.mail_outline_rounded,
-                                          keyboardType:
-                                              TextInputType.emailAddress,
-                                        ),
-                                        const Gap(Spacing.lg),
-                                        VersoGradientButton(
-                                          label: 'Send Reset Link',
-                                          isLoading: _isLoading,
-                                          onPressed: _submit,
-                                        ),
-                                      ],
+                                    const Gap(Spacing.sm),
+                                    Text(
+                                      "Enter your email and we'll send you\na link to reset your password.",
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 14,
+                                        color: colorScheme.onSurfaceVariant,
+                                        height: 1.6,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                    const Gap(Spacing.xl),
+
+                                    // Form card
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.surface,
+                                        borderRadius: AppRadii.borderRadiusXL,
+                                        border: Border.all(
+                                          color: colorScheme.outline.withValues(
+                                            alpha: isDark ? 0.25 : 0.65,
+                                          ),
+                                        ),
+                                        boxShadow: isDark
+                                            ? AppShadows.md
+                                            : AppShadows.lg,
+                                      ),
+                                      padding: const EdgeInsets.all(Spacing.lg),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          VersoTextField(
+                                            controller: _emailController,
+                                            label: 'Email',
+                                            icon: Icons.mail_outline_rounded,
+                                            keyboardType:
+                                                TextInputType.emailAddress,
+                                          ),
+                                          const Gap(Spacing.lg),
+                                          VersoGradientButton(
+                                            label: 'Send Reset Link',
+                                            isLoading: _isLoading,
+                                            onPressed: _submit,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
