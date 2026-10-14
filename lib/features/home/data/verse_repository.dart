@@ -3,20 +3,21 @@ import 'dart:developer' as dev;
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:verso/features/home/data/daily_verse.dart';
 
 class VerseRepository {
   VerseRepository(this._supabase);
   final SupabaseClient _supabase;
   static const String _cacheKey = 'cached_daily_verses_v1';
 
-  /// Called by the UI to get today's verse instantly.
-  Future<Map<String, dynamic>> getTodayVerse() async {
+  /// Called by the UI to get today's verse.
+  Future<DailyVerse> getTodayVerse() async {
     final todayDayOfYear = _getDayOfYear(DateTime.now());
 
-    // 1. Instantly fetch our local offline stash
-    final localVerses = await _getLocalVerses();
+    // 1. Fetch our local offline stash (cached from Supabase)
+    var localVerses = await _getLocalVerses();
 
-    // 2. Find today's verse
+    // 2. Find today's verse in local cache
     Map<String, dynamic>? todayVerse;
     try {
       todayVerse = localVerses.firstWhere(
@@ -27,43 +28,39 @@ class VerseRepository {
       // It's okay if it fails, todayVerse stays null
     }
 
-    // 3. BACKGROUND CHECK: Are we running low on verses?
-    final futureVersesCount = localVerses
-        .where(
-          (v) =>
-              (v as Map<String, dynamic>)['day_of_year'] as int >=
-              todayDayOfYear,
-        )
-        .length;
-
-    if (futureVersesCount < 3) {
-      if (todayVerse == null) {
-        // We have no verse for today (e.g. cache cleared)! Await the fetch so the UI gets it instantly.
-        await _fetchAndCacheNextBatch(todayDayOfYear);
-        // Try reading from cache again
-        final newVerses = await _getLocalVerses();
-        try {
-          todayVerse = newVerses.firstWhere(
-            (verse) =>
-                (verse as Map<String, dynamic>)['day_of_year'] ==
+    // 3. If cache is empty or doesn't have today's verse (e.g. fresh install),
+    // fetch immediately from Supabase
+    if (todayVerse == null) {
+      await _fetchAndCacheNextBatch(todayDayOfYear);
+      localVerses = await _getLocalVerses();
+      try {
+        todayVerse = localVerses.firstWhere(
+          (verse) =>
+              (verse as Map<String, dynamic>)['day_of_year'] == todayDayOfYear,
+        ) as Map<String, dynamic>;
+      } catch (_) {
+        // Still null (e.g. device is offline)
+      }
+    } else {
+      // 4. BACKGROUND CHECK: Are we running low on verses in cache? (< 3 days remaining)
+      final futureVersesCount = localVerses
+          .where(
+            (v) =>
+                (v as Map<String, dynamic>)['day_of_year'] as int >=
                 todayDayOfYear,
-          ) as Map<String, dynamic>;
-        } catch (_) {}
-      } else {
-        // We have today's verse, but are running low. Fetch silently in the background.
+          )
+          .length;
+
+      if (futureVersesCount < 3) {
         _fetchAndCacheNextBatch(todayDayOfYear).ignore();
       }
     }
 
-    // 4. Return the verse, or throw if they are offline and the cache is completely empty
+    // 5. Return today's verse, or safe fallback if offline on fresh install
     if (todayVerse != null) {
-      return {
-        'text': todayVerse['text'],
-        'ref': todayVerse['reference'],
-      };
-    } else {
-      throw Exception('Unable to fetch the daily verse.');
+      return DailyVerse.fromJson(todayVerse);
     }
+    return DailyVerse.fallback;
   }
 
   // --- PRIVATE HELPER METHODS ---
@@ -72,7 +69,11 @@ class VerseRepository {
     final prefs = await SharedPreferences.getInstance();
     final jsonString = prefs.getString(_cacheKey);
     if (jsonString == null) return [];
-    return jsonDecode(jsonString) as List<dynamic>;
+    try {
+      return jsonDecode(jsonString) as List<dynamic>;
+    } catch (_) {
+      return [];
+    }
   }
 
   Future<void> _fetchAndCacheNextBatch(int startDay) async {
@@ -84,13 +85,25 @@ class VerseRepository {
 
       final response = await _supabase
           .from('daily_verses')
-          .select('day_of_year, reference, text')
+          .select('day_of_year, reference, text, text_ml_poc, text_ml_bsi')
           .gte('day_of_year', startDay)
-          .limit(7);
+          .limit(14);
 
-      // Save them directly to SharedPreferences for tomorrow
+      final list = List<Map<String, dynamic>>.from(response);
+
+      // Wrap around to start of year if near the end (e.g. day 360-366)
+      if (list.length < 14) {
+        final wrapNeeded = 14 - list.length;
+        final wrapResponse = await _supabase
+            .from('daily_verses')
+            .select('day_of_year, reference, text, text_ml_poc, text_ml_bsi')
+            .lte('day_of_year', wrapNeeded);
+        list.addAll(List<Map<String, dynamic>>.from(wrapResponse));
+      }
+
+      // Save to SharedPreferences for offline reading
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_cacheKey, jsonEncode(response));
+      await prefs.setString(_cacheKey, jsonEncode(list));
     } catch (e) {
       // Silent failure. If they are offline, we just try again next time!
       dev.log(
