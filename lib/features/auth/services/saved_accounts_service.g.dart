@@ -77,7 +77,7 @@ final class SavedAccountsListProvider
   SavedAccountsList create() => SavedAccountsList();
 }
 
-String _$savedAccountsListHash() => r'c65b7af6d6aef2050b023220ca7f6f069dfec6fb';
+String _$savedAccountsListHash() => r'c711d60b0a7b6b0d53b4e416e862d536bdbd1fb7';
 
 abstract class _$SavedAccountsList extends $AsyncNotifier<List<SavedAccount>> {
   FutureOr<List<SavedAccount>> build();
