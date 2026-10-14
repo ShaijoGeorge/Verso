@@ -135,6 +135,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         AppearanceStyle.amoled => 'AMOLED (pure black)',
       };
 
+  String _themeModeLabel(UserSettings settings) {
+    final base = switch (settings.themeMode) {
+      AppThemeMode.system => 'System',
+      AppThemeMode.light => 'Light',
+      AppThemeMode.dark => 'Dark',
+    };
+    if (settings.themeMode != AppThemeMode.light && settings.useAmoledForDark) {
+      return '$base · AMOLED';
+    }
+    return base;
+  }
+
   IconData _styleIcon(AppearanceStyle style) => switch (style) {
         AppearanceStyle.light => Icons.light_mode_outlined,
         AppearanceStyle.dark => Icons.dark_mode_outlined,
@@ -145,6 +157,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         CanonType.catholic => 'Catholic (73 Books)',
         CanonType.protestant => 'Protestant (66 Books)',
         CanonType.orthodox => 'Eastern Orthodox (78 Books)',
+      };
+
+  String _canonShortLabel(CanonType canon) => switch (canon) {
+        CanonType.catholic => 'Catholic',
+        CanonType.protestant => 'Protestant',
+        CanonType.orthodox => 'Orthodox',
       };
 
   String _canonSubtitle(CanonType canon) => switch (canon) {
@@ -203,7 +221,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
                   child: Text(
                     'Choose the language for Bible book names, categories, and chapter navigation.',
                     style: GoogleFonts.plusJakartaSans(
@@ -604,21 +622,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _showSettingsSheet(
       context: context,
       title: 'Color Theme',
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final profile in ThemeProfiles.all)
-            _ThemeProfileTile(
-              profile: profile,
-              isSelected: settings.themeProfileId == profile.id,
-              onTap: () {
-                ref
-                    .read(currentSettingsProvider.notifier)
-                    .setThemeProfileId(profile.id);
-                Navigator.pop(context);
-              },
-            ),
-        ],
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.72,
+        ),
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final profile in ThemeProfiles.all)
+                _ThemeProfileTile(
+                  profile: profile,
+                  isSelected: settings.themeProfileId == profile.id,
+                  onTap: () {
+                    ref
+                        .read(currentSettingsProvider.notifier)
+                        .setThemeProfileId(profile.id);
+                    Navigator.pop(context);
+                  },
+                ),
+              const Gap(12),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -701,6 +728,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         .read(currentSettingsProvider.notifier)
                         .setUseAmoledForDark(v),
                   ),
+                const Gap(12),
               ],
             ),
           );
@@ -841,6 +869,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   },
                 ),
               ],
+              const Gap(12),
             ],
           );
         },
@@ -858,8 +887,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         title: Text(
           'Settings',
           style: GoogleFonts.plusJakartaSans(
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.4,
           ),
         ),
         scrolledUnderElevation: 0,
@@ -871,58 +900,85 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           onRetry: () => ref.invalidate(currentSettingsProvider),
         ),
         data: (settings) {
+          final activeProfile = ThemeProfiles.byId(settings.themeProfileId);
+          final activeFontPreset =
+              AppFontSize.fromScale(settings.fontScaleFactor);
+
           return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _SectionLabel(label: 'APPEARANCE & THEME', scheme: scheme),
                   _SettingsSectionCard(
                     children: [
                       _SettingsActionTile(
-                        title: 'Choose Color Theme',
+                        title: 'Color Theme',
                         icon: Icons.palette_outlined,
                         iconColor: scheme.primary,
+                        trailing: _ValuePill(text: activeProfile.name),
                         onTap: () => _showColorThemePicker(context, settings),
                       ),
                       _SettingsActionTile(
                         title: 'Theme Mode',
                         icon: Icons.brightness_6_outlined,
                         iconColor: scheme.primary,
+                        trailing: _ValuePill(text: _themeModeLabel(settings)),
                         onTap: () => _showAppearancePicker(context, settings),
                       ),
                       _SettingsActionTile(
                         title: 'Schedule Theme',
                         icon: Icons.schedule_outlined,
                         iconColor: const Color(0xFFF59E0B),
+                        trailing: _ValuePill(
+                          text: settings.scheduleEnabled ? 'On' : 'Off',
+                        ),
                         onTap: () => _showScheduleThemePicker(context),
                       ),
                     ],
                   ),
                   const Gap(24),
+
+                  _SectionLabel(
+                    label: 'SCRIPTURE & TYPOGRAPHY',
+                    scheme: scheme,
+                  ),
                   _SettingsSectionCard(
                     children: [
                       _SettingsActionTile(
                         title: 'Bible Canon',
                         icon: Icons.auto_stories_rounded,
                         iconColor: const Color(0xFF8B5CF6),
+                        trailing: _ValuePill(
+                          text: _canonShortLabel(settings.canon),
+                        ),
                         onTap: () => _pickCanon(settings),
                       ),
                       _SettingsActionTile(
                         title: 'Bible Language',
                         icon: Icons.translate_rounded,
                         iconColor: const Color(0xFF0EA5E9),
+                        trailing: _ValuePill(
+                          text: settings.bibleLanguage == 'ml'
+                              ? 'മലയാളം'
+                              : 'English',
+                        ),
                         onTap: () => _pickBibleLanguage(settings),
                       ),
                       _SettingsActionTile(
-                        title: 'Adjust Text Size',
+                        title: 'Text Size',
                         icon: Icons.format_size_rounded,
                         iconColor: scheme.primary,
+                        trailing: _ValuePill(text: activeFontPreset.label),
                         onTap: () => _showTextSizePicker(context, settings),
                       ),
                     ],
                   ),
                   const Gap(24),
+
+                  _SectionLabel(label: 'REMINDERS & COMMUNITY', scheme: scheme),
                   _SettingsSectionCard(
                     children: [
                       _SettingsActionTile(
@@ -965,7 +1021,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ],
                   ),
-                  const Gap(32),
+                  const Gap(36),
 
                   // --- ABOUT SECTION ---
                   Center(
@@ -981,11 +1037,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         children: [
                           Text(
                             'Verso v${ref.watch(packageInfoProvider).version}',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
+                            style: GoogleFonts.dmSerifDisplay(
+                              fontSize: 16,
                               color: scheme.onSurfaceVariant
-                                  .withValues(alpha: 0.7),
+                                  .withValues(alpha: 0.75),
                             ),
                           ),
                           const Gap(4),
@@ -999,9 +1054,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 vertical: 2,
                               ),
                               child: Text(
-                                'Made by Shaijo George',
+                                'Crafted by Shaijo George',
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.w600,
                                   fontSize: 12,
                                   color: scheme.onSurfaceVariant
                                       .withValues(alpha: 0.7),
@@ -1029,6 +1084,53 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
 // -- Components --
 
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.label, required this.scheme});
+  final String label;
+  final ColorScheme scheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 10),
+      child: Text(
+        label,
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 10.5,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.2,
+          color: scheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+class _ValuePill extends StatelessWidget {
+  const _ValuePill({required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.65),
+        borderRadius: AppRadii.borderRadiusFull,
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: scheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
 class _SettingsSectionCard extends StatelessWidget {
   const _SettingsSectionCard({
     required this.children,
@@ -1042,7 +1144,6 @@ class _SettingsSectionCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return VersoCard(
-      shadow: AppShadows.md,
       padding: EdgeInsets.zero,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadii.lg),
@@ -1061,7 +1162,7 @@ class _SettingsSectionCard extends StatelessWidget {
                     indent: 66,
                     endIndent: 16,
                     color: scheme.outlineVariant
-                        .withValues(alpha: isDark ? 0.3 : 0.5),
+                        .withValues(alpha: isDark ? 0.3 : 0.6),
                   ),
               ],
             ],
@@ -1103,13 +1204,14 @@ class _SettingsSwitchTile extends StatelessWidget {
           ),
         ),
         secondary: Container(
-          width: 36,
-          height: 36,
+          width: 38,
+          height: 38,
           decoration: BoxDecoration(
             color: iconColor.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(AppRadii.sm),
+            border: Border.all(color: iconColor.withValues(alpha: 0.2)),
           ),
-          child: Icon(icon, size: 18, color: iconColor),
+          child: Icon(icon, size: 19, color: iconColor),
         ),
         value: value,
         onChanged: onChanged,
@@ -1145,28 +1247,24 @@ class _SettingsActionTile extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   color: iconColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(AppRadii.sm),
+                  border: Border.all(color: iconColor.withValues(alpha: 0.2)),
                 ),
-                child: Icon(icon, size: 18, color: iconColor),
+                child: Icon(icon, size: 19, color: iconColor),
               ),
               const Gap(14),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: scheme.onSurface,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  title,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: scheme.onSurface,
+                  ),
                 ),
               ),
               if (trailing != null) ...[
@@ -1213,13 +1311,13 @@ class _ThemeProfileTile extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           child: Row(
             children: [
               // Swatches
               SizedBox(
-                width: 40,
-                height: 40,
+                width: 42,
+                height: 42,
                 child: Stack(
                   children: [
                     Positioned(
@@ -1235,7 +1333,7 @@ class _ThemeProfileTile extends StatelessWidget {
                     Positioned(
                       top: 4,
                       right: 0,
-                      child: _Swatch(color: previewPalette.accent, size: 14),
+                      child: _Swatch(color: previewPalette.secondary, size: 14),
                     ),
                   ],
                 ),
@@ -1248,7 +1346,7 @@ class _ThemeProfileTile extends StatelessWidget {
                     Text(
                       profile.name,
                       style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                         fontSize: 15,
                         color: scheme.onSurface,
                       ),
@@ -1257,7 +1355,7 @@ class _ThemeProfileTile extends StatelessWidget {
                     Text(
                       profile.tagline,
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13,
+                        fontSize: 12.5,
                         color: scheme.onSurfaceVariant,
                       ),
                     ),
@@ -1305,7 +1403,7 @@ class _Swatch extends StatelessWidget {
         color: color,
         shape: BoxShape.circle,
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.25),
         ),
       ),
     );
@@ -1359,7 +1457,7 @@ class _FontSizeSettingsTile extends StatelessWidget {
     final activePreset = AppFontSize.fromScale(currentScale);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
