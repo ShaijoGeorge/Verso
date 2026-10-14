@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gap/gap.dart';
 import 'package:verso/core/design/extensions.dart';
+import 'package:verso/core/design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/shadows.dart';
 import 'package:verso/data/bible_book_names.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
@@ -51,6 +54,8 @@ class _BookGridState extends ConsumerState<BookGrid> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final isLight = Theme.of(context).brightness == Brightness.light;
     final isAmoled = context.palette.style == AppearanceStyle.amoled;
 
     final settings = switch (ref.watch(currentSettingsProvider)) {
@@ -68,30 +73,58 @@ class _BookGridState extends ConsumerState<BookGrid> {
     final crossAxisCount = width > 600 ? 4 : 2;
 
     return CustomScrollView(
+      physics: const BouncingScrollPhysics(),
       slivers: [
         // 1. Search Bar
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (val) => setState(() => _searchQuery = val),
-              decoration: InputDecoration(
-                hintText: 'Search books...',
-                prefixIcon: Icon(
-                  Icons.search_rounded,
-                  color: scheme.primary.withValues(alpha: 0.5),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
+            child: Container(
+              decoration: BoxDecoration(
+                color:
+                    isAmoled ? scheme.surfaceContainerHighest : scheme.surface,
+                borderRadius: AppRadii.borderRadiusLG,
+                border: Border.all(
+                  color:
+                      scheme.outline.withValues(alpha: isLight ? 0.65 : 0.25),
                 ),
-                filled: true,
-                fillColor: isAmoled
-                    ? scheme.surfaceContainerHighest
-                    : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
+                boxShadow: isLight ? AppShadows.sm : AppShadows.none,
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (val) => setState(() => _searchQuery = val),
+                style: textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurface,
                 ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: InputDecoration(
+                  hintText: 'Search books...',
+                  hintStyle: textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
+                    size: 20,
+                    color: scheme.primary.withValues(alpha: 0.7),
+                  ),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(
+                            Icons.close_rounded,
+                            size: 18,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                ),
               ),
             ),
           ),
@@ -105,16 +138,32 @@ class _BookGridState extends ConsumerState<BookGrid> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.search_off_rounded,
-                    size: 48,
-                    color: Theme.of(context).colorScheme.outline,
+                  Container(
+                    width: 68,
+                    height: 68,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: scheme.primary.withValues(alpha: 0.08),
+                    ),
+                    child: Icon(
+                      Icons.search_off_rounded,
+                      size: 32,
+                      color: scheme.primary,
+                    ),
                   ),
-                  const SizedBox(height: 16),
+                  const Gap(14),
                   Text(
-                    "No matches for '$_searchQuery'",
-                    style:
-                        TextStyle(color: Theme.of(context).colorScheme.outline),
+                    "No books matching '$_searchQuery'",
+                    style: textTheme.titleSmall?.copyWith(
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                  const Gap(4),
+                  Text(
+                    'Try searching with another book name',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -126,24 +175,49 @@ class _BookGridState extends ConsumerState<BookGrid> {
           // Sticky Header Equivalent (Non-pinned for now)
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+              padding: const EdgeInsets.fromLTRB(20, 22, 20, 12),
               child: Row(
                 children: [
+                  Container(
+                    width: 3,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: scheme.primary,
+                      borderRadius: AppRadii.borderRadiusFull,
+                    ),
+                  ),
+                  const Gap(8),
                   Text(
                     category.getLocalizedDisplayName(bibleLanguage),
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                          letterSpacing: 0.5,
-                        ),
+                    style: textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: scheme.onSurface,
+                      letterSpacing: 0.2,
+                    ),
                   ),
-                  const SizedBox(width: 8),
+                  const Gap(8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: scheme.primary.withValues(alpha: 0.1),
+                      borderRadius: AppRadii.borderRadiusFull,
+                    ),
+                    child: Text(
+                      '${groupedBooks[category]!.length}',
+                      style: textTheme.labelSmall?.copyWith(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: scheme.primary,
+                      ),
+                    ),
+                  ),
+                  const Gap(10),
                   Expanded(
                     child: Divider(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.1),
+                      color: scheme.outline.withValues(alpha: 0.2),
                       thickness: 1,
                     ),
                   ),
@@ -154,11 +228,11 @@ class _BookGridState extends ConsumerState<BookGrid> {
 
           // Grid for this category
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             sliver: SliverGrid(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: crossAxisCount,
-                childAspectRatio: 1.6,
+                childAspectRatio: 1.52,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
               ),
@@ -208,7 +282,7 @@ class _BookGridState extends ConsumerState<BookGrid> {
         ],
 
         // 4. Bottom Spacing
-        const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
+        const SliverPadding(padding: EdgeInsets.only(bottom: 110)),
       ],
     );
   }
