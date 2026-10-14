@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:verso/core/design/profiles/verso_palette.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/typography.dart';
@@ -48,6 +49,7 @@ abstract final class AppTheme {
       textTheme: textTheme,
       scaffoldBackgroundColor: palette.bg,
       extensions: [palette],
+      splashFactory: InkSparkle.splashFactory,
       appBarTheme: AppBarTheme(
         backgroundColor: palette.bg,
         surfaceTintColor: Colors.transparent,
@@ -55,28 +57,34 @@ abstract final class AppTheme {
         foregroundColor: colorScheme.onSurface,
         centerTitle: true,
         elevation: 0,
+        systemOverlayStyle:
+            isLight ? SystemUiOverlayStyle.dark : SystemUiOverlayStyle.light,
         titleTextStyle: AppTypography.titleMedium.copyWith(
           color: colorScheme.onSurface,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.3,
         ),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: colorScheme.surface,
         surfaceTintColor: Colors.transparent,
+        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
+              const BorderRadius.vertical(top: Radius.circular(AppRadii.xxl)),
           side: BorderSide(
-            color: palette.border.withValues(alpha: isLight ? 0.2 : 0.5),
+            color: palette.border.withValues(alpha: isLight ? 0.35 : 0.6),
           ),
         ),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: colorScheme.surface,
         surfaceTintColor: Colors.transparent,
+        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: const BorderRadius.all(Radius.circular(AppRadii.xl)),
           side: BorderSide(
-            color: palette.border.withValues(alpha: isLight ? 0.2 : 0.5),
+            color: palette.border.withValues(alpha: isLight ? 0.35 : 0.6),
           ),
         ),
       ),
@@ -89,7 +97,7 @@ abstract final class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: const BorderRadius.all(Radius.circular(AppRadii.xl)),
           side: BorderSide(
-            color: palette.border.withValues(alpha: isLight ? 0.2 : 0.5),
+            color: palette.border.withValues(alpha: isLight ? 0.35 : 0.6),
           ),
         ),
       ),
@@ -99,14 +107,46 @@ abstract final class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: AppRadii.borderRadiusLG,
           side: BorderSide(
-            color: palette.border.withValues(alpha: isLight ? 0.5 : 0.15),
+            color: palette.border.withValues(alpha: isLight ? 0.6 : 0.22),
           ),
         ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          textStyle: AppTypography.labelLarge.copyWith(
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.1,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: AppRadii.borderRadiusMD,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          textStyle: AppTypography.labelLarge.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+          side: BorderSide(
+            color: palette.border.withValues(alpha: isLight ? 0.8 : 0.4),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: AppRadii.borderRadiusMD,
+          ),
+        ),
+      ),
+      dividerTheme: DividerThemeData(
+        color: palette.divider.withValues(alpha: isLight ? 0.7 : 0.3),
+        thickness: 1,
+        space: 1,
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: palette.footerBg,
         indicatorColor:
-            palette.footerActive.withValues(alpha: isLight ? 0.15 : 0.2),
+            palette.footerActive.withValues(alpha: isLight ? 0.12 : 0.2),
         labelTextStyle: WidgetStateProperty.all(
           AppTypography.labelSmall.copyWith(color: palette.text),
         ),
@@ -119,12 +159,12 @@ abstract final class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: AppRadii.borderRadiusSM),
+        shape: RoundedRectangleBorder(borderRadius: AppRadii.borderRadiusMD),
       ),
     );
   }
 
-  static Color _onColor(Color bg) => bg.computeLuminance() > 0.4
-      ? const Color(0xFF1C1C1E)
-      : const Color(0xFFF5F5F5);
+  static Color _onColor(Color bg) => bg.computeLuminance() > 0.42
+      ? const Color(0xFF0F172A)
+      : const Color(0xFFF8FAFC);
 }
