@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:verso/core/design/components/verso_card.dart';
 import 'package:verso/core/design/components/verso_circular_progress.dart';
@@ -16,6 +17,7 @@ import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/data/bible_book_names.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
+import 'package:verso/features/home/data/daily_verse.dart';
 import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
 import 'package:verso/features/stats/providers/activity_providers.dart';
@@ -906,9 +908,16 @@ class _RecentActivityList extends ConsumerWidget {
 
 // DAILY VERSE CARD
 
-class _DailyVerseCard extends StatelessWidget {
+class _DailyVerseCard extends ConsumerStatefulWidget {
   const _DailyVerseCard({required this.verseAsync});
-  final AsyncValue<Map<String, dynamic>> verseAsync;
+  final AsyncValue<DailyVerse> verseAsync;
+
+  @override
+  ConsumerState<_DailyVerseCard> createState() => _DailyVerseCardState();
+}
+
+class _DailyVerseCardState extends ConsumerState<_DailyVerseCard> {
+  String? _overrideLang;
 
   @override
   Widget build(BuildContext context) {
@@ -917,7 +926,12 @@ class _DailyVerseCard extends StatelessWidget {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final isAmoled = context.palette.style == AppearanceStyle.amoled;
 
-    return verseAsync.when(
+    final settings = ref.watch(currentSettingsProvider).value;
+    final defaultLang = settings?.bibleLanguage ?? 'en';
+    final canon = settings?.canon ?? CanonType.catholic;
+    final activeLang = _overrideLang ?? defaultLang;
+
+    return widget.verseAsync.when(
       loading: () => _buildShell(
         scheme: scheme,
         isLight: isLight,
@@ -940,6 +954,15 @@ class _DailyVerseCard extends StatelessWidget {
                   ),
                   const Gap(Spacing.sm),
                   Container(width: 100, height: 10, color: Colors.white),
+                  const Spacer(),
+                  Container(
+                    width: 76,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: AppRadii.borderRadiusFull,
+                    ),
+                  ),
                 ],
               ),
               const Gap(Spacing.md),
@@ -958,6 +981,10 @@ class _DailyVerseCard extends StatelessWidget {
       ),
       error: (_, __) => const SizedBox.shrink(),
       data: (verse) {
+        final verseText = verse.getText(activeLang, canon);
+        final verseRef = verse.getReference(activeLang, canon);
+        final isMalayalam = activeLang == 'ml';
+
         return _buildShell(
           scheme: scheme,
           isLight: isLight,
@@ -965,7 +992,7 @@ class _DailyVerseCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Eyebrow label
+              // Eyebrow and Language Toggle Header
               Row(
                 children: [
                   Container(
@@ -978,49 +1005,176 @@ class _DailyVerseCard extends StatelessWidget {
                   ),
                   const Gap(Spacing.sm),
                   Text(
-                    'VERSE OF THE DAY',
-                    style: textTheme.labelSmall?.copyWith(
-                      color: scheme.secondary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 2,
-                    ),
+                    isMalayalam ? 'ഇന്നത്തെ വചനം' : 'VERSE OF THE DAY',
+                    style: isMalayalam
+                        ? GoogleFonts.anekMalayalam(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                            color: scheme.secondary,
+                          )
+                        : textTheme.labelSmall?.copyWith(
+                            color: scheme.secondary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 2,
+                          ),
                   ),
+                  const Spacer(),
+                  _buildLanguageToggle(scheme, isLight, activeLang),
                 ],
               ),
               const Gap(Spacing.md),
-              // Verse text - DM Serif Display
-              Text(
-                verse['text'] as String,
-                style: textTheme.headlineSmall?.copyWith(
-                  fontSize: 20,
-                  height: 1.45,
-                  color: isLight
-                      ? scheme.onSurface.withValues(alpha: 0.92)
-                      : const Color(0xFFF5EFE3).withValues(alpha: 0.95),
-                ),
-              ),
-              const Gap(Spacing.md),
-              // Gold hairline rule
-              Container(
-                width: 32,
-                height: 1,
-                color: scheme.secondary.withValues(alpha: 0.7),
-              ),
-              const Gap(Spacing.sm),
-              // Reference
-              Text(
-                (verse['ref'] as String).toUpperCase(),
-                style: textTheme.labelSmall?.copyWith(
-                  color: scheme.secondary,
-                  letterSpacing: 1.8,
-                  fontWeight: FontWeight.w600,
+              // Animated Crossfade between English & Malayalam
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: (child, animation) =>
+                    FadeTransition(opacity: animation, child: child),
+                child: KeyedSubtree(
+                  key: ValueKey<String>('$activeLang-${verse.dayOfYear}'),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Verse text
+                      Text(
+                        verseText,
+                        style: isMalayalam
+                            ? GoogleFonts.anekMalayalam(
+                                fontSize: 18,
+                                height: 1.6,
+                                fontWeight: FontWeight.w500,
+                                color: isLight
+                                    ? scheme.onSurface.withValues(alpha: 0.92)
+                                    : const Color(0xFFF5EFE3)
+                                        .withValues(alpha: 0.95),
+                              )
+                            : textTheme.headlineSmall?.copyWith(
+                                fontSize: 20,
+                                height: 1.45,
+                                color: isLight
+                                    ? scheme.onSurface.withValues(alpha: 0.92)
+                                    : const Color(0xFFF5EFE3)
+                                        .withValues(alpha: 0.95),
+                              ),
+                      ),
+                      const Gap(Spacing.md),
+                      // Gold hairline rule
+                      Container(
+                        width: 32,
+                        height: 1,
+                        color: scheme.secondary.withValues(alpha: 0.7),
+                      ),
+                      const Gap(Spacing.sm),
+                      // Reference
+                      Text(
+                        isMalayalam ? verseRef : verseRef.toUpperCase(),
+                        style: isMalayalam
+                            ? GoogleFonts.anekMalayalam(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: scheme.secondary,
+                                letterSpacing: 0.6,
+                              )
+                            : textTheme.labelSmall?.copyWith(
+                                color: scheme.secondary,
+                                letterSpacing: 1.8,
+                                fontWeight: FontWeight.w600,
+                              ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildLanguageToggle(
+    ColorScheme scheme,
+    bool isLight,
+    String activeLang,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(2.5),
+      decoration: BoxDecoration(
+        color: isLight
+            ? scheme.surfaceContainerHighest.withValues(alpha: 0.6)
+            : scheme.surface.withValues(alpha: 0.5),
+        borderRadius: AppRadii.borderRadiusFull,
+        border: Border.all(
+          color: scheme.secondary.withValues(alpha: 0.2),
+          width: 0.8,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildPillItem(
+            label: 'EN',
+            isSelected: activeLang == 'en',
+            scheme: scheme,
+            onTap: () => setState(() => _overrideLang = 'en'),
+          ),
+          _buildPillItem(
+            label: 'മലയാളം',
+            isSelected: activeLang == 'ml',
+            scheme: scheme,
+            isMalayalam: true,
+            onTap: () => setState(() => _overrideLang = 'ml'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPillItem({
+    required String label,
+    required bool isSelected,
+    required ColorScheme scheme,
+    required VoidCallback onTap,
+    bool isMalayalam = false,
+  }) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        padding: EdgeInsets.symmetric(
+          horizontal: isMalayalam ? 8 : 7,
+          vertical: 3,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? scheme.secondary.withValues(alpha: 0.22)
+              : Colors.transparent,
+          borderRadius: AppRadii.borderRadiusFull,
+        ),
+        child: Text(
+          label,
+          style: isMalayalam
+              ? GoogleFonts.anekMalayalam(
+                  fontSize: 10.5,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected
+                      ? scheme.secondary
+                      : scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                )
+              : GoogleFonts.plusJakartaSans(
+                  fontSize: 10,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  letterSpacing: 0.5,
+                  color: isSelected
+                      ? scheme.secondary
+                      : scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                ),
+        ),
+      ),
     );
   }
 
