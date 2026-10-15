@@ -1,4 +1,4 @@
-package com.example.biblia
+package com.shaijo.verso
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -6,7 +6,7 @@ import io.flutter.plugin.common.MethodChannel
 import java.util.TimeZone
 
 class MainActivity: FlutterActivity() {
-    private val CHANNEL = "com.example.biblia/timezone"
+    private val CHANNEL = "com.shaijo.verso/timezone"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
