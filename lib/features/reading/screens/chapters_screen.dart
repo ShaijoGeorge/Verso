@@ -177,14 +177,23 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
                   isRead: isRead,
                   readAt: readAt,
                   onTap: (newStatus) async {
-                    final newStreak =
-                        await ref.read(readingServiceProvider).toggleChapter(
-                              widget.book.id,
-                              chapterNum,
-                              newStatus,
-                            );
-                    if (newStreak != null && context.mounted) {
-                      VersoConfetti.show(context, streak: newStreak);
+                    try {
+                      final newStreak =
+                          await ref.read(readingServiceProvider).toggleChapter(
+                                widget.book.id,
+                                chapterNum,
+                                newStatus,
+                              );
+                      if (newStreak != null && context.mounted) {
+                        VersoConfetti.show(context, streak: newStreak);
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        VersoSnackbar.error(
+                          context,
+                          message: 'Failed: ${AppErrorHandler.getMessage(e)}',
+                        );
+                      }
                     }
                   },
                 );
@@ -530,12 +539,170 @@ class _ChapterTileState extends State<_ChapterTile>
     }
   }
 
-  void _handleTap() {
+  Future<void> _handleTap() async {
+    if (_isRead) {
+      final confirmed = await _showUnmarkConfirmationDialog();
+      if (!confirmed || !mounted) return;
+    }
+
     HapticFeedback.lightImpact();
     _scaleCtrl.forward().then((_) => _scaleCtrl.reverse());
     _isOptimistic = true;
     setState(() => _isRead = !_isRead);
     widget.onTap(_isRead);
+  }
+
+  Future<bool> _showUnmarkConfirmationDialog() async {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final palette = context.palette;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final isDark = !isLight;
+    final warningColor =
+        isDark ? const Color(0xFFFBBF24) : const Color(0xFFEA580C);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadii.borderRadiusXL,
+          side: BorderSide(
+            color: palette.border.withValues(alpha: isLight ? 0.35 : 0.6),
+          ),
+        ),
+        backgroundColor: scheme.surface,
+        surfaceTintColor: Colors.transparent,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: warningColor.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.warning_amber_rounded,
+                color: warningColor,
+                size: 22,
+              ),
+            ),
+            const Gap(12),
+            Expanded(
+              child: Text(
+                'Mark as unread?',
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to mark ${widget.bookName} ${widget.chapterNum} as unread?',
+              style: textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurface,
+              ),
+            ),
+            const Gap(14),
+            if (widget.readAt != null) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(Spacing.md),
+                decoration: BoxDecoration(
+                  color: isLight
+                      ? palette.danger.withValues(alpha: 0.05)
+                      : palette.danger.withValues(alpha: 0.1),
+                  borderRadius: AppRadii.borderRadiusMD,
+                  border: Border.all(
+                    color:
+                        palette.danger.withValues(alpha: isLight ? 0.2 : 0.3),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today_rounded,
+                          size: 15,
+                          color: palette.danger,
+                        ),
+                        const Gap(6),
+                        Text(
+                          'Recorded Read Data',
+                          style: textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: palette.danger,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Gap(6),
+                    Text(
+                      '${DateFormat('EEEE, MMMM d, yyyy').format(widget.readAt!)} at ${DateFormat('h:mm a').format(widget.readAt!)}',
+                      style: textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                    const Gap(4),
+                    Text(
+                      'This recorded date and time will be permanently cleared.',
+                      style: textTheme.bodySmall?.copyWith(
+                        fontSize: 11,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else ...[
+              Text(
+                'This will remove its completion record from your reading history.',
+                style: textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: palette.danger,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: AppRadii.borderRadiusSM,
+              ),
+            ),
+            child: const Text(
+              'Mark Unread',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return confirmed ?? false;
   }
 
   // Cache decoration objects to prevent AnimatedContainer from
@@ -597,220 +764,259 @@ class _ChapterTileState extends State<_ChapterTile>
   void _showChapterInfoSheet() {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final palette = context.palette;
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final isRead = widget.isRead;
+    final isRead = _isRead;
     final readAt = widget.readAt;
 
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) {
-        return Container(
-          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-          decoration: BoxDecoration(
-            color: scheme.surface,
-            borderRadius: AppRadii.borderRadiusXXL,
-            border: Border.all(
-              color: scheme.outline.withValues(alpha: isLight ? 0.35 : 0.5),
-            ),
-            boxShadow: AppShadows.xl,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Top accent bar
-              Container(
-                height: 4,
-                margin: const EdgeInsets.only(top: 12),
-                width: 40,
-                decoration: BoxDecoration(
-                  color: scheme.onSurfaceVariant.withValues(alpha: 0.25),
-                  borderRadius: AppRadii.borderRadiusFull,
-                ),
+      builder: (sheetCtx) {
+        return SingleChildScrollView(
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            decoration: BoxDecoration(
+              color: scheme.surface,
+              borderRadius: AppRadii.borderRadiusXXL,
+              border: Border.all(
+                color: scheme.outline.withValues(alpha: isLight ? 0.35 : 0.5),
               ),
-
-              // Header with gradient
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                padding: const EdgeInsets.all(Spacing.lg),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isRead
-                        ? (isLight
-                            ? [
-                                context.palette.primary,
-                                context.palette.primaryHover,
-                              ]
-                            : [
-                                context.palette.primary.withValues(alpha: 0.22),
-                                context.palette.primary.withValues(alpha: 0.1),
-                              ])
-                        : [
-                            scheme.surfaceContainerHighest,
-                            scheme.surfaceContainerHighest
-                                .withValues(alpha: 0.5),
-                          ],
+              boxShadow: AppShadows.xl,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Top accent bar
+                Container(
+                  height: 4,
+                  margin: const EdgeInsets.only(top: 12),
+                  width: 40,
+                  decoration: BoxDecoration(
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.25),
+                    borderRadius: AppRadii.borderRadiusFull,
                   ),
-                  borderRadius: AppRadii.borderRadiusXL,
                 ),
-                child: Column(
-                  children: [
-                    // Large chapter number
-                    Text(
-                      '${widget.chapterNum}',
-                      style: textTheme.displayLarge?.copyWith(
-                        color: isRead
-                            ? (isLight
-                                ? scheme.onPrimary
-                                : context.palette.primary)
-                            : scheme.onSurfaceVariant,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 48,
-                        height: 1,
-                      ),
-                    ),
-                    const Gap(Spacing.xs),
-                    Text(
-                      widget.bookName,
-                      style: textTheme.titleSmall?.copyWith(
-                        color: isRead
-                            ? (isLight
-                                ? scheme.onPrimary.withValues(alpha: 0.85)
-                                : context.palette.primary
-                                    .withValues(alpha: 0.85))
-                            : scheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const Gap(Spacing.md),
 
-                    // Status pill
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 6,
+                // Header with gradient
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  padding: const EdgeInsets.all(Spacing.lg),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: isRead
+                          ? (isLight
+                              ? [
+                                  context.palette.primary,
+                                  context.palette.primaryHover,
+                                ]
+                              : [
+                                  context.palette.primary
+                                      .withValues(alpha: 0.22),
+                                  context.palette.primary
+                                      .withValues(alpha: 0.1),
+                                ])
+                          : [
+                              scheme.surfaceContainerHighest,
+                              scheme.surfaceContainerHighest
+                                  .withValues(alpha: 0.5),
+                            ],
+                    ),
+                    borderRadius: AppRadii.borderRadiusXL,
+                  ),
+                  child: Column(
+                    children: [
+                      // Large chapter number
+                      Text(
+                        '${widget.chapterNum}',
+                        style: textTheme.displayLarge?.copyWith(
+                          color: isRead
+                              ? (isLight
+                                  ? scheme.onPrimary
+                                  : context.palette.primary)
+                              : scheme.onSurfaceVariant,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 48,
+                          height: 1,
+                        ),
                       ),
-                      decoration: BoxDecoration(
-                        color: isRead
-                            ? (isLight
-                                ? scheme.onPrimary.withValues(alpha: 0.2)
-                                : context.palette.primary
-                                    .withValues(alpha: 0.28))
-                            : scheme.outline.withValues(alpha: 0.12),
-                        borderRadius: AppRadii.borderRadiusFull,
+                      const Gap(Spacing.xs),
+                      Text(
+                        widget.bookName,
+                        style: textTheme.titleSmall?.copyWith(
+                          color: isRead
+                              ? (isLight
+                                  ? scheme.onPrimary.withValues(alpha: 0.85)
+                                  : context.palette.primary
+                                      .withValues(alpha: 0.85))
+                              : scheme.onSurfaceVariant,
+                        ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isRead
-                                ? Icons.check_circle_rounded
-                                : Icons.radio_button_unchecked_rounded,
-                            size: 14,
-                            color: isRead
-                                ? (isLight
-                                    ? scheme.onPrimary
-                                    : context.palette.primary)
-                                : scheme.onSurfaceVariant,
-                          ),
-                          const Gap(6),
-                          Text(
-                            isRead ? 'Read' : 'Not yet read',
-                            style: textTheme.labelMedium?.copyWith(
+                      const Gap(Spacing.md),
+
+                      // Status pill
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isRead
+                              ? (isLight
+                                  ? scheme.onPrimary.withValues(alpha: 0.2)
+                                  : context.palette.primary
+                                      .withValues(alpha: 0.28))
+                              : scheme.outline.withValues(alpha: 0.12),
+                          borderRadius: AppRadii.borderRadiusFull,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isRead
+                                  ? Icons.check_circle_rounded
+                                  : Icons.radio_button_unchecked_rounded,
+                              size: 14,
                               color: isRead
                                   ? (isLight
                                       ? scheme.onPrimary
                                       : context.palette.primary)
                                   : scheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w700,
+                            ),
+                            const Gap(6),
+                            Text(
+                              isRead ? 'Read' : 'Not yet read',
+                              style: textTheme.labelMedium?.copyWith(
+                                color: isRead
+                                    ? (isLight
+                                        ? scheme.onPrimary
+                                        : context.palette.primary)
+                                    : scheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Timestamp detail (only if read)
+                if (isRead && readAt != null) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(Spacing.md),
+                      decoration: BoxDecoration(
+                        color: isLight
+                            ? scheme.primary.withValues(alpha: 0.05)
+                            : scheme.primary.withValues(alpha: 0.09),
+                        borderRadius: AppRadii.borderRadiusMD,
+                        border: Border.all(
+                          color: scheme.primary
+                              .withValues(alpha: isLight ? 0.14 : 0.12),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          // Calendar icon container
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: scheme.primary
+                                  .withValues(alpha: isLight ? 0.1 : 0.16),
+                              borderRadius: AppRadii.borderRadiusSM,
+                            ),
+                            child: Icon(
+                              Icons.calendar_today_rounded,
+                              size: 20,
+                              color: context.palette.primary,
+                            ),
+                          ),
+                          const Gap(Spacing.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  DateFormat('EEEE, MMMM d, yyyy')
+                                      .format(readAt),
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: context.palette.primary,
+                                  ),
+                                ),
+                                const Gap(2),
+                                Text(
+                                  'Logged at ${DateFormat('h:mm a').format(readAt)}',
+                                  style: textTheme.bodySmall?.copyWith(
+                                    color: scheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                ],
 
-              // Timestamp detail (only if read)
-              if (isRead && readAt != null) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(Spacing.md),
-                    decoration: BoxDecoration(
-                      color: isLight
-                          ? scheme.primary.withValues(alpha: 0.05)
-                          : scheme.primary.withValues(alpha: 0.09),
-                      borderRadius: AppRadii.borderRadiusMD,
-                      border: Border.all(
-                        color: scheme.primary
-                            .withValues(alpha: isLight ? 0.14 : 0.12),
+                // Unread hint
+                if (!isRead)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    child: Text(
+                      'Tap the chapter tile to mark it as read.',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+
+                if (isRead) ...[
+                  const Gap(14),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(sheetCtx);
+                          _handleTap();
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: palette.danger,
+                          side: BorderSide(
+                            color: palette.danger.withValues(alpha: 0.35),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppRadii.borderRadiusMD,
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        icon: const Icon(Icons.bookmark_remove_outlined,
+                            size: 18),
+                        label: const Text(
+                          'Mark as Unread',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        // Calendar icon container
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: scheme.primary
-                                .withValues(alpha: isLight ? 0.1 : 0.16),
-                            borderRadius: AppRadii.borderRadiusSM,
-                          ),
-                          child: Icon(
-                            Icons.calendar_today_rounded,
-                            size: 20,
-                            color: context.palette.primary,
-                          ),
-                        ),
-                        const Gap(Spacing.md),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                DateFormat('EEEE, MMMM d, yyyy').format(readAt),
-                                style: textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: context.palette.primary,
-                                ),
-                              ),
-                              const Gap(2),
-                              Text(
-                                'Logged at ${DateFormat('h:mm a').format(readAt)}',
-                                style: textTheme.bodySmall?.copyWith(
-                                  color: scheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
-                ),
+                ],
+
+                // Safe area + bottom padding
+                Gap(Spacing.lg + MediaQuery.of(context).padding.bottom),
               ],
-
-              // Unread hint
-              if (!isRead)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: Text(
-                    'Tap the chapter tile to mark it as read.',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-
-              // Safe area + bottom padding
-              Gap(Spacing.lg + MediaQuery.of(context).padding.bottom),
-            ],
+            ),
           ),
         );
       },
