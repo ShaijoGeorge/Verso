@@ -35,6 +35,12 @@ class VersoGradientButton extends StatelessWidget {
     final secondaryStop =
         color != null ? primary.withValues(alpha: 0.85) : palette.primaryHover;
 
+    final contentColor = color != null
+        ? (primary.computeLuminance() > 0.45
+            ? const Color(0xFF0F172A)
+            : const Color(0xFFF8FAFC))
+        : Theme.of(context).colorScheme.onPrimary;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -80,7 +86,7 @@ class VersoGradientButton extends StatelessWidget {
                     width: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      color: Theme.of(context).colorScheme.onPrimary,
+                      color: contentColor,
                     ),
                   )
                 : Row(
@@ -91,7 +97,7 @@ class VersoGradientButton extends StatelessWidget {
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: Theme.of(context).colorScheme.onPrimary,
+                          color: contentColor,
                           letterSpacing: 0.2,
                         ),
                       ),
@@ -99,10 +105,7 @@ class VersoGradientButton extends StatelessWidget {
                       Icon(
                         Icons.arrow_forward_rounded,
                         size: 18,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onPrimary
-                            .withValues(alpha: 0.9),
+                        color: contentColor.withValues(alpha: 0.9),
                       ),
                     ],
                   ),
