@@ -13,12 +13,20 @@ class ConfirmationView extends StatefulWidget {
     required this.onPressed,
     super.key,
     this.icon = Icons.check_circle_outline_rounded,
+    this.accentColor,
+    this.titleColor,
+    this.subtitleColor,
+    this.buttonColor,
   });
   final String title;
   final String subtitle;
   final String buttonText;
   final VoidCallback onPressed;
   final IconData icon;
+  final Color? accentColor;
+  final Color? titleColor;
+  final Color? subtitleColor;
+  final Color? buttonColor;
 
   @override
   State<ConfirmationView> createState() => _ConfirmationViewState();
@@ -53,7 +61,9 @@ class _ConfirmationViewState extends State<ConfirmationView>
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final accentColor = context.appColors.success;
+    final accentColor = widget.accentColor ?? context.appColors.success;
+    final titleColor = widget.titleColor ?? colorScheme.onSurface;
+    final subtitleColor = widget.subtitleColor ?? colorScheme.onSurfaceVariant;
 
     return Center(
       child: SingleChildScrollView(
@@ -72,9 +82,9 @@ class _ConfirmationViewState extends State<ConfirmationView>
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: accentColor.withValues(alpha: 0.06),
+                      color: accentColor.withValues(alpha: 0.08),
                       border: Border.all(
-                        color: accentColor.withValues(alpha: 0.14),
+                        color: accentColor.withValues(alpha: 0.16),
                       ),
                     ),
                     child: Container(
@@ -84,12 +94,12 @@ class _ConfirmationViewState extends State<ConfirmationView>
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            accentColor.withValues(alpha: 0.2),
+                            accentColor.withValues(alpha: 0.22),
                             accentColor.withValues(alpha: 0.06),
                           ],
                         ),
                         border: Border.all(
-                          color: accentColor.withValues(alpha: 0.35),
+                          color: accentColor.withValues(alpha: 0.4),
                           width: 1.5,
                         ),
                       ),
@@ -108,7 +118,7 @@ class _ConfirmationViewState extends State<ConfirmationView>
                   textAlign: TextAlign.center,
                   style: GoogleFonts.dmSerifDisplay(
                     fontSize: 30,
-                    color: colorScheme.onSurface,
+                    color: titleColor,
                   ),
                 ),
                 const Gap(Spacing.sm),
@@ -118,7 +128,7 @@ class _ConfirmationViewState extends State<ConfirmationView>
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 15,
-                    color: colorScheme.onSurfaceVariant,
+                    color: subtitleColor,
                     height: 1.6,
                   ),
                 ),
@@ -130,6 +140,7 @@ class _ConfirmationViewState extends State<ConfirmationView>
                   child: VersoGradientButton(
                     label: widget.buttonText,
                     onPressed: widget.onPressed,
+                    color: widget.buttonColor,
                   ),
                 ),
               ],
