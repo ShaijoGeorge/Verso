@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:verso/core/design/extensions.dart';
+import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/shadows.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
 
@@ -26,50 +27,80 @@ class StatSummaryCard extends StatelessWidget {
     final isAmoled = context.palette.style == AppearanceStyle.amoled;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: scheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadii.borderRadiusLG,
         border: Border.all(
           color: isAmoled
-              ? scheme.outline
-              : scheme.outline.withValues(alpha: isLight ? 0.5 : 0.15),
+              ? scheme.outline.withValues(alpha: 0.85)
+              : scheme.outline.withValues(alpha: isLight ? 0.65 : 0.25),
         ),
-        boxShadow: AppShadows.sm,
+        boxShadow: isLight ? AppShadows.sm : AppShadows.none,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, size: 20, color: iconColor),
-          ),
-          const Gap(12),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const Gap(2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: scheme.onSurface,
+          Positioned(
+            right: -20,
+            top: -20,
+            child: Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    iconColor.withValues(alpha: isLight ? 0.15 : 0.22),
+                    iconColor.withValues(alpha: 0),
+                  ],
+                ),
+              ),
             ),
           ),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 11,
-              color: scheme.onSurfaceVariant,
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(9),
+                  decoration: BoxDecoration(
+                    color: iconColor.withValues(alpha: 0.12),
+                    borderRadius: AppRadii.borderRadiusSM,
+                    border: Border.all(
+                      color: iconColor.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Icon(icon, size: 19, color: iconColor),
+                ),
+                const Gap(14),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                    color: scheme.onSurface,
+                  ),
+                ),
+                const Gap(2),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSurface,
+                  ),
+                ),
+                const Gap(1),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

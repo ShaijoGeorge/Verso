@@ -4,10 +4,10 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:verso/core/design/components/verso_card.dart';
 import 'package:verso/core/design/extensions.dart';
-import 'package:verso/core/design/tokens/shadows.dart';
-import 'package:verso/data/local/entities/user_settings.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
+import 'package:verso/features/stats/widgets/stat_summary_card.dart';
 import 'package:verso/features/stats/widgets/time_period_navigator.dart';
 
 class YearlyTab extends ConsumerWidget {
@@ -45,7 +45,8 @@ class YearlyTab extends ConsumerWidget {
         }
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 110),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -63,169 +64,185 @@ class YearlyTab extends ConsumerWidget {
               ),
               const Gap(16),
 
-              // Summary
-              RichText(
-                text: TextSpan(
-                  style:
-                      TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
+              // Area Chart Card
+              VersoCard(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextSpan(
-                      text: '${chartData.totalRead} chapters ',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: scheme.primary,
-                        fontSize: 16,
+                    // Summary
+                    RichText(
+                      text: TextSpan(
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: '${chartData.totalRead} chapters ',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: scheme.primary,
+                              fontSize: 18,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                          TextSpan(
+                            text: chartData.totalRead > 0
+                                ? (offset == 0
+                                    ? 'read this year'
+                                    : 'read in ${chartData.year}')
+                                : 'no reading recorded',
+                          ),
+                        ],
                       ),
                     ),
-                    TextSpan(
-                      text: chartData.totalRead > 0
-                          ? (offset == 0
-                              ? 'read this year'
-                              : 'read in ${chartData.year}')
-                          : 'no reading recorded',
+                    const Gap(24),
+
+                    // Area Chart
+                    SizedBox(
+                      height: 240,
+                      child: _AnimatedChartWrapper(
+                        key: ValueKey('yearly_chart_$offset'),
+                        builder: (isAnimated) {
+                          return LineChart(
+                            LineChartData(
+                              minY: 0,
+                              maxY: maxY,
+                              minX: 1,
+                              maxX: 12,
+                              gridData: FlGridData(
+                                drawVerticalLine: false,
+                                horizontalInterval: (maxY / 4)
+                                    .ceilToDouble()
+                                    .clamp(1, double.infinity),
+                                getDrawingHorizontalLine: (value) => FlLine(
+                                  color: scheme.outline.withValues(alpha: 0.12),
+                                  strokeWidth: 1,
+                                ),
+                              ),
+                              titlesData: FlTitlesData(
+                                topTitles: const AxisTitles(),
+                                rightTitles: const AxisTitles(),
+                                bottomTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    interval: 1,
+                                    reservedSize: 30,
+                                    getTitlesWidget: (value, meta) {
+                                      final m = value.toInt();
+                                      if (m < 1 || m > 12) {
+                                        return const SizedBox();
+                                      }
+                                      final isCurrentMonth =
+                                          offset == 0 && m == now.month;
+                                      return Padding(
+                                        padding: const EdgeInsets.only(top: 8),
+                                        child: Text(
+                                          _monthNameShort(m),
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: isCurrentMonth
+                                                ? FontWeight.w800
+                                                : FontWeight.w500,
+                                            color: isCurrentMonth
+                                                ? scheme.primary
+                                                : scheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                leftTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    reservedSize: 32,
+                                    interval: (maxY / 4)
+                                        .ceilToDouble()
+                                        .clamp(1, double.infinity),
+                                    getTitlesWidget: (value, meta) => Text(
+                                      value.toInt().toString(),
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: scheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              borderData: FlBorderData(show: false),
+                              lineBarsData: [
+                                LineChartBarData(
+                                  spots: _generateSpots(
+                                    isAnimated,
+                                    maxMonthToShow,
+                                    chartData,
+                                  ),
+                                  isCurved: true,
+                                  curveSmoothness: 0.32,
+                                  color: scheme.primary,
+                                  barWidth: 3,
+                                  isStrokeCapRound: true,
+                                  dotData: FlDotData(
+                                    getDotPainter: (spot, percent, bar, index) {
+                                      return FlDotCirclePainter(
+                                        radius: 4,
+                                        color: scheme.primary,
+                                        strokeWidth: 2,
+                                        strokeColor: scheme.surface,
+                                      );
+                                    },
+                                  ),
+                                  belowBarData: BarAreaData(
+                                    show: true,
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        scheme.primary.withValues(
+                                          alpha: isLight ? 0.28 : 0.25,
+                                        ),
+                                        scheme.primary.withValues(alpha: 0.02),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              lineTouchData: LineTouchData(
+                                touchTooltipData: LineTouchTooltipData(
+                                  getTooltipColor: (_) =>
+                                      scheme.primaryContainer,
+                                  getTooltipItems: (spots) => spots.map((spot) {
+                                    return LineTooltipItem(
+                                      '${_monthNameShort(spot.x.toInt())}: ${spot.y.toInt()} chapters',
+                                      TextStyle(
+                                        color: scheme.onPrimaryContainer,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 12,
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ),
+                            duration: const Duration(milliseconds: 1000),
+                            curve: Curves.easeOutCubic,
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),
               ),
               const Gap(24),
 
-              // Area Chart
-              SizedBox(
-                height: 260,
-                child: _AnimatedChartWrapper(
-                  key: ValueKey('yearly_chart_$offset'),
-                  builder: (isAnimated) {
-                    return LineChart(
-                      LineChartData(
-                        minY: 0,
-                        maxY: maxY,
-                        minX: 1,
-                        maxX: 12,
-                        gridData: FlGridData(
-                          drawVerticalLine: false,
-                          horizontalInterval: (maxY / 4)
-                              .ceilToDouble()
-                              .clamp(1, double.infinity),
-                          getDrawingHorizontalLine: (value) => FlLine(
-                            color: scheme.outline.withValues(alpha: 0.08),
-                            strokeWidth: 1,
-                          ),
-                        ),
-                        titlesData: FlTitlesData(
-                          topTitles: const AxisTitles(),
-                          rightTitles: const AxisTitles(),
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              interval: 1,
-                              reservedSize: 30,
-                              getTitlesWidget: (value, meta) {
-                                final m = value.toInt();
-                                if (m < 1 || m > 12) return const SizedBox();
-                                final isCurrentMonth =
-                                    offset == 0 && m == now.month;
-                                return Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: Text(
-                                    _monthNameShort(m),
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: isCurrentMonth
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
-                                      color: isCurrentMonth
-                                          ? scheme.primary
-                                          : scheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          leftTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              reservedSize: 35,
-                              interval: (maxY / 4)
-                                  .ceilToDouble()
-                                  .clamp(1, double.infinity),
-                              getTitlesWidget: (value, meta) => Text(
-                                value.toInt().toString(),
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: scheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        borderData: FlBorderData(show: false),
-                        lineBarsData: [
-                          LineChartBarData(
-                            spots: _generateSpots(
-                              isAnimated,
-                              maxMonthToShow,
-                              chartData,
-                            ),
-                            isCurved: true,
-                            curveSmoothness: 0.3,
-                            color: scheme.primary,
-                            barWidth: 3,
-                            isStrokeCapRound: true,
-                            dotData: FlDotData(
-                              getDotPainter: (spot, percent, bar, index) {
-                                return FlDotCirclePainter(
-                                  radius: 4,
-                                  color: scheme.primary,
-                                  strokeWidth: 2,
-                                  strokeColor: scheme.surface,
-                                );
-                              },
-                            ),
-                            belowBarData: BarAreaData(
-                              show: true,
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  scheme.primary
-                                      .withValues(alpha: isLight ? 0.3 : 0.25),
-                                  scheme.primary.withValues(alpha: 0.02),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                        lineTouchData: LineTouchData(
-                          touchTooltipData: LineTouchTooltipData(
-                            getTooltipColor: (_) => scheme.primaryContainer,
-                            getTooltipItems: (spots) => spots.map((spot) {
-                              return LineTooltipItem(
-                                '${_monthNameShort(spot.x.toInt())}: ${spot.y.toInt()} chapters',
-                                TextStyle(
-                                  color: scheme.onPrimaryContainer,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ),
-                      duration: const Duration(milliseconds: 1000),
-                      curve: Curves.easeOutCubic,
-                    );
-                  },
-                ),
-              ),
-              const Gap(32),
-
               // Summary cards
               if (chartData.totalRead > 0) ...[
                 Row(
                   children: [
                     Expanded(
-                      child: _YearCard(
+                      child: StatSummaryCard(
                         label: 'Best Month',
                         value: bestMonthLabel,
                         subtitle: '$bestMonthCount chapters',
@@ -235,7 +252,7 @@ class YearlyTab extends ConsumerWidget {
                     ),
                     const Gap(12),
                     Expanded(
-                      child: _YearCard(
+                      child: StatSummaryCard(
                         label: 'Monthly Avg',
                         value: maxMonthToShow > 0
                             ? (chartData.totalRead / maxMonthToShow)
@@ -250,17 +267,17 @@ class YearlyTab extends ConsumerWidget {
                 ),
               ] else ...[
                 // Empty state
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
+                VersoCard(
+                  padding: const EdgeInsets.symmetric(vertical: 28),
+                  child: Center(
                     child: Column(
                       children: [
                         Icon(
                           Icons.insert_chart_outlined,
-                          size: 40,
+                          size: 36,
                           color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
                         ),
-                        const Gap(12),
+                        const Gap(10),
                         Text(
                           'No reading activity in ${chartData.year}',
                           style: TextStyle(
@@ -310,68 +327,6 @@ class YearlyTab extends ConsumerWidget {
     ];
     if (m < 1 || m > 12) return '';
     return months[m - 1];
-  }
-}
-
-class _YearCard extends StatelessWidget {
-  const _YearCard({
-    required this.label,
-    required this.value,
-    required this.subtitle,
-    required this.icon,
-    required this.iconColor,
-  });
-  final String label;
-  final String value;
-  final String subtitle;
-  final IconData icon;
-  final Color iconColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final isLight = Theme.of(context).brightness == Brightness.light;
-    final isAmoled = context.palette.style == AppearanceStyle.amoled;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isAmoled
-              ? scheme.outline
-              : scheme.outline.withValues(alpha: isLight ? 0.5 : 0.15),
-        ),
-        boxShadow: AppShadows.sm,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, size: 20, color: iconColor),
-          ),
-          const Gap(10),
-          Text(
-            label,
-            style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
-          ),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          Text(
-            subtitle,
-            style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
-          ),
-        ],
-      ),
-    );
   }
 }
 

@@ -2,6 +2,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:verso/core/design/components/verso_card.dart';
+import 'package:verso/core/design/components/verso_section_header.dart';
 import 'package:verso/core/design/extensions.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 import 'package:verso/features/stats/widgets/time_period_navigator.dart';
@@ -25,7 +27,8 @@ class MonthlyTab extends ConsumerWidget {
         final label = '${_monthName(chartData.month)} ${chartData.year}';
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 110),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -44,69 +47,78 @@ class MonthlyTab extends ConsumerWidget {
               const Gap(16),
 
               // Summary
-              RichText(
-                text: TextSpan(
-                  style:
-                      TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
+              VersoCard(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextSpan(
-                      text: '${chartData.totalRead} chapters ',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: scheme.primary,
-                        fontSize: 16,
+                    RichText(
+                      text: TextSpan(
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: '${chartData.totalRead} chapters ',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: scheme.primary,
+                              fontSize: 18,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                          TextSpan(
+                            text: daysWithReading > 0
+                                ? 'across $daysWithReading active days'
+                                : 'no reading recorded',
+                          ),
+                        ],
                       ),
                     ),
-                    TextSpan(
-                      text: daysWithReading > 0
-                          ? 'across $daysWithReading days'
-                          : 'no reading recorded',
+                    const Gap(20),
+                    // Heatmap Calendar
+                    _HeatmapCalendar(
+                      year: chartData.year,
+                      month: chartData.month,
+                      dailyCounts: chartData.dailyCounts,
                     ),
+                    const Gap(18),
+                    // Intensity legend
+                    const _IntensityLegend(),
                   ],
                 ),
               ),
               const Gap(24),
 
-              // Heatmap Calendar
-              _HeatmapCalendar(
-                year: chartData.year,
-                month: chartData.month,
-                dailyCounts: chartData.dailyCounts,
-              ),
-              const Gap(20),
-
-              // Intensity legend
-              const _IntensityLegend(),
-              const Gap(28),
-
               // Top reading days
               if (chartData.dailyCounts.values.any((v) => v > 0)) ...[
-                Text(
-                  'Top Reading Days',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
+                const VersoSectionHeader(title: 'Top Reading Days'),
                 const Gap(12),
-                ..._topDays(
-                  context,
-                  chartData.dailyCounts,
-                  chartData.month,
-                  chartData.year,
+                VersoCard(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: _topDays(
+                      context,
+                      chartData.dailyCounts,
+                      chartData.month,
+                      chartData.year,
+                    ),
+                  ),
                 ),
               ] else ...[
                 // Empty state for months with no data
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
+                VersoCard(
+                  padding: const EdgeInsets.symmetric(vertical: 28),
+                  child: Center(
                     child: Column(
                       children: [
                         Icon(
                           Icons.calendar_today_outlined,
-                          size: 40,
+                          size: 36,
                           color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
                         ),
-                        const Gap(12),
+                        const Gap(10),
                         Text(
                           'No reading activity this month',
                           style: TextStyle(
@@ -153,27 +165,29 @@ class MonthlyTab extends ConsumerWidget {
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
+    final topItems = sorted.take(5).toList();
 
-    return sorted.take(5).map((entry) {
+    return List.generate(topItems.length, (i) {
+      final entry = topItems[i];
       final entryDate = DateTime(year, month, entry.key);
       final isToday = entryDate == today;
 
       return Padding(
-        padding: const EdgeInsets.only(bottom: 10),
+        padding: EdgeInsets.only(bottom: i == topItems.length - 1 ? 0 : 12),
         child: Row(
           children: [
             Container(
-              width: 38,
-              height: 38,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: scheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(11),
               ),
               alignment: Alignment.center,
               child: Text(
                 '${entry.key}',
                 style: TextStyle(
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
                   color: scheme.primary,
                   fontSize: 15,
                 ),
@@ -188,7 +202,7 @@ class MonthlyTab extends ConsumerWidget {
                     isToday ? 'Today' : '${months[month - 1]} ${entry.key}',
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
                       color: isToday ? scheme.primary : scheme.onSurface,
                     ),
                   ),
@@ -204,18 +218,18 @@ class MonthlyTab extends ConsumerWidget {
             ),
             // Mini bar indicator
             Container(
-              width: 48,
+              width: 56,
               height: 6,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(3),
-                color: scheme.outline.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(99),
+                color: scheme.outline.withValues(alpha: 0.12),
               ),
               child: FractionallySizedBox(
                 alignment: Alignment.centerLeft,
                 widthFactor: (entry.value / sorted.first.value).clamp(0.0, 1.0),
                 child: Container(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(3),
+                    borderRadius: BorderRadius.circular(99),
                     color: scheme.primary,
                   ),
                 ),
@@ -224,7 +238,7 @@ class MonthlyTab extends ConsumerWidget {
           ],
         ),
       );
-    }).toList();
+    });
   }
 
   String _monthName(int m) {
@@ -246,9 +260,7 @@ class MonthlyTab extends ConsumerWidget {
   }
 }
 
-// ─────────────────────────────────────────────
 // Heatmap Calendar (Sunday-first)
-// ─────────────────────────────────────────────
 class _HeatmapCalendar extends StatelessWidget {
   const _HeatmapCalendar({
     required this.year,
@@ -287,7 +299,7 @@ class _HeatmapCalendar extends StatelessWidget {
                       d,
                       style: TextStyle(
                         fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                         color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
                       ),
                     ),
@@ -297,7 +309,6 @@ class _HeatmapCalendar extends StatelessWidget {
               .toList(),
         ),
         const Gap(8),
-
         // Calendar grid
         ...List.generate(_weekCount(daysInMonth, firstWeekday), (weekIndex) {
           return Padding(
@@ -321,14 +332,14 @@ class _HeatmapCalendar extends StatelessWidget {
                   child: AspectRatio(
                     aspectRatio: 1,
                     child: Padding(
-                      padding: const EdgeInsets.all(2),
+                      padding: const EdgeInsets.all(2.5),
                       child: Tooltip(
                         message: '$count chapter${count == 1 ? '' : 's'}',
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 400),
                           decoration: BoxDecoration(
                             color: _heatColor(context, intensity),
-                            borderRadius: BorderRadius.circular(5),
+                            borderRadius: BorderRadius.circular(7),
                             border: isToday
                                 ? Border.all(color: scheme.primary, width: 2)
                                 : null,
@@ -337,11 +348,11 @@ class _HeatmapCalendar extends StatelessWidget {
                           child: Text(
                             '$dayNum',
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 10.5,
                               fontWeight:
-                                  isToday ? FontWeight.bold : FontWeight.w500,
+                                  isToday ? FontWeight.w800 : FontWeight.w600,
                               color: intensity > 0.25
-                                  ? Colors.white.withValues(alpha: 0.9)
+                                  ? Colors.white.withValues(alpha: 0.95)
                                   : scheme.onSurfaceVariant,
                             ),
                           ),
@@ -365,24 +376,22 @@ class _HeatmapCalendar extends StatelessWidget {
 
   Color _heatColor(BuildContext context, double intensity) {
     if (intensity <= 0) {
-      return context.palette.surfaceAlt;
+      return context.palette.surfaceAlt.withValues(alpha: 0.65);
     }
 
     if (intensity <= 0.25) {
-      return context.palette.primary.withValues(alpha: 0.3);
+      return context.palette.primary.withValues(alpha: 0.32);
     } else if (intensity <= 0.5) {
-      return context.palette.primary.withValues(alpha: 0.5);
+      return context.palette.primary.withValues(alpha: 0.54);
     } else if (intensity <= 0.75) {
-      return context.palette.primary.withValues(alpha: 0.75);
+      return context.palette.primary.withValues(alpha: 0.78);
     } else {
       return context.palette.primary;
     }
   }
 }
 
-// ─────────────────────────────────────────────
 // Intensity Legend
-// ─────────────────────────────────────────────
 class _IntensityLegend extends StatelessWidget {
   const _IntensityLegend();
 
@@ -391,10 +400,10 @@ class _IntensityLegend extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
 
     final colors = [
-      context.palette.surfaceAlt,
-      context.palette.primary.withValues(alpha: 0.3),
-      context.palette.primary.withValues(alpha: 0.5),
-      context.palette.primary.withValues(alpha: 0.75),
+      context.palette.surfaceAlt.withValues(alpha: 0.65),
+      context.palette.primary.withValues(alpha: 0.32),
+      context.palette.primary.withValues(alpha: 0.54),
+      context.palette.primary.withValues(alpha: 0.78),
       context.palette.primary,
     ];
 
@@ -403,24 +412,32 @@ class _IntensityLegend extends StatelessWidget {
       children: [
         Text(
           'Less',
-          style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: scheme.onSurfaceVariant,
+          ),
         ),
         const Gap(6),
         ...colors.map(
           (c) => Container(
-            width: 16,
-            height: 16,
+            width: 15,
+            height: 15,
             margin: const EdgeInsets.symmetric(horizontal: 2),
             decoration: BoxDecoration(
               color: c,
-              borderRadius: BorderRadius.circular(3),
+              borderRadius: BorderRadius.circular(4),
             ),
           ),
         ),
         const Gap(6),
         Text(
           'More',
-          style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: scheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
