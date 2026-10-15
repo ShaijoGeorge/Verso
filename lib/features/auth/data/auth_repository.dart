@@ -172,4 +172,25 @@ class AuthRepository {
       rethrow;
     }
   }
+
+  /// Permanently deletes the current user's account and all associated records
+  /// by calling the Supabase `delete_user_account` RPC function, then clears
+  /// local session credentials.
+  Future<void> deleteAccount() async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('User not logged in');
+
+    try {
+      // 1. Invoke the database RPC function to delete user and cascade records
+      await _supabase.rpc<void>('delete_user_account');
+
+      // 2. Clear any pending email change state
+      await clearPendingEmailChange();
+
+      // 3. Clear local session tokens
+      await _supabase.auth.signOut();
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
