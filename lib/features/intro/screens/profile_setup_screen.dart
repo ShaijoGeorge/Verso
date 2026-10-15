@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
@@ -225,94 +226,118 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen>
   // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: AnimatedContainer(
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeOutCubic,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: _backgroundGradient,
-            stops: const [0.0, 0.5, 1.0],
-          ),
-        ),
-        child: _isComplete
-            ? SafeArea(
-                child: ConfirmationView(
-                  icon: Icons.celebration_rounded,
-                  title: "You're all set!",
-                  subtitle:
-                      'Your profile is ready. Start tracking your Bible journey today.',
-                  buttonText: "Let's Go",
-                  onPressed: () => context.go('/home'),
-                ),
-              )
-            : Stack(
-                children: [
-                  // ── Floating particles (background) ──────────────────────────
-                  ..._buildFloatingParticles(),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: PopScope(
+        canPop: !_isComplete,
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop && _isComplete) {
+            context.go('/home');
+          }
+        },
+        child: Scaffold(
+          body: AnimatedContainer(
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeOutCubic,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: _backgroundGradient,
+                stops: const [0.0, 0.5, 1.0],
+              ),
+            ),
+            child: Stack(
+              children: [
+                // ── Floating particles (background) ──────────────────────────
+                ..._buildFloatingParticles(),
 
-                  // ── Main content ─────────────────────────────────────────────
-                  SafeArea(
-                    child: FadeTransition(
-                      opacity: _fadeIn,
-                      child: SlideTransition(
-                        position: _slideUp,
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: Spacing.xl,
-                          ),
-                          child: Column(
-                            children: [
-                              Gap(MediaQuery.of(context).size.height * 0.04),
-
-                              // Header
-                              _buildHeader(),
-                              Gap(MediaQuery.of(context).size.height * 0.04),
-
-                              // Gender Selection
-                              _buildSectionLabel('Who are you?'),
-                              const Gap(Spacing.lg),
-                              _buildGenderCards(),
-                              Gap(MediaQuery.of(context).size.height * 0.035),
-
-                              // Birthday
-                              _buildSectionLabel('When is your birthday?'),
-                              const Gap(Spacing.md),
-                              _buildBirthdayCard(),
-                              Gap(MediaQuery.of(context).size.height * 0.035),
-
-                              // Bible Tradition / Canon
-                              _buildSectionLabel(
-                                'Which Bible tradition do you follow?',
+                // ── Main content ─────────────────────────────────────────────
+                SafeArea(
+                  child: _isComplete
+                      ? ConfirmationView(
+                          icon: Icons.celebration_rounded,
+                          title: "You're all set!",
+                          subtitle:
+                              'Your profile is ready. Start tracking your Bible journey today.',
+                          buttonText: "Let's Go",
+                          accentColor: _accentColor,
+                          titleColor: Colors.white,
+                          subtitleColor: Colors.white.withValues(alpha: 0.75),
+                          buttonColor: _accentColor,
+                          onPressed: () => context.go('/home'),
+                        )
+                      : FadeTransition(
+                          opacity: _fadeIn,
+                          child: SlideTransition(
+                            position: _slideUp,
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: Spacing.xl,
                               ),
-                              const Gap(Spacing.xs),
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  'Sets the correct books and chapters for your reading tracker.',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 13,
-                                    color: Colors.white.withValues(alpha: 0.55),
+                              child: Column(
+                                children: [
+                                  Gap(
+                                    MediaQuery.of(context).size.height * 0.04,
                                   ),
-                                ),
-                              ),
-                              const Gap(Spacing.md),
-                              _buildCanonCards(),
-                              Gap(MediaQuery.of(context).size.height * 0.05),
 
-                              // Continue Button
-                              _buildContinueButton(),
-                              const Gap(Spacing.xxl),
-                            ],
+                                  // Header
+                                  _buildHeader(),
+                                  Gap(
+                                    MediaQuery.of(context).size.height * 0.04,
+                                  ),
+
+                                  // Gender Selection
+                                  _buildSectionLabel('Who are you?'),
+                                  const Gap(Spacing.lg),
+                                  _buildGenderCards(),
+                                  Gap(
+                                    MediaQuery.of(context).size.height * 0.035,
+                                  ),
+
+                                  // Birthday
+                                  _buildSectionLabel('When is your birthday?'),
+                                  const Gap(Spacing.md),
+                                  _buildBirthdayCard(),
+                                  Gap(
+                                    MediaQuery.of(context).size.height * 0.035,
+                                  ),
+
+                                  // Bible Tradition / Canon
+                                  _buildSectionLabel(
+                                    'Which Bible tradition do you follow?',
+                                  ),
+                                  const Gap(Spacing.xs),
+                                  Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      'Sets the correct books and chapters for your reading tracker.',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 13,
+                                        color: Colors.white
+                                            .withValues(alpha: 0.55),
+                                      ),
+                                    ),
+                                  ),
+                                  const Gap(Spacing.md),
+                                  _buildCanonCards(),
+                                  Gap(
+                                    MediaQuery.of(context).size.height * 0.05,
+                                  ),
+
+                                  // Continue Button
+                                  _buildContinueButton(),
+                                  const Gap(Spacing.xxl),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
