@@ -9,6 +9,7 @@ import 'package:verso/core/providers/package_info_provider.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
+import 'package:verso/features/auth/widgets/delete_account_dialog.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
 import 'package:verso/features/settings/screens/debug_cache_screen.dart';
@@ -1017,6 +1018,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   'https://play.google.com/store/apps/details?id=com.shaijo.verso',
                             ),
                           );
+                        },
+                      ),
+                    ],
+                  ),
+                  const Gap(24),
+
+                  _SectionLabel(label: 'ACCOUNT & DATA', scheme: scheme),
+                  _SettingsSectionCard(
+                    children: [
+                      _SettingsActionTile(
+                        title: 'Delete Account',
+                        icon: Icons.delete_forever_rounded,
+                        iconColor: scheme.error,
+                        trailing: Text(
+                          'Permanent',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: scheme.error,
+                          ),
+                        ),
+                        onTap: () {
+                          DeleteAccountDialog.show(context);
                         },
                       ),
                     ],
