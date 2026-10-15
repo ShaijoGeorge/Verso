@@ -18,6 +18,7 @@ import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/data/bible_book_names.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
+import 'package:verso/features/home/data/daily_verse.dart';
 import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
 import 'package:verso/features/stats/providers/activity_providers.dart';
@@ -1248,16 +1249,21 @@ class _RecentActivityList extends ConsumerWidget {
 
 // DAILY VERSE CARD
 
-class _DailyVerseCard extends StatelessWidget {
+class _DailyVerseCard extends ConsumerWidget {
   const _DailyVerseCard({required this.verseAsync});
-  final AsyncValue<Map<String, dynamic>> verseAsync;
+  final AsyncValue<DailyVerse> verseAsync;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
     final isAmoled = context.palette.style == AppearanceStyle.amoled;
+
+    final settings = ref.watch(currentSettingsProvider).value;
+    final lang = settings?.bibleLanguage ?? 'en';
+    final canon = settings?.canon ?? CanonType.catholic;
+    final isMalayalam = lang == 'ml';
 
     return verseAsync.when(
       loading: () => _buildShell(
@@ -1272,10 +1278,10 @@ class _DailyVerseCard extends StatelessWidget {
             children: [
               Container(
                 width: 120,
-                height: 18,
+                height: 22,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppRadii.borderRadiusFull,
                 ),
               ),
               const Gap(Spacing.md),
@@ -1294,6 +1300,9 @@ class _DailyVerseCard extends StatelessWidget {
       ),
       error: (_, __) => const SizedBox.shrink(),
       data: (verse) {
+        final verseText = verse.getText(lang, canon);
+        final verseRef = verse.getReference(lang, canon);
+
         return _buildShell(
           scheme: scheme,
           isLight: isLight,
@@ -1303,8 +1312,10 @@ class _DailyVerseCard extends StatelessWidget {
             children: [
               // Eyebrow label
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: scheme.secondary.withValues(alpha: 0.14),
                   borderRadius: AppRadii.borderRadiusFull,
@@ -1322,31 +1333,46 @@ class _DailyVerseCard extends StatelessWidget {
                     ),
                     const Gap(6),
                     Text(
-                      'VERSE OF THE DAY',
-                      style: textTheme.labelSmall?.copyWith(
-                        color: scheme.secondary,
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.6,
-                      ),
+                      isMalayalam ? 'ഇന്നത്തെ വചനം' : 'VERSE OF THE DAY',
+                      style: isMalayalam
+                          ? GoogleFonts.anekMalayalam(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1,
+                              color: scheme.secondary,
+                            )
+                          : textTheme.labelSmall?.copyWith(
+                              color: scheme.secondary,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.6,
+                            ),
                     ),
                   ],
                 ),
               ),
               const Gap(Spacing.md),
-              // Verse text - DM Serif Display
+              // Verse text
               Text(
-                verse['text'] as String,
-                style: textTheme.headlineMedium?.copyWith(
-                  fontSize: 20.5,
-                  height: 1.45,
-                  color: isLight
-                      ? scheme.onSurface.withValues(alpha: 0.94)
-                      : const Color(0xFFF8F4EC).withValues(alpha: 0.96),
-                ),
+                verseText,
+                style: isMalayalam
+                    ? GoogleFonts.anekMalayalam(
+                        fontSize: 18.5,
+                        height: 1.6,
+                        fontWeight: FontWeight.w500,
+                        color: isLight
+                            ? scheme.onSurface.withValues(alpha: 0.94)
+                            : const Color(0xFFF8F4EC).withValues(alpha: 0.96),
+                      )
+                    : textTheme.headlineMedium?.copyWith(
+                        fontSize: 20.5,
+                        height: 1.45,
+                        color: isLight
+                            ? scheme.onSurface.withValues(alpha: 0.94)
+                            : const Color(0xFFF8F4EC).withValues(alpha: 0.96),
+                      ),
               ),
               const Gap(Spacing.md),
-              // Gold hairline rule
               // Reference
               Row(
                 children: [
@@ -1360,12 +1386,19 @@ class _DailyVerseCard extends StatelessWidget {
                   ),
                   const Gap(10),
                   Text(
-                    (verse['ref'] as String).toUpperCase(),
-                    style: textTheme.labelSmall?.copyWith(
-                      color: scheme.secondary,
-                      letterSpacing: 1.8,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    isMalayalam ? verseRef : verseRef.toUpperCase(),
+                    style: isMalayalam
+                        ? GoogleFonts.anekMalayalam(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: scheme.secondary,
+                            letterSpacing: 0.6,
+                          )
+                        : textTheme.labelSmall?.copyWith(
+                            color: scheme.secondary,
+                            letterSpacing: 1.8,
+                            fontWeight: FontWeight.w700,
+                          ),
                   ),
                 ],
               ),
