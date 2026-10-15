@@ -1,8 +1,50 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthRepository {
-  AuthRepository(this._supabase);
+  AuthRepository(this._supabase) {
+    _initPendingEmail();
+  }
+
   final SupabaseClient _supabase;
+  static const _pendingEmailKey = 'pending_email_change';
+  String? _pendingEmail;
+
+  /// Cached pending email change for synchronous access in router guards
+  String? get pendingEmail => _pendingEmail;
+
+  Future<void> _initPendingEmail() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _pendingEmail = prefs.getString(_pendingEmailKey);
+    } catch (_) {}
+  }
+
+  Future<void> savePendingEmailChange(String newEmail) async {
+    _pendingEmail = newEmail;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_pendingEmailKey, newEmail);
+    } catch (_) {}
+  }
+
+  Future<String?> getPendingEmailChange() async {
+    if (_pendingEmail != null) return _pendingEmail;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return _pendingEmail = prefs.getString(_pendingEmailKey);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> clearPendingEmailChange() async {
+    _pendingEmail = null;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_pendingEmailKey);
+    } catch (_) {}
+  }
 
   // Get the current user (if logged in)
   User? get currentUser => _supabase.auth.currentUser;
@@ -61,11 +103,13 @@ class AuthRepository {
   // Update Email
   Future<void> updateEmail(String newEmail) async {
     try {
+      await savePendingEmailChange(newEmail);
       await _supabase.auth.updateUser(
         UserAttributes(email: newEmail),
         emailRedirectTo: 'io.supabase.flutter://reset-callback',
       );
     } catch (e) {
+      await clearPendingEmailChange();
       rethrow;
     }
   }

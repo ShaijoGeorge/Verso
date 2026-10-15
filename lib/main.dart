@@ -12,6 +12,7 @@ import 'package:verso/core/providers/package_info_provider.dart';
 import 'package:verso/core/router.dart';
 import 'package:verso/core/utils/firebase_crash_reporter.dart';
 import 'package:verso/core/utils/verso_error_observer.dart';
+import 'package:verso/features/auth/providers/auth_providers.dart';
 import 'package:verso/features/auth/services/saved_accounts_service.dart';
 import 'package:verso/features/reading/services/reading_service.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
@@ -97,11 +98,26 @@ class _VersoAppState extends ConsumerState<VersoApp>
     WidgetsBinding.instance.addObserver(this);
 
     // Listen for Auth Events
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
       final event = data.event;
       if (event == AuthChangeEvent.passwordRecovery) {
         // If we detect a recovery link was clicked, force navigation to Update Password
         ref.read(routerProvider).go('/update-password');
+      } else if (event == AuthChangeEvent.userUpdated ||
+          event == AuthChangeEvent.signedIn ||
+          event == AuthChangeEvent.tokenRefreshed) {
+        // Check if an email change was confirmed
+        final pending =
+            await ref.read(authRepositoryProvider).getPendingEmailChange();
+        final currentEmail = data.session?.user.email;
+        if (pending != null &&
+            currentEmail != null &&
+            currentEmail.toLowerCase() == pending.toLowerCase()) {
+          await ref.read(authRepositoryProvider).clearPendingEmailChange();
+          ref.read(routerProvider).go(
+                '/email-change-success?email=${Uri.encodeComponent(currentEmail)}',
+              );
+        }
       }
 
       // Keep saved accounts list synchronized with latest tokens and profiles
@@ -139,7 +155,27 @@ class _VersoAppState extends ConsumerState<VersoApp>
       ref.read(readingServiceProvider).syncOnResume();
       // Ensure daily reminders and verse notifications remain fresh and registered
       _initializeReminders();
+      // Check if an email update was confirmed while app was in background
+      _checkPendingEmailChange();
     }
+  }
+
+  Future<void> _checkPendingEmailChange() async {
+    try {
+      final pending =
+          await ref.read(authRepositoryProvider).getPendingEmailChange();
+      if (pending == null) return;
+
+      final res = await Supabase.instance.client.auth.getUser();
+      final currentEmail = res.user?.email;
+      if (currentEmail != null &&
+          currentEmail.toLowerCase() == pending.toLowerCase()) {
+        await ref.read(authRepositoryProvider).clearPendingEmailChange();
+        ref.read(routerProvider).go(
+              '/email-change-success?email=${Uri.encodeComponent(currentEmail)}',
+            );
+      }
+    } catch (_) {}
   }
 
   Future<void> _initializeReminders() async {

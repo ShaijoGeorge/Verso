@@ -10,6 +10,8 @@ import 'package:verso/core/widgets/main_wrapper.dart';
 import 'package:verso/core/widgets/not_found_screen.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/features/about/screens/our_mission_screen.dart';
+import 'package:verso/features/auth/providers/auth_providers.dart';
+import 'package:verso/features/auth/screens/email_change_success_screen.dart';
 import 'package:verso/features/auth/screens/forgot_password_screen.dart';
 import 'package:verso/features/auth/screens/login_screen.dart';
 import 'package:verso/features/auth/screens/profile_screen.dart';
@@ -47,13 +49,44 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
 
     redirect: (context, state) {
-      // --- CRITICAL FIX START ---
-      // Intercept the raw deep link from Android and convert it to a valid path
-      if (state.uri.scheme == 'io.supabase.flutter' &&
-          state.uri.host == 'reset-callback') {
-        return '/reset-callback';
+      // --- CRITICAL DEEP LINK INTERCEPTION ---
+      if (state.uri.scheme == 'io.supabase.flutter') {
+        final host = state.uri.host;
+        final fragment = state.uri.fragment;
+        final queryParams = state.uri.queryParameters;
+
+        final isEmailChange = host == 'email-callback' ||
+            fragment.contains('type=email_change') ||
+            queryParams['type'] == 'email_change' ||
+            fragment.contains('type%3Demail_change');
+
+        final isEmailStepOne = fragment
+                .contains('message=Confirmation+link+accepted') ||
+            (queryParams['message']?.contains('Confirmation link accepted') ??
+                false);
+
+        if (isEmailChange) {
+          final pending = ref.read(authRepositoryProvider).pendingEmail;
+          final userEmail =
+              Supabase.instance.client.auth.currentUser?.email ?? pending;
+          return '/email-change-success${userEmail != null ? '?email=${Uri.encodeComponent(userEmail)}' : ''}';
+        }
+
+        if (isEmailStepOne) {
+          return '/email-change-success?step=1';
+        }
+
+        if (host == 'reset-callback') {
+          // If this was an email change flow where pending email is stored and it's not a password recovery
+          final isRecovery = fragment.contains('type=recovery') ||
+              queryParams['type'] == 'recovery';
+          final pending = ref.read(authRepositoryProvider).pendingEmail;
+          if (!isRecovery && pending != null) {
+            return '/email-change-success?email=${Uri.encodeComponent(pending)}';
+          }
+          return '/reset-callback';
+        }
       }
-      // --- CRITICAL FIX END ---
 
       final session = Supabase.instance.client.auth.currentSession;
       final isLoggedIn = session != null;
@@ -72,6 +105,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isForgotRoute = cleanPath == '/forgot-password';
       final isUpdatePasswordRoute = cleanPath == '/update-password';
       final isResetCallback = cleanPath == '/reset-callback';
+      final isEmailSuccessRoute = cleanPath == '/email-change-success';
 
       final isOnboardingRoute = cleanPath == '/onboarding';
       final isProfileSetupRoute = cleanPath == '/profile-setup';
@@ -88,6 +122,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             !isForgotRoute &&
             !isUpdatePasswordRoute &&
             !isResetCallback &&
+            !isEmailSuccessRoute &&
             !isOnboardingRoute) {
           return '/login';
         }
@@ -108,11 +143,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           return '/profile-setup';
         }
 
-        // Once profile is complete, bounce away from all pre-auth screens.
-        // Also bounce off /profile-setup itself (so back-button can't return there).
-        // Note: isForgotRoute removed so logged-in users can reset their password from the profile screen.
+        // Once profile is complete, bounce away from pre-auth screens.
+        // Note: isForgotRoute and isEmailSuccessRoute are allowed while logged in.
         if ((isLoginRoute && !isAddAccountLogin) ||
-            isResetCallback ||
             isOnboardingRoute ||
             (hasProfileData && isProfileSetupRoute)) {
           return '/home';
@@ -177,20 +210,52 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/reset-callback',
         pageBuilder: (context, state) {
-          // SAFETY NET:
-          // If we are here, but Supabase already has a session, go Home immediately.
-          // This handles cases where the auth state changed faster than the router could react.
           final session = Supabase.instance.client.auth.currentSession;
           if (session != null) {
             // Capture the navigator before the async gap to avoid BuildContext misuse.
             final go = context.go;
-            Future.microtask(() => go('/home'));
+            Future.microtask(() async {
+              final pending = await ref
+                  .read(authRepositoryProvider)
+                  .getPendingEmailChange();
+              if (pending != null &&
+                  session.user.email?.toLowerCase() == pending.toLowerCase()) {
+                await ref
+                    .read(authRepositoryProvider)
+                    .clearPendingEmailChange();
+                go('/email-change-success?email=${Uri.encodeComponent(pending)}');
+              } else {
+                go('/home');
+              }
+            });
           }
 
           return AppPageTransitions.fade(
             key: state.pageKey,
             child: const Scaffold(
               body: Center(child: CircularProgressIndicator()),
+            ),
+          );
+        },
+      ),
+
+      // Email Change Success Screen
+      GoRoute(
+        path: '/email-change-success',
+        pageBuilder: (context, state) {
+          final emailQuery = state.uri.queryParameters['email'];
+          final isStepOne = state.uri.queryParameters['step'] == '1';
+          final extra = state.extra;
+          final emailExtra = extra is String ? extra : null;
+          final email = emailQuery ??
+              emailExtra ??
+              Supabase.instance.client.auth.currentUser?.email;
+
+          return AppPageTransitions.fadeThrough(
+            key: state.pageKey,
+            child: EmailChangeSuccessScreen(
+              email: email,
+              isStepOne: isStepOne,
             ),
           );
         },

@@ -1002,8 +1002,10 @@ class _ChapterTileState extends State<_ChapterTile>
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
-                        icon: const Icon(Icons.bookmark_remove_outlined,
-                            size: 18),
+                        icon: const Icon(
+                          Icons.bookmark_remove_outlined,
+                          size: 18,
+                        ),
                         label: const Text(
                           'Mark as Unread',
                           style: TextStyle(fontWeight: FontWeight.w700),
