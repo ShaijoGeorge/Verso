@@ -10,7 +10,7 @@ import Flutter
     
     // 1. Setup Method Channel for Timezone
     let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
-    let timezoneChannel = FlutterMethodChannel(name: "com.example.biblia/timezone",
+    let timezoneChannel = FlutterMethodChannel(name: "com.shaijo.verso/timezone",
                                               binaryMessenger: controller.binaryMessenger)
     
     timezoneChannel.setMethodCallHandler({

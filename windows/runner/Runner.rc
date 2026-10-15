@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "biblia" "\0"
+            VALUE "CompanyName", "com.shaijo" "\0"
+            VALUE "FileDescription", "Verso" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "biblia" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2025 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "biblia.exe" "\0"
-            VALUE "ProductName", "biblia" "\0"
+            VALUE "InternalName", "verso" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2025 com.shaijo. All rights reserved." "\0"
+            VALUE "OriginalFilename", "verso.exe" "\0"
+            VALUE "ProductName", "Verso" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
