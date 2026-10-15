@@ -18,6 +18,7 @@ class VersoCard extends StatelessWidget {
     super.key,
     this.padding,
     this.color,
+    this.gradient,
     this.shadow,
     this.borderRadius,
     this.border,
@@ -26,6 +27,7 @@ class VersoCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
   final Color? color;
+  final Gradient? gradient;
   final List<BoxShadow>? shadow;
   final BorderRadiusGeometry? borderRadius;
   final Border? border;
@@ -36,29 +38,48 @@ class VersoCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
     final isAmoled = context.palette.style == AppearanceStyle.amoled;
+    final resolvedRadius = borderRadius ?? AppRadii.borderRadiusLG;
 
-    final content = Container(
-      padding: padding ?? Spacing.cardPadding,
-      decoration: BoxDecoration(
-        color: color ?? scheme.surface,
-        borderRadius: borderRadius ?? AppRadii.borderRadiusLG,
-        border: border ??
-            Border.all(
-              color: isAmoled
-                  ? scheme.outline
-                  : scheme.outline.withValues(alpha: isLight ? 0.5 : 0.15),
-            ),
-        boxShadow: shadow ?? AppShadows.sm,
-      ),
-      child: child,
+    final effectiveBorder = border ??
+        Border.all(
+          color: isAmoled
+              ? scheme.outline.withValues(alpha: 0.85)
+              : scheme.outline.withValues(alpha: isLight ? 0.65 : 0.25),
+        );
+
+    final decoration = BoxDecoration(
+      color: gradient == null ? (color ?? scheme.surface) : null,
+      gradient: gradient,
+      borderRadius: resolvedRadius,
+      border: effectiveBorder,
+      boxShadow: shadow ?? (isLight ? AppShadows.sm : AppShadows.none),
     );
 
     if (onTap != null) {
-      return GestureDetector(
-        onTap: onTap,
-        child: content,
+      return Container(
+        decoration: decoration,
+        clipBehavior: Clip.antiAlias,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius:
+                resolvedRadius is BorderRadius ? resolvedRadius : null,
+            splashColor: scheme.primary.withValues(alpha: 0.06),
+            highlightColor: scheme.primary.withValues(alpha: 0.03),
+            child: Padding(
+              padding: padding ?? Spacing.cardPadding,
+              child: child,
+            ),
+          ),
+        ),
       );
     }
-    return content;
+
+    return Container(
+      padding: padding ?? Spacing.cardPadding,
+      decoration: decoration,
+      child: child,
+    );
   }
 }

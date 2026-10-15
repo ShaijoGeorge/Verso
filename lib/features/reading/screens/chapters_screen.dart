@@ -42,22 +42,41 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
     final canon = settings?.canon ?? CanonType.catholic;
     final localizedBookName =
         widget.book.getLocalizedName(bibleLanguage, canon);
+    final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(localizedBookName),
         actions: [
-          IconButton(
-            icon: _isMarkingRead
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2.5),
-                  )
-                : const Icon(Icons.done_all_rounded),
-            tooltip: 'Mark all as read',
-            onPressed:
-                _isMarkingRead ? null : () => _markAllRead(localizedBookName),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: TextButton.icon(
+              onPressed:
+                  _isMarkingRead ? null : () => _markAllRead(localizedBookName),
+              style: TextButton.styleFrom(
+                backgroundColor: scheme.primary.withValues(alpha: 0.1),
+                foregroundColor: scheme.primary,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppRadii.borderRadiusFull,
+                ),
+              ),
+              icon: _isMarkingRead
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.done_all_rounded, size: 17),
+              label: const Text(
+                'Mark All',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -100,6 +119,7 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
     final isComplete = readCount >= widget.book.chapters;
 
     return CustomScrollView(
+      physics: const BouncingScrollPhysics(),
       slivers: [
         SliverToBoxAdapter(
           child: _HeroHeader(
@@ -109,8 +129,36 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
             isComplete: isComplete,
           ),
         ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'CHAPTERS',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        letterSpacing: 1.4,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+                Text(
+                  'Tap to log · Long-press for details',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontSize: 11,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurfaceVariant
+                            .withValues(alpha: 0.75),
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ),
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 48),
           sliver: SliverGrid(
             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
               maxCrossAxisExtent: 72,
@@ -153,7 +201,7 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: AppRadii.borderRadiusLG),
+        shape: RoundedRectangleBorder(borderRadius: AppRadii.borderRadiusXL),
         title: const Text('Mark all as read?'),
         content: Text(
           'This will mark all ${widget.book.chapters} chapters of $localizedBookName as read.',
@@ -219,6 +267,7 @@ class _HeroHeader extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
+    final palette = context.palette;
 
     final settings = switch (ref.watch(currentSettingsProvider)) {
       AsyncData(:final value) => value,
@@ -229,106 +278,135 @@ class _HeroHeader extends ConsumerWidget {
     final localizedBookName = book.getLocalizedName(bibleLanguage, canon);
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      padding: const EdgeInsets.all(Spacing.lg),
+      margin: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            context.palette.primary.withValues(alpha: isLight ? 0.08 : 0.15),
-            context.palette.primary.withValues(alpha: isLight ? 0.03 : 0.05),
+            scheme.surface,
+            palette.primary.withValues(alpha: isLight ? 0.08 : 0.16),
           ],
         ),
         borderRadius: AppRadii.borderRadiusXL,
         border: Border.all(
-          color:
-              context.palette.primary.withValues(alpha: isLight ? 0.15 : 0.1),
+          color: palette.primary.withValues(alpha: isLight ? 0.2 : 0.28),
         ),
+        boxShadow: isLight ? AppShadows.md : AppShadows.none,
       ),
-      child: Row(
+      child: Stack(
         children: [
-          // Left: Book info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Category pill
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: context.palette.primary
-                        .withValues(alpha: isLight ? 0.12 : 0.2),
-                    borderRadius: AppRadii.borderRadiusFull,
-                  ),
-                  child: Text(
-                    book.category.getLocalizedDisplayName(bibleLanguage),
-                    style: textTheme.labelSmall?.copyWith(
-                      color: context.palette.primary,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
+          Positioned(
+            right: -30,
+            top: -30,
+            child: Container(
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    palette.primary.withValues(alpha: 0.14),
+                    palette.primary.withValues(alpha: 0),
+                  ],
                 ),
-                const Gap(Spacing.md),
-
-                // Book name
-                Text(
-                  localizedBookName,
-                  style: textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Gap(Spacing.xs),
-
-                // Chapter count
-                Text(
-                  '${book.chapters} Chapters',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-                const Gap(Spacing.md),
-
-                // Progress bar
-                VersoProgressBar(
-                  value: progress,
-                  height: 6,
-                  color: context.palette.primary,
-                  label: '$readCount / ${book.chapters}',
-                ),
-
-                // Completion badge
-                if (isComplete) ...[
-                  const Gap(Spacing.md),
-                  _CompletedBadge(),
-                ],
-              ],
+              ),
             ),
           ),
-          const Gap(Spacing.md),
+          Padding(
+            padding: const EdgeInsets.all(Spacing.lg),
+            child: Row(
+              children: [
+                // Left: Book info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Category pill
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: palette.primary
+                              .withValues(alpha: isLight ? 0.1 : 0.2),
+                          borderRadius: AppRadii.borderRadiusFull,
+                        ),
+                        child: Text(
+                          book.category
+                              .getLocalizedDisplayName(bibleLanguage)
+                              .toUpperCase(),
+                          style: textTheme.labelSmall?.copyWith(
+                            color: palette.primary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 9.5,
+                            letterSpacing: 1.1,
+                          ),
+                        ),
+                      ),
+                      const Gap(12),
 
-          // Right: Circular progress
-          TweenAnimationBuilder<double>(
-            tween: Tween<double>(begin: 0, end: progress * 100),
-            duration: const Duration(milliseconds: 1200),
-            curve: Curves.easeOutCubic,
-            builder: (context, val, _) {
-              return VersoCircularProgress(
-                progress: val,
-                size: 80,
-                strokeWidth: 7,
-                color: context.palette.primary,
-                child: Text(
-                  '${val.toInt()}%',
-                  style: textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: context.palette.primary,
+                      // Book name
+                      Text(
+                        localizedBookName,
+                        style: textTheme.displaySmall?.copyWith(
+                          color: scheme.onSurface,
+                        ),
+                      ),
+                      const Gap(4),
+
+                      // Chapter count
+                      Text(
+                        '${book.chapters} Chapters · $readCount Read',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const Gap(Spacing.md),
+
+                      // Progress bar
+                      VersoProgressBar(
+                        value: progress,
+                        height: 6,
+                        color: palette.primary,
+                        label: '$readCount / ${book.chapters}',
+                      ),
+
+                      // Completion badge
+                      if (isComplete) ...[
+                        const Gap(Spacing.md),
+                        _CompletedBadge(),
+                      ],
+                    ],
                   ),
                 ),
-              );
-            },
+                const Gap(Spacing.md),
+
+                // Right: Circular progress
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0, end: progress * 100),
+                  duration: const Duration(milliseconds: 1200),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, val, _) {
+                    return VersoCircularProgress(
+                      progress: val,
+                      size: 84,
+                      strokeWidth: 7.5,
+                      color: palette.primary,
+                      child: Text(
+                        '${val.toInt()}%',
+                        style: textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: palette.primary,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -341,8 +419,6 @@ class _HeroHeader extends ConsumerWidget {
 class _CompletedBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final isLight = Theme.of(context).brightness == Brightness.light;
-    final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
     // Vibrant green-teal gradient for the achievement feel
@@ -361,26 +437,26 @@ class _CompletedBadge extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: gradientColors.first.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
+          const Icon(
             Icons.auto_awesome_rounded,
             size: 14,
-            color: isLight ? scheme.onPrimary : scheme.onSurface,
+            color: Colors.white,
           ),
           const Gap(Spacing.xs),
           Text(
             'Completed',
             style: textTheme.labelSmall?.copyWith(
-              color: isLight ? scheme.onPrimary : scheme.onSurface,
+              color: Colors.white,
               fontWeight: FontWeight.w800,
-              letterSpacing: 0.5,
+              letterSpacing: 0.4,
             ),
           ),
         ],
@@ -483,22 +559,32 @@ class _ChapterTileState extends State<_ChapterTile>
     _cachedPrimary = context.palette.primary;
     _cachedSurface = scheme.surface;
     _cachedDecoration = BoxDecoration(
-      color: _isRead ? context.palette.primary : scheme.surface,
+      gradient: _isRead
+          ? LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                context.palette.primary,
+                context.palette.primaryHover,
+              ],
+            )
+          : null,
+      color: _isRead ? null : scheme.surface,
       borderRadius: AppRadii.borderRadiusMD,
       border: _isRead
-          ? null
+          ? Border.all(color: Colors.white.withValues(alpha: 0.18))
           : Border.all(
-              color: scheme.outline.withValues(alpha: isLight ? 0.5 : 0.2),
+              color: scheme.outline.withValues(alpha: isLight ? 0.65 : 0.25),
             ),
       boxShadow: _isRead
           ? [
               BoxShadow(
-                color: context.palette.primary.withValues(alpha: 0.3),
-                blurRadius: 8,
+                color: context.palette.primary.withValues(alpha: 0.28),
+                blurRadius: 10,
                 offset: const Offset(0, 3),
               ),
             ]
-          : AppShadows.sm,
+          : (isLight ? AppShadows.sm : AppShadows.none),
     );
     return _cachedDecoration!;
   }
@@ -523,17 +609,11 @@ class _ChapterTileState extends State<_ChapterTile>
           margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
           decoration: BoxDecoration(
             color: scheme.surface,
-            borderRadius: AppRadii.borderRadiusXL,
+            borderRadius: AppRadii.borderRadiusXXL,
             border: Border.all(
-              color: scheme.outline.withValues(alpha: isLight ? 0.2 : 0.5),
+              color: scheme.outline.withValues(alpha: isLight ? 0.35 : 0.5),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isLight ? 0.1 : 0.3),
-                blurRadius: 30,
-                offset: const Offset(0, -4),
-              ),
-            ],
+            boxShadow: AppShadows.xl,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -544,7 +624,7 @@ class _ChapterTileState extends State<_ChapterTile>
                 margin: const EdgeInsets.only(top: 12),
                 width: 40,
                 decoration: BoxDecoration(
-                  color: scheme.onSurfaceVariant.withValues(alpha: 0.2),
+                  color: scheme.onSurfaceVariant.withValues(alpha: 0.25),
                   borderRadius: AppRadii.borderRadiusFull,
                 ),
               ),
@@ -562,26 +642,19 @@ class _ChapterTileState extends State<_ChapterTile>
                         ? (isLight
                             ? [
                                 context.palette.primary,
-                                context.palette.primary.withValues(alpha: 0.8),
+                                context.palette.primaryHover,
                               ]
                             : [
-                                context.palette.primary.withValues(alpha: 0.2),
+                                context.palette.primary.withValues(alpha: 0.22),
                                 context.palette.primary.withValues(alpha: 0.1),
                               ])
-                        : (isLight
-                            ? [
-                                scheme.surfaceContainerHighest,
-                                scheme.surfaceContainerHighest
-                                    .withValues(alpha: 0.6),
-                              ]
-                            : [
-                                scheme.surfaceContainerHighest
-                                    .withValues(alpha: 0.5),
-                                scheme.surfaceContainerHighest
-                                    .withValues(alpha: 0.3),
-                              ]),
+                        : [
+                            scheme.surfaceContainerHighest,
+                            scheme.surfaceContainerHighest
+                                .withValues(alpha: 0.5),
+                          ],
                   ),
-                  borderRadius: AppRadii.borderRadiusLG,
+                  borderRadius: AppRadii.borderRadiusXL,
                 ),
                 child: Column(
                   children: [
@@ -607,7 +680,7 @@ class _ChapterTileState extends State<_ChapterTile>
                             ? (isLight
                                 ? scheme.onPrimary.withValues(alpha: 0.85)
                                 : context.palette.primary
-                                    .withValues(alpha: 0.8))
+                                    .withValues(alpha: 0.85))
                             : scheme.onSurfaceVariant,
                       ),
                     ),
@@ -624,8 +697,8 @@ class _ChapterTileState extends State<_ChapterTile>
                             ? (isLight
                                 ? scheme.onPrimary.withValues(alpha: 0.2)
                                 : context.palette.primary
-                                    .withValues(alpha: 0.3))
-                            : scheme.outline.withValues(alpha: 0.1),
+                                    .withValues(alpha: 0.28))
+                            : scheme.outline.withValues(alpha: 0.12),
                         borderRadius: AppRadii.borderRadiusFull,
                       ),
                       child: Row(
@@ -670,12 +743,12 @@ class _ChapterTileState extends State<_ChapterTile>
                     padding: const EdgeInsets.all(Spacing.md),
                     decoration: BoxDecoration(
                       color: isLight
-                          ? scheme.primary.withValues(alpha: 0.04)
-                          : scheme.primary.withValues(alpha: 0.08),
+                          ? scheme.primary.withValues(alpha: 0.05)
+                          : scheme.primary.withValues(alpha: 0.09),
                       borderRadius: AppRadii.borderRadiusMD,
                       border: Border.all(
                         color: scheme.primary
-                            .withValues(alpha: isLight ? 0.1 : 0.08),
+                            .withValues(alpha: isLight ? 0.14 : 0.12),
                       ),
                     ),
                     child: Row(
@@ -685,7 +758,7 @@ class _ChapterTileState extends State<_ChapterTile>
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             color: scheme.primary
-                                .withValues(alpha: isLight ? 0.1 : 0.15),
+                                .withValues(alpha: isLight ? 0.1 : 0.16),
                             borderRadius: AppRadii.borderRadiusSM,
                           ),
                           child: Icon(
@@ -702,13 +775,13 @@ class _ChapterTileState extends State<_ChapterTile>
                               Text(
                                 DateFormat('EEEE, MMMM d, yyyy').format(readAt),
                                 style: textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w700,
                                   color: context.palette.primary,
                                 ),
                               ),
                               const Gap(2),
                               Text(
-                                'at ${DateFormat('h:mm a').format(readAt)}',
+                                'Logged at ${DateFormat('h:mm a').format(readAt)}',
                                 style: textTheme.bodySmall?.copyWith(
                                   color: scheme.onSurfaceVariant,
                                 ),
@@ -764,11 +837,11 @@ class _ChapterTileState extends State<_ChapterTile>
               Text(
                 '${widget.chapterNum}',
                 style: TextStyle(
-                  fontSize: 17,
+                  fontSize: 16.5,
                   fontWeight: FontWeight.w700,
                   color: _isRead
                       ? scheme.onPrimary
-                      : scheme.onSurface.withValues(alpha: 0.8),
+                      : scheme.onSurface.withValues(alpha: 0.85),
                 ),
               ),
               if (_isRead)
@@ -777,8 +850,8 @@ class _ChapterTileState extends State<_ChapterTile>
                   top: 5,
                   child: Icon(
                     Icons.check_rounded,
-                    size: 12,
-                    color: scheme.onPrimary.withValues(alpha: 0.7),
+                    size: 11.5,
+                    color: scheme.onPrimary.withValues(alpha: 0.8),
                   ),
                 ),
             ],

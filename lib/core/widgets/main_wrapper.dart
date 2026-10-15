@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -58,46 +60,54 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
   @override
   Widget build(BuildContext context) {
     final isOnline = ref.watch(connectivityProvider);
+    final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             // Offline indicator banner
             AnimatedSize(
               duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
+              curve: Curves.easeOutCubic,
               child: isOnline
                   ? const SizedBox.shrink()
-                  : Material(
-                      color: Theme.of(context).colorScheme.secondaryContainer,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
+                  : Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: scheme.secondaryContainer.withValues(alpha: 0.9),
+                        borderRadius: AppRadii.borderRadiusFull,
+                        border: Border.all(
+                          color: scheme.secondary.withValues(alpha: 0.35),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.cloud_off,
-                              size: 14,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSecondaryContainer,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Reading in offline mode. Changes will sync when connected.',
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.cloud_off_rounded,
+                            size: 14,
+                            color: scheme.secondary,
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              'Offline mode · Changes will sync when connected',
                               style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSecondaryContainer,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: scheme.onSecondaryContainer,
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
             ),
@@ -132,8 +142,8 @@ class _VersoBottomNav extends StatelessWidget {
       label: 'Bible',
     ),
     _NavItem(
-      icon: Icons.bar_chart_outlined,
-      activeIcon: Icons.bar_chart_rounded,
+      icon: Icons.insights_outlined,
+      activeIcon: Icons.insights_rounded,
       label: 'Stats',
     ),
     _NavItem(
@@ -162,87 +172,124 @@ class _VersoBottomNav extends StatelessWidget {
     final isAmoled = context.palette.style == AppearanceStyle.amoled;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
+    final itemCount = _items.length;
     // Map selected index -> alignment x in the range [-1, 1] so the pill sits
     // centered on the selected slot. Formula derived from N equal-width slots.
-    final itemCount = _items.length;
     final alignX =
         itemCount > 1 ? -1.0 + (2.0 * currentIndex / (itemCount - 1)) : 0.0;
 
-    return Container(
-      margin: EdgeInsets.only(
+    return Padding(
+      padding: EdgeInsets.only(
         left: 16,
         right: 16,
-        bottom: bottomPadding > 0 ? bottomPadding : 12,
+        bottom: bottomPadding > 0 ? bottomPadding : 14,
       ),
-      decoration: BoxDecoration(
-        color:
-            isLight ? scheme.surface : scheme.surface.withValues(alpha: 0.95),
-        borderRadius: AppRadii.borderRadiusXL,
-        border: Border.all(
-          color: isLight
-              ? scheme.outline.withValues(alpha: 0.1)
-              : (isAmoled
-                  ? scheme.outline
-                  : scheme.outline.withValues(alpha: 0.2)),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isLight ? 0.08 : 0.25),
-            blurRadius: 24,
-            offset: const Offset(0, 4),
-          ),
-          if (isLight)
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 8,
-              offset: const Offset(0, 1),
+      child: Center(
+        heightFactor: 1,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: AppRadii.borderRadiusXXL,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isLight ? 0.08 : 0.35),
+                  blurRadius: 32,
+                  offset: const Offset(0, 10),
+                ),
+                if (isLight)
+                  BoxShadow(
+                    color: scheme.primary.withValues(alpha: 0.04),
+                    blurRadius: 12,
+                    offset: const Offset(0, 2),
+                  ),
+              ],
             ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: AppRadii.borderRadiusXL,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          child: Stack(
-            children: [
-              // Sliding pill: a single element that glides between slots.
-              // FractionallySizedBox sizes it to 1/N of the row, AnimatedAlign
-              // moves it; both together replace N per-item fade-in backgrounds.
-              Positioned.fill(
-                child: AnimatedAlign(
-                  alignment: Alignment(alignX, 0),
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOutCubic,
-                  child: FractionallySizedBox(
-                    widthFactor: 1 / itemCount,
-                    heightFactor: 1,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: scheme.primary
-                            .withValues(alpha: isLight ? 0.1 : 0.15),
-                        borderRadius: AppRadii.borderRadiusLG,
-                      ),
+            child: ClipRRect(
+              borderRadius: AppRadii.borderRadiusXXL,
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isAmoled
+                        ? scheme.surface.withValues(alpha: 0.92)
+                        : scheme.surface
+                            .withValues(alpha: isLight ? 0.88 : 0.84),
+                    borderRadius: AppRadii.borderRadiusXXL,
+                    border: Border.all(
+                      color: isAmoled
+                          ? scheme.outline.withValues(alpha: 0.8)
+                          : (isLight
+                              ? scheme.outline.withValues(alpha: 0.55)
+                              : Colors.white.withValues(alpha: 0.1)),
                     ),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Sliding pill: a single element that glides between slots.
+                      // FractionallySizedBox sizes it to 1/N of the row, AnimatedAlign
+                      // moves it; both together replace N per-item fade-in backgrounds.
+                      // Tap targets sit above the pill. They no longer render their
+                      // own background - the sliding pill is the selection indicator.
+                      Positioned.fill(
+                        child: AnimatedAlign(
+                          alignment: Alignment(alignX, 0),
+                          duration: const Duration(milliseconds: 320),
+                          curve: Curves.easeOutCubic,
+                          child: FractionallySizedBox(
+                            widthFactor: 1 / itemCount,
+                            heightFactor: 1,
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 200),
+                              opacity: currentIndex == 2 ? 0.0 : 1.0,
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      scheme.primary.withValues(
+                                        alpha: isLight ? 0.12 : 0.2,
+                                      ),
+                                      scheme.primary.withValues(
+                                        alpha: isLight ? 0.06 : 0.1,
+                                      ),
+                                    ],
+                                  ),
+                                  borderRadius: AppRadii.borderRadiusXL,
+                                  border: Border.all(
+                                    color: scheme.primary.withValues(
+                                      alpha: isLight ? 0.14 : 0.22,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        children: List.generate(itemCount, (i) {
+                          final item = _items[i];
+                          final isSelected = currentIndex == i;
+
+                          return Expanded(
+                            child: _NavItemWidget(
+                              item: item,
+                              isSelected: isSelected,
+                              onTap: () => onTap(i),
+                            ),
+                          );
+                        }),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              // Tap targets sit above the pill. They no longer render their
-              // own background — the sliding pill is the selection indicator.
-              Row(
-                children: List.generate(itemCount, (i) {
-                  final item = _items[i];
-                  final isSelected = currentIndex == i;
-
-                  return Expanded(
-                    child: _NavItemWidget(
-                      item: item,
-                      isSelected: isSelected,
-                      onTap: () => onTap(i),
-                    ),
-                  );
-                }),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -278,32 +325,47 @@ class _NavItemWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final palette = context.palette;
 
     if (item.isMiddle) {
       return GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsets.symmetric(vertical: 2),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
+                duration: const Duration(milliseconds: 280),
                 curve: Curves.easeOutCubic,
-                width: isSelected ? 44 : 40,
-                height: isSelected ? 44 : 40,
+                width: isSelected ? 48 : 44,
+                height: isSelected ? 48 : 44,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isSelected
-                      ? scheme.primary
-                      : scheme.primary.withValues(alpha: 0.12),
+                  gradient: isSelected
+                      ? LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            palette.primary,
+                            palette.primaryHover,
+                          ],
+                        )
+                      : null,
+                  color:
+                      isSelected ? null : scheme.primary.withValues(alpha: 0.1),
+                  border: Border.all(
+                    color: isSelected
+                        ? Colors.white.withValues(alpha: 0.25)
+                        : scheme.primary.withValues(alpha: 0.18),
+                  ),
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: scheme.primary.withValues(alpha: 0.35),
-                            blurRadius: 10,
+                            color: scheme.primary.withValues(alpha: 0.38),
+                            blurRadius: 14,
                             offset: const Offset(0, 4),
                           ),
                         ]
@@ -325,7 +387,7 @@ class _NavItemWidget extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 7),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -342,10 +404,10 @@ class _NavItemWidget extends StatelessWidget {
               },
               child: item.isAvatar
                   ? Opacity(
-                      opacity: isSelected ? 1.0 : 0.75,
+                      opacity: isSelected ? 1.0 : 0.78,
                       child: VersoAvatar(
-                        size: isSelected ? 26 : 24,
-                        borderWidth: isSelected ? 2.0 : 1.0,
+                        size: isSelected ? 25 : 23,
+                        borderWidth: isSelected ? 2.0 : 1.2,
                         borderColor: isSelected
                             ? scheme.primary
                             : scheme.onSurfaceVariant.withValues(alpha: 0.3),
@@ -354,21 +416,21 @@ class _NavItemWidget extends StatelessWidget {
                   : Icon(
                       isSelected ? item.activeIcon : item.icon,
                       key: ValueKey(isSelected),
-                      size: isSelected ? 26 : 24,
+                      size: isSelected ? 23 : 22,
                       color:
                           isSelected ? scheme.primary : scheme.onSurfaceVariant,
                     ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 3),
             // Label
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeOutCubic,
               style: TextStyle(
-                fontSize: isSelected ? 11.5 : 11,
+                fontSize: isSelected ? 11 : 10.5,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected ? scheme.primary : scheme.onSurfaceVariant,
-                letterSpacing: 0.2,
+                letterSpacing: 0.15,
               ),
               child: Text(item.label),
             ),

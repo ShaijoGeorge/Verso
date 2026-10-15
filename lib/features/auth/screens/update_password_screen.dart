@@ -8,8 +8,8 @@ import 'package:verso/core/design/components/verso_gradient_button.dart';
 import 'package:verso/core/design/components/verso_header_icon.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
 import 'package:verso/core/design/components/verso_text_field.dart';
-import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/core/design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/shadows.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/core/utils/app_error_handler.dart';
 import 'package:verso/core/widgets/confirmation_view.dart';
@@ -139,119 +139,115 @@ class _UpdatePasswordScreenState extends ConsumerState<UpdatePasswordScreen>
                       child: Center(
                         child: SingleChildScrollView(
                           padding: Spacing.pagePadding,
-                          child: FadeTransition(
-                            opacity: _fadeIn,
-                            child: SlideTransition(
-                              position: _slideUp,
-                              child: Column(
-                                children: [
-                                  const VersoHeaderIcon(
-                                    icon: Icons.shield_outlined,
-                                  ),
-                                  const Gap(Spacing.lg),
-                                  Text(
-                                    'Set New Password',
-                                    style: GoogleFonts.dmSerifDisplay(
-                                      fontSize: 28,
-                                      color: colorScheme.onSurface,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 440),
+                            child: FadeTransition(
+                              opacity: _fadeIn,
+                              child: SlideTransition(
+                                position: _slideUp,
+                                child: Column(
+                                  children: [
+                                    const VersoHeaderIcon(
+                                      icon: Icons.shield_outlined,
                                     ),
-                                  ),
-                                  const Gap(Spacing.sm),
-                                  Text(
-                                    'Your email has been verified.\nChoose a strong new password below.',
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 14,
-                                      color: colorScheme.onSurfaceVariant,
-                                      height: 1.6,
-                                    ),
-                                  ),
-                                  const Gap(Spacing.xl),
-
-                                  // Form card
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: colorScheme.surface,
-                                      borderRadius: AppRadii.borderRadiusXL,
-                                      border: Border.all(
-                                        color: colorScheme.outline.withValues(
-                                          alpha: isDark ? 0.15 : 0.4,
-                                        ),
+                                    const Gap(Spacing.lg),
+                                    Text(
+                                      'Set New Password',
+                                      style: GoogleFonts.dmSerifDisplay(
+                                        fontSize: 30,
+                                        color: colorScheme.onSurface,
                                       ),
-                                      boxShadow: isDark
-                                          ? []
-                                          : [
-                                              BoxShadow(
-                                                color: AppColors.primaryLight
-                                                    .withValues(alpha: 0.06),
-                                                blurRadius: 40,
-                                                offset: const Offset(0, 16),
+                                    ),
+                                    const Gap(Spacing.sm),
+                                    Text(
+                                      'Your email has been verified.\nChoose a strong new password below.',
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 14,
+                                        color: colorScheme.onSurfaceVariant,
+                                        height: 1.6,
+                                      ),
+                                    ),
+                                    const Gap(Spacing.xl),
+
+                                    // Form card
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.surface,
+                                        borderRadius: AppRadii.borderRadiusXL,
+                                        border: Border.all(
+                                          color: colorScheme.outline.withValues(
+                                            alpha: isDark ? 0.25 : 0.65,
+                                          ),
+                                        ),
+                                        boxShadow: isDark
+                                            ? AppShadows.md
+                                            : AppShadows.lg,
+                                      ),
+                                      padding: const EdgeInsets.all(Spacing.lg),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          VersoTextField(
+                                            controller: _passwordController,
+                                            label: 'New Password',
+                                            icon: Icons.lock_outline_rounded,
+                                            obscureText: !_isPasswordVisible,
+                                            suffixIcon: IconButton(
+                                              icon: Icon(
+                                                _isPasswordVisible
+                                                    ? Icons.visibility_outlined
+                                                    : Icons
+                                                        .visibility_off_outlined,
+                                                size: 20,
+                                                color: colorScheme
+                                                    .onSurfaceVariant,
                                               ),
-                                            ],
-                                    ),
-                                    padding: const EdgeInsets.all(Spacing.lg),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: [
-                                        VersoTextField(
-                                          controller: _passwordController,
-                                          label: 'New Password',
-                                          icon: Icons.lock_outline_rounded,
-                                          obscureText: !_isPasswordVisible,
-                                          suffixIcon: IconButton(
-                                            icon: Icon(
-                                              _isPasswordVisible
-                                                  ? Icons.visibility_outlined
-                                                  : Icons
-                                                      .visibility_off_outlined,
-                                              size: 20,
-                                              color:
-                                                  colorScheme.onSurfaceVariant,
+                                              onPressed: () {
+                                                setState(
+                                                  () => _isPasswordVisible =
+                                                      !_isPasswordVisible,
+                                                );
+                                              },
                                             ),
-                                            onPressed: () {
-                                              setState(
-                                                () => _isPasswordVisible =
-                                                    !_isPasswordVisible,
-                                              );
-                                            },
                                           ),
-                                        ),
-                                        const Gap(Spacing.md),
-                                        VersoTextField(
-                                          controller:
-                                              _confirmPasswordController,
-                                          label: 'Confirm Password',
-                                          icon: Icons.lock_outline_rounded,
-                                          obscureText: !_isConfirmVisible,
-                                          suffixIcon: IconButton(
-                                            icon: Icon(
-                                              _isConfirmVisible
-                                                  ? Icons.visibility_outlined
-                                                  : Icons
-                                                      .visibility_off_outlined,
-                                              size: 20,
-                                              color:
-                                                  colorScheme.onSurfaceVariant,
+                                          const Gap(Spacing.md),
+                                          VersoTextField(
+                                            controller:
+                                                _confirmPasswordController,
+                                            label: 'Confirm Password',
+                                            icon: Icons.lock_outline_rounded,
+                                            obscureText: !_isConfirmVisible,
+                                            suffixIcon: IconButton(
+                                              icon: Icon(
+                                                _isConfirmVisible
+                                                    ? Icons.visibility_outlined
+                                                    : Icons
+                                                        .visibility_off_outlined,
+                                                size: 20,
+                                                color: colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                              onPressed: () {
+                                                setState(
+                                                  () => _isConfirmVisible =
+                                                      !_isConfirmVisible,
+                                                );
+                                              },
                                             ),
-                                            onPressed: () {
-                                              setState(
-                                                () => _isConfirmVisible =
-                                                    !_isConfirmVisible,
-                                              );
-                                            },
                                           ),
-                                        ),
-                                        const Gap(Spacing.lg),
-                                        VersoGradientButton(
-                                          label: 'Update Password',
-                                          isLoading: _isLoading,
-                                          onPressed: _updatePassword,
-                                        ),
-                                      ],
+                                          const Gap(Spacing.lg),
+                                          VersoGradientButton(
+                                            label: 'Update Password',
+                                            isLoading: _isLoading,
+                                            onPressed: _updatePassword,
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),

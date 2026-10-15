@@ -25,7 +25,7 @@ class VersoChip extends StatelessWidget {
   });
   final String text;
 
-  /// Background color (will be applied at 15% opacity).
+  /// Background color (will be applied at 12% opacity with a subtle border).
   final Color color;
 
   /// Optional explicit text color. If null, uses [color] at full opacity.
@@ -39,10 +39,13 @@ class VersoChip extends StatelessWidget {
     final fgColor = textColor ?? color;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: AppRadii.borderRadiusXS,
+        color: color.withValues(alpha: 0.12),
+        borderRadius: AppRadii.borderRadiusFull,
+        border: Border.all(
+          color: color.withValues(alpha: 0.24),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -54,8 +57,9 @@ class VersoChip extends StatelessWidget {
           Text(
             text,
             style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
               color: fgColor,
             ),
           ),

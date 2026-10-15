@@ -24,19 +24,19 @@ class BookCompletionGrid extends ConsumerWidget {
       children: [
         // Legend
         _Legend(isLight: isLight),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
 
         // Grid
         LayoutBuilder(
           builder: (context, constraints) {
             // Aim for ~10 columns — adapt to width
             const crossAxisCount = 10;
-            final cellSize = (constraints.maxWidth - (crossAxisCount - 1) * 4) /
+            final cellSize = (constraints.maxWidth - (crossAxisCount - 1) * 5) /
                 crossAxisCount;
 
             return Wrap(
-              spacing: 4,
-              runSpacing: 4,
+              spacing: 5,
+              runSpacing: 5,
               children: books.map((book) {
                 final fraction = bookCompletionMap[book.id] ?? 0.0;
                 return _BookCell(
@@ -108,7 +108,7 @@ class _BookCell extends ConsumerWidget {
         height: size,
         decoration: BoxDecoration(
           color: _cellColor(context),
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(6),
         ),
         child: fraction >= 1.0
             ? Icon(
@@ -128,26 +128,26 @@ class _Legend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Wrap(
+      spacing: 12,
+      runSpacing: 6,
       children: [
         // OT legend
         _LegendDot(
           color: context.appColors.otColor,
-          label: 'OT',
+          label: 'Old Testament',
         ),
-        const SizedBox(width: 16),
         // NT legend
         _LegendDot(
           color: context.appColors.ntColor,
-          label: 'NT',
+          label: 'New Testament',
         ),
-        const SizedBox(width: 16),
         // Empty legend
         _LegendDot(
           color: isLight
               ? AppColors.completionEmptyLight
               : AppColors.completionEmptyDark,
-          label: 'Not started',
+          label: 'Unread',
         ),
       ],
     );
@@ -161,26 +161,35 @@ class _LegendDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 9,
+            height: 9,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(3),
+            ),
           ),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: scheme.onSurfaceVariant,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

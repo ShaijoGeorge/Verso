@@ -12,16 +12,17 @@ import 'package:verso/core/design/extensions.dart';
 abstract final class VersoAuthGradient {
   static LinearGradient of(BuildContext context) {
     final palette = context.palette;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: [
-        palette.accentSoft,
+        palette.accentSoft.withValues(alpha: isDark ? 0.85 : 1.0),
         palette.bg,
-        palette.bg,
+        palette.surfaceAlt.withValues(alpha: isDark ? 0.35 : 0.5),
       ],
-      stops: const [0.0, 0.4, 1.0],
+      stops: const [0.0, 0.55, 1.0],
     );
   }
 }

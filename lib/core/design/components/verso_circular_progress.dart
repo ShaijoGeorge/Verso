@@ -58,7 +58,8 @@ class VersoCircularProgress extends StatelessWidget {
           maxProgress: maxProgress,
           strokeWidth: strokeWidth,
           progressColor: color ?? scheme.primary,
-          trackColor: trackColor ?? scheme.surfaceContainerHighest,
+          trackColor: trackColor ??
+              scheme.surfaceContainerHighest.withValues(alpha: 0.7),
         ),
         child: child != null ? Center(child: child) : null,
       ),
@@ -85,27 +86,48 @@ class _CircularProgressPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = (size.width - strokeWidth) / 2;
 
-    // Track
+    // Subtle track ring
     final trackPaint = Paint()
       ..color = trackColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.butt;
+      ..strokeCap = StrokeCap.round;
 
     canvas.drawCircle(center, radius, trackPaint);
 
-    // Progress arc
+    final clampedRatio =
+        maxProgress > 0 ? (progress / maxProgress).clamp(0.0, 1.0) : 0.0;
+    if (clampedRatio <= 0) return;
+
+    final sweepAngle = clampedRatio * 2 * math.pi;
+    const startAngle = -math.pi / 2; // Start from top
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    // Soft ambient glow behind the progress arc
+    final glowPaint = Paint()
+      ..color = progressColor.withValues(alpha: 0.25)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth + 4
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+
+    canvas.drawArc(
+      rect,
+      startAngle,
+      sweepAngle,
+      false,
+      glowPaint,
+    );
+
+    // Crisp foreground progress arc
     final progressPaint = Paint()
       ..color = progressColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.butt;
-
-    final sweepAngle = (progress / maxProgress) * 2 * math.pi;
-    const startAngle = -math.pi / 2; // Start from top
+      ..strokeCap = StrokeCap.round;
 
     canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
+      rect,
       startAngle,
       sweepAngle,
       false,
