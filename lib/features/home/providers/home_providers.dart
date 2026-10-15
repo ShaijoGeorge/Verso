@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
+import 'package:verso/features/home/data/daily_verse.dart';
 import 'package:verso/features/home/data/verse_repository.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 
@@ -126,7 +127,7 @@ VerseRepository verseRepository(Ref ref) {
 
 // Fetches the daily Scripture verse to display on the home screen.
 @riverpod
-Future<Map<String, dynamic>> dailyVerse(Ref ref) async {
+Future<DailyVerse> dailyVerse(Ref ref) async {
   final repo = ref.watch(verseRepositoryProvider);
   return repo.getTodayVerse();
 }
