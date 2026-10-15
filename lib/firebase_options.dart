@@ -63,6 +63,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '589925757210',
     projectId: 'biblia-f545c',
     storageBucket: 'biblia-f545c.firebasestorage.app',
-    iosBundleId: 'com.example.biblia',
+    iosBundleId: 'com.shaijo.verso',
   );
 }
