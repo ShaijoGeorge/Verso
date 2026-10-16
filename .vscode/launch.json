@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/shaij/Desktop/biblia/windows/flutter",
-      "program": "c:/Users/shaij/Desktop/biblia/windows/flutter/build/Debug/outDebug",
+      "cwd": "${workspaceFolder}/windows/flutter",
+      "program": "${workspaceFolder}/windows/flutter/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
