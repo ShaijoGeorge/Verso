@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:verso/core/design/components/verso_snackbar.dart';
 
 /// Terms of Use screen.
 class TermsOfUseScreen extends StatelessWidget {
@@ -138,8 +141,46 @@ class TermsOfUseScreen extends StatelessWidget {
               _LegalSection(
                 number: '8',
                 title: 'Contact',
-                content:
-                    'If you have questions about these Terms of Use, please contact us at versoappsupport@gmail.com.',
+                contentWidget: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'If you have questions about these Terms of Use, please contact us at:',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        height: 1.6,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const Gap(6),
+                    GestureDetector(
+                      onTap: () => _handleEmailTap(context),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.mail_outline_rounded,
+                              size: 15,
+                              color: Color(0xFF6366F1),
+                            ),
+                            const Gap(6),
+                            Text(
+                              'versoappsupport@gmail.com',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                decoration: TextDecoration.underline,
+                                color: const Color(0xFF6366F1),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 scheme: scheme,
                 isDark: isDark,
               ),
@@ -151,22 +192,61 @@ class TermsOfUseScreen extends StatelessWidget {
       ),
     );
   }
+
+  static Future<void> _handleEmailTap(BuildContext context) async {
+    HapticFeedback.lightImpact();
+    final uri = Uri.parse(
+      'mailto:versoappsupport@gmail.com?subject=Verso%20Terms%20of%20Use%20Inquiry',
+    );
+    try {
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched) {
+        await Clipboard.setData(
+          const ClipboardData(text: 'versoappsupport@gmail.com'),
+        );
+        if (context.mounted) {
+          VersoSnackbar.show(
+            context,
+            message: 'Email copied: versoappsupport@gmail.com',
+          );
+        }
+      }
+    } catch (_) {
+      await Clipboard.setData(
+        const ClipboardData(text: 'versoappsupport@gmail.com'),
+      );
+      if (context.mounted) {
+        VersoSnackbar.show(
+          context,
+          message: 'Email copied: versoappsupport@gmail.com',
+        );
+      }
+    }
+  }
 }
 
 class _LegalSection extends StatelessWidget {
   const _LegalSection({
     required this.number,
     required this.title,
-    required this.content,
     required this.scheme,
     required this.isDark,
-  });
+    this.content,
+    this.contentWidget,
+  }) : assert(
+          content != null || contentWidget != null,
+          'Either content or contentWidget must be provided',
+        );
 
   final String number;
   final String title;
-  final String content;
   final ColorScheme scheme;
   final bool isDark;
+  final String? content;
+  final Widget? contentWidget;
 
   @override
   Widget build(BuildContext context) {
@@ -207,14 +287,17 @@ class _LegalSection extends StatelessWidget {
                   ),
                 ),
                 const Gap(6),
-                Text(
-                  content,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13,
-                    height: 1.6,
-                    color: scheme.onSurfaceVariant,
+                if (contentWidget != null)
+                  contentWidget!
+                else
+                  Text(
+                    content!,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      height: 1.6,
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
