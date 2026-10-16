@@ -1004,6 +1004,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         },
                       ),
                       _SettingsActionTile(
+                        title: 'Legal',
+                        icon: Icons.gavel_outlined,
+                        iconColor: const Color(0xFF8B5CF6),
+                        onTap: () {
+                          GoRouter.of(context).push('/legal');
+                        },
+                      ),
+                      _SettingsActionTile(
                         title: 'Share Verso with a friend',
                         icon: Icons.share_outlined,
                         iconColor: const Color(0xFF10B981),
