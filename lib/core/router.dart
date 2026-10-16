@@ -9,7 +9,10 @@ import 'package:verso/core/transitions/app_page_transitions.dart';
 import 'package:verso/core/widgets/main_wrapper.dart';
 import 'package:verso/core/widgets/not_found_screen.dart';
 import 'package:verso/data/bible_data.dart';
+import 'package:verso/features/about/screens/legal_screen.dart';
 import 'package:verso/features/about/screens/our_mission_screen.dart';
+import 'package:verso/features/about/screens/privacy_policy_screen.dart';
+import 'package:verso/features/about/screens/terms_of_use_screen.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
 import 'package:verso/features/auth/screens/email_change_success_screen.dart';
 import 'package:verso/features/auth/screens/forgot_password_screen.dart';
@@ -381,6 +384,32 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => AppPageTransitions.slideFromBottom(
           key: state.pageKey,
           child: const OurMissionScreen(),
+        ),
+      ),
+
+      // Legal Routes
+      GoRoute(
+        path: '/legal',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.slideFromRight(
+          key: state.pageKey,
+          child: const LegalScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/terms-of-use',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.slideFromRight(
+          key: state.pageKey,
+          child: const TermsOfUseScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/privacy-policy',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.slideFromRight(
+          key: state.pageKey,
+          child: const PrivacyPolicyScreen(),
         ),
       ),
 
