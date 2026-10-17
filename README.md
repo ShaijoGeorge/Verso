@@ -85,8 +85,12 @@ User sign-up, login, and password management powered by Supabase Auth.
 
 3. **Environment Setup:**
    
-   Create a `.env` file in the root directory of the project and add your Supabase credentials:
+   Copy `.env.example` to `.env` in the root directory and add Supabase credentials:
    
+   ```bash
+   cp .env.example .env
+   ```
+
    ```env
    SUPABASE_URL=your_supabase_project_url
    SUPABASE_ANON_KEY=your_supabase_anon_key
@@ -123,8 +127,10 @@ User sign-up, login, and password management powered by Supabase Auth.
 
 5. **Run the App:**
    ```bash
-   flutter run
+   flutter run --dart-define-from-file=.env
    ```
+
+   > **Tip for VS Code users:** You can also launch or debug directly using the preconfigured **Verso (Debug)** profile in `.vscode/launch.json`.
 
 ---
 
