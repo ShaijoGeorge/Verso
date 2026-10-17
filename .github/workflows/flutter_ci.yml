@@ -80,7 +80,7 @@ jobs:
         run: flutter pub get
 
       - name: Build APK
-        run: flutter build apk --debug -v
+        run: flutter build apk --debug --dart-define-from-file=.env -v
 
   build_ios:
     name: Build iOS App
@@ -106,4 +106,4 @@ jobs:
         run: flutter pub get
 
       - name: Build iOS
-        run: flutter build ios --release --no-codesign -v
+        run: flutter build ios --release --no-codesign --dart-define-from-file=.env -v
