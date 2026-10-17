@@ -4,12 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:verso/core/constants.dart';
 import 'package:verso/core/transitions/animated_branch_container.dart';
 import 'package:verso/core/transitions/app_page_transitions.dart';
 import 'package:verso/core/widgets/main_wrapper.dart';
 import 'package:verso/core/widgets/not_found_screen.dart';
 import 'package:verso/data/bible_data.dart';
+import 'package:verso/features/about/screens/legal_screen.dart';
 import 'package:verso/features/about/screens/our_mission_screen.dart';
+import 'package:verso/features/about/screens/privacy_policy_screen.dart';
+import 'package:verso/features/about/screens/terms_of_use_screen.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
 import 'package:verso/features/auth/screens/email_change_success_screen.dart';
 import 'package:verso/features/auth/screens/forgot_password_screen.dart';
@@ -50,12 +54,14 @@ final routerProvider = Provider<GoRouter>((ref) {
 
     redirect: (context, state) {
       // --- CRITICAL DEEP LINK INTERCEPTION ---
-      if (state.uri.scheme == 'io.supabase.flutter') {
+      if (state.uri.scheme == AppConstants.appScheme ||
+          state.uri.scheme == 'io.supabase.flutter') {
         final host = state.uri.host;
         final fragment = state.uri.fragment;
         final queryParams = state.uri.queryParameters;
 
         final isEmailChange = host == 'email-callback' ||
+            state.uri.path.contains('email-callback') ||
             fragment.contains('type=email_change') ||
             queryParams['type'] == 'email_change' ||
             fragment.contains('type%3Demail_change');
@@ -76,7 +82,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           return '/email-change-success?step=1';
         }
 
-        if (host == 'reset-callback') {
+        if (host == 'reset-callback' ||
+            state.uri.path.contains('reset-callback')) {
           // If this was an email change flow where pending email is stored and it's not a password recovery
           final isRecovery = fragment.contains('type=recovery') ||
               queryParams['type'] == 'recovery';
@@ -381,6 +388,32 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => AppPageTransitions.slideFromBottom(
           key: state.pageKey,
           child: const OurMissionScreen(),
+        ),
+      ),
+
+      // Legal Routes
+      GoRoute(
+        path: '/legal',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.slideFromRight(
+          key: state.pageKey,
+          child: const LegalScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/terms-of-use',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.slideFromRight(
+          key: state.pageKey,
+          child: const TermsOfUseScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/privacy-policy',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.slideFromRight(
+          key: state.pageKey,
+          child: const PrivacyPolicyScreen(),
         ),
       ),
 

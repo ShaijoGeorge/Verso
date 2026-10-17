@@ -1,0 +1,9 @@
+# Template for android/key.properties
+# Copy this file to `android/key.properties` and replace with your actual keystore credentials.
+# Note: Never commit `key.properties` or keystore files to source control.
+# On Windows, paths can use forward slashes (e.g. C:/Users/name/upload-keystore.jks) or double backslashes.
+
+storePassword=your_store_password
+keyPassword=your_key_password
+keyAlias=upload
+storeFile=/path/to/upload-keystore.jks

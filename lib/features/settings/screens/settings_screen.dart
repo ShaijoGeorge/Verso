@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -1004,6 +1005,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         },
                       ),
                       _SettingsActionTile(
+                        title: 'Legal',
+                        icon: Icons.gavel_outlined,
+                        iconColor: const Color(0xFF8B5CF6),
+                        onTap: () {
+                          GoRouter.of(context).push('/legal');
+                        },
+                      ),
+                      _SettingsActionTile(
                         title: 'Share Verso with a friend',
                         icon: Icons.share_outlined,
                         iconColor: const Color(0xFF10B981),
@@ -1051,11 +1060,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Center(
                     child: GestureDetector(
                       onLongPress: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => const DebugCacheScreen(),
-                          ),
-                        );
+                        if (kDebugMode) {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const DebugCacheScreen(),
+                            ),
+                          );
+                        }
                       },
                       child: Column(
                         children: [

@@ -952,12 +952,38 @@ class _ContactFooter extends StatelessWidget {
                 ),
               ),
               GestureDetector(
-                onTap: () {
+                onTap: () async {
                   HapticFeedback.lightImpact();
-                  VersoSnackbar.show(
-                    context,
-                    message: 'Contact page coming soon!',
+                  final uri = Uri.parse(
+                    'mailto:versoappsupport@gmail.com?subject=Verso%20Support%20%26%20Feedback',
                   );
+                  try {
+                    final launched = await launchUrl(
+                      uri,
+                      mode: LaunchMode.externalApplication,
+                    );
+                    if (!launched) {
+                      await Clipboard.setData(
+                        const ClipboardData(text: 'versoappsupport@gmail.com'),
+                      );
+                      if (context.mounted) {
+                        VersoSnackbar.show(
+                          context,
+                          message: 'Email copied: versoappsupport@gmail.com',
+                        );
+                      }
+                    }
+                  } catch (_) {
+                    await Clipboard.setData(
+                      const ClipboardData(text: 'versoappsupport@gmail.com'),
+                    );
+                    if (context.mounted) {
+                      VersoSnackbar.show(
+                        context,
+                        message: 'Email copied: versoappsupport@gmail.com',
+                      );
+                    }
+                  }
                 },
                 child: Text(
                   'contact us',
