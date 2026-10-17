@@ -51,9 +51,11 @@
       <dict>
         <key>CFBundleTypeRole</key>
         <string>Editor</string>
+        <key>CFBundleURLName</key>
+        <string>verso</string>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>io.supabase.flutter</string>
+          <string>verso</string>
         </array>
       </dict>
     </array>
