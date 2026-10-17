@@ -17,7 +17,6 @@ dependencies:
   fl_chart: ^1.1.1
   flutter:
     sdk: flutter
-  flutter_dotenv: ^6.0.0
   flutter_local_notifications: ^21.0.0
   flutter_riverpod: ^3.0.3
   flutter_secure_storage: ^10.3.4
@@ -48,7 +47,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - .env
     - assets/
     - assets/avatars/
     - assets/developer/

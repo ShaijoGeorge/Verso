@@ -3,7 +3,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -50,8 +49,18 @@ void main() async {
     return true;
   };
 
-  // 1. Load the .env file
-  await dotenv.load();
+  assert(
+    () {
+      if (!AppConstants.isConfigured) {
+        debugPrint(
+          'WARNING: Supabase credentials not found. '
+          'Pass --dart-define-from-file=.env when running or building the app.',
+        );
+      }
+      return true;
+    }(),
+    'Supabase configuration verification',
+  );
 
   // 2. Initialize Supabase
   await Supabase.initialize(
