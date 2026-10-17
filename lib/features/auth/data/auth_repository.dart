@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:verso/core/constants.dart';
 
 class AuthRepository {
   AuthRepository(this._supabase) {
@@ -90,10 +91,10 @@ class AuthRepository {
 
   Future<void> resetPassword(String email) async {
     try {
-      // This sends the email with a link like: io.supabase.flutter://reset-callback
+      // This sends the email with a link like: verso://reset-callback
       await _supabase.auth.resetPasswordForEmail(
         email,
-        redirectTo: 'io.supabase.flutter://reset-callback',
+        redirectTo: AppConstants.resetCallbackUrl,
       );
     } catch (e) {
       rethrow;
@@ -106,7 +107,7 @@ class AuthRepository {
       await savePendingEmailChange(newEmail);
       await _supabase.auth.updateUser(
         UserAttributes(email: newEmail),
-        emailRedirectTo: 'io.supabase.flutter://reset-callback',
+        emailRedirectTo: AppConstants.resetCallbackUrl,
       );
     } catch (e) {
       await clearPendingEmailChange();
