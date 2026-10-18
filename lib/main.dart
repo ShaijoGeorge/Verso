@@ -13,10 +13,12 @@ import 'package:verso/core/utils/firebase_crash_reporter.dart';
 import 'package:verso/core/utils/verso_error_observer.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
 import 'package:verso/features/auth/services/saved_accounts_service.dart';
+import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/reading/services/reading_service.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
 import 'package:verso/features/settings/providers/theme_resolver.dart';
 import 'package:verso/features/settings/services/notification_service.dart';
+import 'package:verso/features/stats/providers/stats_providers.dart';
 import 'package:verso/firebase_options.dart';
 
 void main() async {
@@ -200,8 +202,18 @@ class _VersoAppState extends ConsumerState<VersoApp>
       if (settings.isDailyVerseEnabled) {
         await NotificationService().scheduleDailyVerseNotification();
       }
+
+      // Automatic streak saver countdowns (no user toggle needed)
+      final stats = await ref.read(userStatsProvider.future);
+      final todayCount = await ref.read(todayChaptersProvider.future);
+      await NotificationService().syncStreakEscalationAlerts(
+        streak: stats.streak,
+        availableFreezes: stats.availableFreezes,
+        isStreakFrozen: stats.isStreakFrozen,
+        readToday: todayCount > 0,
+      );
     } catch (e) {
-      // Silently ignore if settings fail to load
+      // Silently ignore if settings/stats fail to load
     }
   }
 

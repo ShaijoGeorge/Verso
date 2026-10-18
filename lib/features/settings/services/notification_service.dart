@@ -64,9 +64,15 @@ class NotificationService {
   static const int readingReminderNotificationId = 100;
   static const int dailyVerseNotificationId = 200;
 
+  /// Dedicated IDs for the 6-stage streak countdown (300..305)
+  static const List<int> streakEscalationIds = [300, 301, 302, 303, 304, 305];
+
   /// Dedicated Android notification channels
   static const String dailyReminderChannelId = 'daily_reminder';
   static const String dailyVerseChannelId = 'daily_verse_channel';
+
+  /// Dedicated high-urgency Android channel for streak countdowns
+  static const String streakEscalationChannelId = 'streak_escalation_channel';
 
   /// Schedule daily reading reminder
   Future<void> scheduleDailyReminder(int hour, int minute) async {
@@ -200,6 +206,185 @@ class NotificationService {
     await _notificationsPlugin.cancelAll();
   }
 
+  /// Automatically schedules the evening countdown series:
+  /// 8:00 PM, 11:00 PM (1h), 11:30 PM (30m), 11:50 PM (10m), 11:55 PM (5m), and 12:00 AM.
+  ///
+  /// - If [readToday] is `true`, today's alerts are cancelled and the sequence is
+  ///   scheduled for **tomorrow night** (in case the user doesn't open the app tomorrow).
+  /// - If [readToday] is `false`, any future slots remaining **tonight** are scheduled.
+  Future<void> syncStreakEscalationAlerts({
+    required int streak,
+    required int availableFreezes,
+    required bool isStreakFrozen,
+    required bool readToday,
+  }) async {
+    if (!_isInitialized) await init();
+
+    // Always clear previous escalation alarms first
+    await cancelStreakEscalationAlerts();
+
+    // Only pester users who actually have an active streak to lose
+    if (streak <= 0) return;
+
+    final hasPermission = await requestPermissions();
+    if (!hasPermission) return;
+
+    final now = tz.TZDateTime.now(tz.local);
+
+    // Target date: Today if they haven't read yet; Tomorrow if they already read today
+    final baseDate = readToday
+        ? tz.TZDateTime(tz.local, now.year, now.month, now.day)
+            .add(const Duration(days: 1))
+        : tz.TZDateTime(tz.local, now.year, now.month, now.day);
+
+    // If scheduling for tomorrow (because they read today), tomorrow they won't be "frozen"
+    // going into the evening—they'll have an active flame of `streak`.
+    final effectiveFrozen = !readToday && isStreakFrozen;
+
+    final stages = <_StreakStage>[
+      // 1. 8:00 PM — Friendly / Ice Warning
+      _StreakStage(
+        id: 300,
+        scheduledTime: tz.TZDateTime(
+          tz.local,
+          baseDate.year,
+          baseDate.month,
+          baseDate.day,
+          20,
+        ),
+        title: effectiveFrozen
+            ? 'Your $streak-day streak is on thin ice!❄️'
+            : 'Keep your $streak-day streak alive!🔥',
+        body: effectiveFrozen
+            ? 'A Streak Freeze saved you yesterday. Read 1 chapter tonight to relight your flame!'
+            : 'Take 2 minutes with Scripture tonight so your $streak-day habit stays strong.',
+      ),
+
+      // 2. 11:00 PM — 1 Hour Left
+      _StreakStage(
+        id: 301,
+        scheduledTime: tz.TZDateTime(
+          tz.local,
+          baseDate.year,
+          baseDate.month,
+          baseDate.day,
+          23,
+        ),
+        title: '1 hour left to save your $streak-day streak!⏳',
+        body: effectiveFrozen
+            ? 'Your streak is already frozen! Read a chapter before midnight or risk losing it.'
+            : "Don't let today slip by—read 1 chapter before midnight to hit ${streak + 1} days!",
+      ),
+
+      // 3. 11:30 PM — 30 Minutes Left
+      _StreakStage(
+        id: 302,
+        scheduledTime: tz.TZDateTime(
+          tz.local,
+          baseDate.year,
+          baseDate.month,
+          baseDate.day,
+          23,
+          30,
+        ),
+        title: '30 minutes left! Streak in danger!🚨',
+        body:
+            'Only 30 minutes until midnight. Open Verso and log a chapter to protect your $streak-day streak!',
+      ),
+
+      // 4. 11:50 PM — 10 Minutes Left
+      _StreakStage(
+        id: 303,
+        scheduledTime: tz.TZDateTime(
+          tz.local,
+          baseDate.year,
+          baseDate.month,
+          baseDate.day,
+          23,
+          50,
+        ),
+        title: '10 minutes left! Save your $streak-day streak!😱',
+        body: availableFreezes > 0
+            ? '10 minutes until midnight! Read now so you don’t burn a Streak Freeze!'
+            : 'You have 0 Streak Freezes left! Read 1 chapter in the next 10 minutes or reset to 0!',
+      ),
+
+      // 5. 11:55 PM — 5 Minutes Left
+      _StreakStage(
+        id: 304,
+        scheduledTime: tz.TZDateTime(
+          tz.local,
+          baseDate.year,
+          baseDate.month,
+          baseDate.day,
+          23,
+          55,
+        ),
+        title: '5 MINUTES LEFT! Final call for your $streak-day streak!🔥',
+        body:
+            'Midnight is 5 minutes away! Tap now to log a chapter and save your $streak-day streak!',
+      ),
+
+      // 6. 12:00 AM Midnight — Freeze Consumed OR Streak Broken Verdict
+      _StreakStage(
+        id: 305,
+        scheduledTime: tz.TZDateTime(
+          tz.local,
+          baseDate.year,
+          baseDate.month,
+          baseDate.day,
+        ).add(const Duration(days: 1)), // 00:00:00 Midnight
+        title: availableFreezes > 0
+            ? 'Phew! Streak Freeze Equipped!🧊'
+            : 'Your $streak-day streak was lost...💔',
+        body: availableFreezes > 0
+            ? 'You missed reading today, so 1 Streak Freeze was automatically used to save your $streak-day streak! (${availableFreezes - 1} left)'
+            : 'Midnight passed with no Streak Freezes left. Open Verso today to start a brand new streak!',
+      ),
+    ];
+
+    const details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        streakEscalationChannelId,
+        'Streak Saver Alerts',
+        channelDescription:
+            'Urgent evening countdowns to protect your reading streak',
+        importance: Importance.max,
+        priority: Priority.max,
+        styleInformation: BigTextStyleInformation(''),
+      ),
+      iOS: DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        interruptionLevel: InterruptionLevel.timeSensitive,
+      ),
+    );
+
+    for (final stage in stages) {
+      // Only schedule alerts that are still in the future
+      if (stage.scheduledTime.isAfter(now)) {
+        await _notificationsPlugin.zonedSchedule(
+          id: stage.id,
+          title: stage.title,
+          body: stage.body,
+          scheduledDate: stage.scheduledTime,
+          notificationDetails: details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          payload: 'streak_escalation_${stage.id}',
+        );
+      }
+    }
+  }
+
+  /// Cancels all 6 countdown notifications.
+  Future<void> cancelStreakEscalationAlerts() async {
+    if (!_isInitialized) await init();
+    for (final id in streakEscalationIds) {
+      await _notificationsPlugin.cancel(id: id);
+    }
+  }
+
   /// Helper: Find next instance of time
   tz.TZDateTime _nextInstance(int hour, int minute) {
     final now = tz.TZDateTime.now(tz.local);
@@ -212,4 +397,18 @@ class NotificationService {
 
     return date;
   }
+}
+
+class _StreakStage {
+  const _StreakStage({
+    required this.id,
+    required this.scheduledTime,
+    required this.title,
+    required this.body,
+  });
+
+  final int id;
+  final tz.TZDateTime scheduledTime;
+  final String title;
+  final String body;
 }

@@ -101,10 +101,18 @@ String getGreeting() {
   return 'Good evening';
 }
 
-/// Motivational subtitle based on streak / progress.
-String getMotivationalMessage(int streak, double progress, int todayCount) {
+/// Motivational subtitle based on streak / progress / frozen status.
+String getMotivationalMessage(
+  int streak,
+  double progress,
+  int todayCount, {
+  bool isFrozen = false,
+}) {
   if (todayCount > 0) {
     return "You've read $todayCount chapter${todayCount == 1 ? '' : 's'} today. Keep going!";
+  }
+  if (isFrozen && streak > 0) {
+    return 'Streak Freeze protected your $streak-day streak! Read today to relight it. ❄️';
   }
   if (streak > 7) {
     return '$streak day streak! Incredible discipline.';

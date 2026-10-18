@@ -52,6 +52,9 @@ abstract final class AppColors {
   // ──────────────── Accent / Chart Colors ────────────────
   static const Color streakLight = Color(0xFFF97316); // Vibrant Orange
   static const Color streakDark = Color(0xFFFB923C); // Bright Orange
+  static const Color streakFreezeLight = Color(0xFF0284C7); // Icy Sky Blue
+  static const Color streakFreezeDark = Color(0xFF38BDF8); // Radiant Cyan Ice
+  static const Color streakFreezeGlow = Color(0xFF7DD3FC); // Frost Highlight
   static const Color chaptersLight = Color(0xFF0D9488); // Teal
   static const Color chaptersDark = Color(0xFF2DD4BF);
   static const Color booksLight = Color(0xFFD97706); // Yellow/Gold

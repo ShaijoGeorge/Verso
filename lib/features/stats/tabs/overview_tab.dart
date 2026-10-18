@@ -215,6 +215,7 @@ class _SummaryCards extends StatelessWidget {
                 label: 'Current Streak',
                 value: '${stats.streak}',
                 subtitle: 'days in a row',
+                isFrozen: stats.isStreakFrozen,
               ),
             ),
             const Gap(12),

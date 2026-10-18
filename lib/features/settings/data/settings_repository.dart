@@ -34,6 +34,13 @@ class SettingsRepository {
   static const _kLastActiveUserIdKey = 'last_active_user_id';
   // Tracks the last local calendar date (YYYY-MM-DD) a daily read was celebrated
   static const _kLastCelebratedReadDateKey = 'last_celebrated_read_date';
+  static const _kStreakFreezesAvailableKey = 'streak_freezes_available';
+  static const _kFrozenDatesKey = 'streak_frozen_dates';
+  static const _kLastFreezeEarnedStreakKey = 'last_freeze_earned_streak';
+  static const _kLastShownFreezeSavedDateKey = 'last_shown_freeze_saved_date';
+  static const _kHasShownWelcomeFreezeKey = 'has_shown_welcome_freeze';
+  static const _kWelcomeFreezeAwardedKey = 'welcome_freeze_awarded';
+  static const int maxStreakFreezes = 2;
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -225,6 +232,95 @@ class SettingsRepository {
       _userKey(_kLastCelebratedReadDateKey, userId),
       dateString,
     );
+  }
+
+  // ── Streak Freeze Persistence ──────────────────────────────────────────────
+
+  /// Returns available streak freezes (defaults to exactly 1 welcome gift freeze).
+  Future<int> getStreakFreezesAvailable(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final freezeKey = _userKey(_kStreakFreezesAvailableKey, userId);
+    final welcomeKey = _userKey(_kWelcomeFreezeAwardedKey, userId);
+    final lastEarnedKey = _userKey(_kLastFreezeEarnedStreakKey, userId);
+
+    final hasAwardedWelcome = prefs.getBool(welcomeKey) ?? false;
+    final lastEarned = prefs.getInt(lastEarnedKey) ?? 0;
+
+    if (!hasAwardedWelcome) {
+      // Award exactly 1 welcome gift freeze
+      await prefs.setInt(freezeKey, 1);
+      await prefs.setBool(welcomeKey, true);
+      return 1;
+    }
+
+    final stored = prefs.getInt(freezeKey) ?? 1;
+    // Self-heal: If user has not earned a milestone yet, clamp to max 1 welcome freeze
+    if (lastEarned == 0 && stored > 1) {
+      await prefs.setInt(freezeKey, 1);
+      return 1;
+    }
+
+    return stored.clamp(0, maxStreakFreezes);
+  }
+
+  Future<void> setStreakFreezesAvailable(String userId, int count) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(
+      _userKey(_kStreakFreezesAvailableKey, userId),
+      count.clamp(0, maxStreakFreezes),
+    );
+  }
+
+  /// Returns the set of local date strings ('YYYY-MM-DD') protected by a Streak Freeze.
+  Future<Set<String>> getFrozenDates(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = prefs.getStringList(_userKey(_kFrozenDatesKey, userId)) ?? [];
+    return list.toSet();
+  }
+
+  Future<void> saveFrozenDates(String userId, Set<String> dates) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _userKey(_kFrozenDatesKey, userId),
+      dates.toList()..sort(),
+    );
+  }
+
+  Future<int> getLastFreezeEarnedStreak(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_userKey(_kLastFreezeEarnedStreakKey, userId)) ?? 0;
+  }
+
+  Future<void> setLastFreezeEarnedStreak(String userId, int streak) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_userKey(_kLastFreezeEarnedStreakKey, userId), streak);
+  }
+
+  Future<String?> getLastShownFreezeSavedDate(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_userKey(_kLastShownFreezeSavedDateKey, userId));
+  }
+
+  Future<void> setLastShownFreezeSavedDate(
+    String userId,
+    String dateString,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _userKey(_kLastShownFreezeSavedDateKey, userId),
+      dateString,
+    );
+  }
+
+  /// Returns whether the user has already seen the welcome gift Streak Freeze celebration.
+  Future<bool> hasShownWelcomeFreeze(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_userKey(_kHasShownWelcomeFreezeKey, userId)) ?? false;
+  }
+
+  Future<void> setHasShownWelcomeFreeze(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_userKey(_kHasShownWelcomeFreezeKey, userId), true);
   }
 
   // ── Theme ─────────────────────────────────────────────────────────────────

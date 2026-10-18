@@ -5,10 +5,13 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/design/components/verso_card.dart';
 import 'package:verso/core/design/components/verso_circular_progress.dart';
+import 'package:verso/core/design/components/verso_frost_effect.dart';
 import 'package:verso/core/design/components/verso_progress_bar.dart';
 import 'package:verso/core/design/components/verso_section_header.dart';
+import 'package:verso/core/design/components/verso_streak_freeze_overlay.dart';
 import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/core/design/tokens/radii.dart';
@@ -18,18 +21,95 @@ import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/data/bible_book_names.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
+import 'package:verso/features/auth/providers/auth_providers.dart';
 import 'package:verso/features/home/data/daily_verse.dart';
 import 'package:verso/features/home/providers/home_providers.dart';
+import 'package:verso/features/home/widgets/streak_freeze_sheet.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
 import 'package:verso/features/stats/providers/activity_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  bool _checkedFreezeSavedThisSession = false;
+  bool _checkedWelcomeFreezeThisSession = false;
+
+  void _checkOverlays(UserStats stats) {
+    _checkFreezeSaved(stats);
+    _checkWelcomeFreeze(stats);
+  }
+
+  void _checkFreezeSaved(UserStats stats) {
+    if (_checkedFreezeSavedThisSession) return;
+    if (stats.newlyFrozenDate != null || stats.isStreakFrozen) {
+      final user = Supabase.instance.client.auth.currentUser ??
+          ref.read(authUserProvider).value;
+      final uid = user?.id ?? '';
+      if (uid.isEmpty) return;
+
+      _checkedFreezeSavedThisSession = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        final settingsRepo = ref.read(settingsRepositoryProvider);
+        final lastShown = await settingsRepo.getLastShownFreezeSavedDate(uid);
+        final todayStr = formatDateKey(DateTime.now());
+        if (lastShown != todayStr) {
+          await settingsRepo.setLastShownFreezeSavedDate(uid, todayStr);
+          if (mounted) {
+            VersoStreakFreezeOverlay.showSaved(
+              context,
+              streak: stats.streak,
+              remainingFreezes: stats.availableFreezes,
+            );
+          }
+        }
+      });
+    }
+  }
+
+  void _checkWelcomeFreeze(UserStats stats) {
+    if (_checkedWelcomeFreezeThisSession) return;
+    if (stats.availableFreezes <= 0) return;
+
+    final user = Supabase.instance.client.auth.currentUser ??
+        ref.read(authUserProvider).value;
+    final uid = user?.id ?? '';
+    if (uid.isEmpty) return;
+
+    _checkedWelcomeFreezeThisSession = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final settingsRepo = ref.read(settingsRepositoryProvider);
+      final hasShown = await settingsRepo.hasShownWelcomeFreeze(uid);
+      if (!hasShown) {
+        await settingsRepo.setHasShownWelcomeFreeze(uid);
+        if (mounted) {
+          await Future<void>.delayed(const Duration(milliseconds: 650));
+          if (mounted) {
+            VersoStreakFreezeOverlay.showWelcome(
+              context,
+              streak: stats.streak,
+            );
+          }
+        }
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen<AsyncValue<UserStats>>(userStatsProvider, (_, next) {
+      next.whenData(_checkOverlays);
+    });
+
     final statsAsync = ref.watch(userStatsProvider);
+    statsAsync.whenData(_checkOverlays);
     final detailedAsync = ref.watch(detailedStatsProvider);
     final continueAsync = ref.watch(continueReadingProvider);
     final activityAsync = ref.watch(activityLogProvider);
@@ -106,6 +186,8 @@ class HomeScreen extends ConsumerWidget {
                     streak: stats.streak,
                     progress: stats.totalProgress,
                     todayCount: todayCount,
+                    availableFreezes: stats.availableFreezes,
+                    isFrozen: stats.isStreakFrozen,
                   );
                 },
               ),
@@ -151,6 +233,8 @@ class HomeScreen extends ConsumerWidget {
                     _WeeklyChart(
                       counts: detailed.last7DaysCounts,
                       dates: detailed.last7DaysDates,
+                      frozenDates:
+                          statsAsync.value?.frozenDates ?? detailed.frozenDates,
                     ),
                     const Gap(Spacing.xl),
                   ],
@@ -249,18 +333,21 @@ class _GreetingSection extends StatelessWidget {
     required this.streak,
     required this.progress,
     required this.todayCount,
+    this.availableFreezes = 1,
+    this.isFrozen = false,
   });
   final String userName;
   final int streak;
   final double progress;
   final int todayCount;
+  final int availableFreezes;
+  final bool isFrozen;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
     final dateStr = DateFormat('EEEE, MMM d').format(DateTime.now());
-    final streakColor = context.appColors.streak;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -289,36 +376,20 @@ class _GreetingSection extends StatelessWidget {
                 ),
               ],
             ),
-            if (streak > 0)
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: streakColor.withValues(alpha: 0.12),
-                  borderRadius: AppRadii.borderRadiusFull,
-                  border: Border.all(
-                    color: streakColor.withValues(alpha: 0.28),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.local_fire_department_rounded,
-                      size: 14,
-                      color: streakColor,
-                    ),
-                    const Gap(4),
-                    Text(
-                      '$streak Day Streak',
-                      style: textTheme.labelSmall?.copyWith(
-                        color: streakColor,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
+            if (streak > 0 || availableFreezes > 0)
+              AnimatedStreakBadge(
+                streak: streak,
+                availableFreezes: availableFreezes,
+                isFrozen: isFrozen,
+                onTap: () {
+                  StreakFreezeBottomSheet.show(
+                    context,
+                    streak: streak,
+                    availableFreezes: availableFreezes,
+                    isFrozen: isFrozen,
+                    todayCount: todayCount,
+                  );
+                },
               ),
           ],
         ),
@@ -332,7 +403,12 @@ class _GreetingSection extends StatelessWidget {
         ),
         const Gap(6),
         Text(
-          getMotivationalMessage(streak, progress, todayCount),
+          getMotivationalMessage(
+            streak,
+            progress,
+            todayCount,
+            isFrozen: isFrozen,
+          ),
           style: textTheme.bodyMedium?.copyWith(
             color: scheme.onSurfaceVariant,
           ),
@@ -621,15 +697,23 @@ class _QuickStatsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
+    final isFrozen = stats.isStreakFrozen;
+    final freezeColor = context.appColors.streakFreeze;
 
     return Row(
       children: [
         Expanded(
           child: _QuickStatCard(
-            icon: Icons.local_fire_department_rounded,
+            icon: isFrozen
+                ? Icons.ac_unit_rounded
+                : Icons.local_fire_department_rounded,
             value: '${stats.streak}',
             label: 'Day Streak',
-            iconColor: isLight ? AppColors.streakLight : AppColors.streakDark,
+            subtitle: isFrozen ? 'Frozen ❄️' : null,
+            iconColor: isFrozen
+                ? freezeColor
+                : (isLight ? AppColors.streakLight : AppColors.streakDark),
+            isFrozen: isFrozen,
           ),
         ),
         const Gap(Spacing.sm),
@@ -662,11 +746,15 @@ class _QuickStatCard extends StatelessWidget {
     required this.value,
     required this.label,
     required this.iconColor,
+    this.subtitle,
+    this.isFrozen = false,
   });
   final IconData icon;
   final String value;
   final String label;
   final Color iconColor;
+  final String? subtitle;
+  final bool isFrozen;
 
   @override
   Widget build(BuildContext context) {
@@ -674,16 +762,24 @@ class _QuickStatCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
     final isAmoled = context.palette.style == AppearanceStyle.amoled;
+    final freezeColor = context.appColors.streakFreeze;
 
-    return Container(
+    final card = Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: scheme.surface,
+        color: isFrozen
+            ? Color.alphaBlend(
+                freezeColor.withValues(alpha: isLight ? 0.08 : 0.12),
+                scheme.surface,
+              )
+            : scheme.surface,
         borderRadius: AppRadii.borderRadiusLG,
         border: Border.all(
-          color: isAmoled
-              ? scheme.outline.withValues(alpha: 0.85)
-              : scheme.outline.withValues(alpha: isLight ? 0.65 : 0.25),
+          color: isFrozen
+              ? freezeColor.withValues(alpha: 0.55)
+              : (isAmoled
+                  ? scheme.outline.withValues(alpha: 0.85)
+                  : scheme.outline.withValues(alpha: isLight ? 0.65 : 0.25)),
         ),
         boxShadow: isLight ? AppShadows.sm : AppShadows.none,
       ),
@@ -723,7 +819,8 @@ class _QuickStatCard extends StatelessWidget {
                       color: iconColor.withValues(alpha: isLight ? 0.1 : 0.16),
                       borderRadius: AppRadii.borderRadiusSM,
                       border: Border.all(
-                        color: iconColor.withValues(alpha: 0.2),
+                        color:
+                            iconColor.withValues(alpha: isFrozen ? 0.35 : 0.2),
                       ),
                     ),
                     child: Icon(icon, size: 19, color: iconColor),
@@ -742,6 +839,7 @@ class _QuickStatCard extends StatelessWidget {
                           style: textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w800,
                             letterSpacing: -0.5,
+                            color: isFrozen ? freezeColor : null,
                           ),
                         ),
                       );
@@ -751,10 +849,11 @@ class _QuickStatCard extends StatelessWidget {
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      label,
+                      subtitle ?? label,
                       style: textTheme.labelSmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
+                        color: isFrozen ? freezeColor : scheme.onSurfaceVariant,
+                        fontWeight:
+                            isFrozen ? FontWeight.w700 : FontWeight.w600,
                       ),
                     ),
                   ),
@@ -765,15 +864,27 @@ class _QuickStatCard extends StatelessWidget {
         ],
       ),
     );
+
+    return VersoFrostEffect(
+      isFrozen: isFrozen,
+      borderRadius: AppRadii.borderRadiusLG,
+      showSnowflakeWatermark: isFrozen,
+      child: card,
+    );
   }
 }
 
 // WEEKLY CHART (mini bar chart)
 
 class _WeeklyChart extends StatelessWidget {
-  const _WeeklyChart({required this.counts, required this.dates});
+  const _WeeklyChart({
+    required this.counts,
+    required this.dates,
+    this.frozenDates = const {},
+  });
   final List<int> counts;
   final List<DateTime> dates;
+  final Set<String> frozenDates;
 
   @override
   Widget build(BuildContext context) {
@@ -784,6 +895,7 @@ class _WeeklyChart extends StatelessWidget {
     final today = DateTime(now.year, now.month, now.day);
     final total = counts.reduce((a, b) => a + b);
     final activeDays = counts.where((c) => c > 0).length;
+    final freezeColor = context.appColors.streakFreeze;
 
     const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
@@ -849,10 +961,14 @@ class _WeeklyChart extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: List.generate(7, (i) {
+                final dateKey = formatDateKey(dates[i]);
+                final isFrozenDay =
+                    counts[i] == 0 && frozenDates.contains(dateKey);
                 final isToday = dates[i].year == today.year &&
                     dates[i].month == today.month &&
                     dates[i].day == today.day;
                 final fraction = maxCount > 0 ? counts[i] / maxCount : 0.0;
+                final targetHeightFactor = isFrozenDay ? 0.35 : fraction;
 
                 return Expanded(
                   child: Padding(
@@ -873,51 +989,80 @@ class _WeeklyChart extends StatelessWidget {
                                 fontSize: 10,
                               ),
                             ),
+                          )
+                        else if (isFrozenDay)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 5),
+                            child: Icon(
+                              Icons.ac_unit_rounded,
+                              size: 11,
+                              color: freezeColor,
+                            ),
                           ),
                         TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 0, end: fraction),
+                          tween: Tween(begin: 0, end: targetHeightFactor),
                           duration: const Duration(milliseconds: 850),
                           curve: Curves.easeOutCubic,
                           builder: (context, val, _) {
                             return Container(
                               height: (val * 64).clamp(6.0, 64.0),
                               decoration: BoxDecoration(
-                                gradient: isToday
+                                gradient: isFrozenDay
                                     ? LinearGradient(
                                         begin: Alignment.bottomCenter,
                                         end: Alignment.topCenter,
                                         colors: [
-                                          scheme.primary,
-                                          context.palette.primaryHover,
+                                          freezeColor,
+                                          freezeColor.withValues(alpha: 0.65),
                                         ],
                                       )
-                                    : (counts[i] > 0
+                                    : isToday
                                         ? LinearGradient(
                                             begin: Alignment.bottomCenter,
                                             end: Alignment.topCenter,
                                             colors: [
-                                              scheme.primary
-                                                  .withValues(alpha: 0.45),
-                                              scheme.primary
-                                                  .withValues(alpha: 0.28),
+                                              scheme.primary,
+                                              context.palette.primaryHover,
                                             ],
                                           )
-                                        : null),
-                                color: !isToday && counts[i] == 0
-                                    ? scheme.surfaceContainerHighest
-                                        .withValues(alpha: 0.7)
-                                    : null,
+                                        : (counts[i] > 0
+                                            ? LinearGradient(
+                                                begin: Alignment.bottomCenter,
+                                                end: Alignment.topCenter,
+                                                colors: [
+                                                  scheme.primary
+                                                      .withValues(alpha: 0.45),
+                                                  scheme.primary
+                                                      .withValues(alpha: 0.28),
+                                                ],
+                                              )
+                                            : null),
+                                color:
+                                    !isToday && counts[i] == 0 && !isFrozenDay
+                                        ? scheme.surfaceContainerHighest
+                                            .withValues(alpha: 0.7)
+                                        : null,
                                 borderRadius: BorderRadius.circular(8),
-                                boxShadow: isToday && counts[i] > 0
+                                boxShadow: isFrozenDay
                                     ? [
                                         BoxShadow(
-                                          color: scheme.primary
-                                              .withValues(alpha: 0.28),
+                                          color: freezeColor.withValues(
+                                            alpha: 0.35,
+                                          ),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
                                         ),
                                       ]
-                                    : null,
+                                    : (isToday && counts[i] > 0
+                                        ? [
+                                            BoxShadow(
+                                              color: scheme.primary
+                                                  .withValues(alpha: 0.28),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ]
+                                        : null),
                               ),
                             );
                           },
@@ -931,7 +1076,9 @@ class _WeeklyChart extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: isToday
                                 ? scheme.primary.withValues(alpha: 0.12)
-                                : Colors.transparent,
+                                : isFrozenDay
+                                    ? freezeColor.withValues(alpha: 0.12)
+                                    : Colors.transparent,
                             borderRadius: AppRadii.borderRadiusFull,
                           ),
                           child: Text(
@@ -939,9 +1086,12 @@ class _WeeklyChart extends StatelessWidget {
                             style: textTheme.labelSmall?.copyWith(
                               color: isToday
                                   ? scheme.primary
-                                  : scheme.onSurfaceVariant,
-                              fontWeight:
-                                  isToday ? FontWeight.w800 : FontWeight.w600,
+                                  : isFrozenDay
+                                      ? freezeColor
+                                      : scheme.onSurfaceVariant,
+                              fontWeight: (isToday || isFrozenDay)
+                                  ? FontWeight.w800
+                                  : FontWeight.w600,
                               fontSize: 10.5,
                             ),
                           ),

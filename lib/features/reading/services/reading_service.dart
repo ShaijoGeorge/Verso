@@ -8,7 +8,9 @@ import 'package:verso/data/local/entities/reading_progress.dart';
 import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/reading/data/bible_repository.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
+import 'package:verso/features/settings/data/settings_repository.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
+import 'package:verso/features/settings/services/notification_service.dart';
 import 'package:verso/features/stats/providers/activity_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 
@@ -132,10 +134,45 @@ class ReadingService {
       isRead: true,
       readAt: now,
     );
-    final updatedStreak = calculateStreak([...cached, simulatedTodayRecord]);
+
+    final availableFreezes = await settingsRepo.getStreakFreezesAvailable(uid);
+    final frozenDates = await settingsRepo.getFrozenDates(uid);
+
+    final streakResult = calculateStreakWithFreezes(
+      [...cached, simulatedTodayRecord],
+      initialFreezes: availableFreezes,
+      existingFrozenDates: frozenDates,
+    );
+    final updatedStreak = streakResult.streak > 0 ? streakResult.streak : 1;
+
+    // Award +1 Streak Freeze on every 30-day streak milestone if below max capacity
+    var updatedFreezes = streakResult.availableFreezes;
+    final lastEarnedStreak = await settingsRepo.getLastFreezeEarnedStreak(uid);
+    if (updatedStreak >= 30 &&
+        updatedStreak % 30 == 0 &&
+        updatedStreak > lastEarnedStreak &&
+        updatedFreezes < SettingsRepository.maxStreakFreezes) {
+      updatedFreezes += 1;
+      await settingsRepo.setStreakFreezesAvailable(uid, updatedFreezes);
+      await settingsRepo.setLastFreezeEarnedStreak(uid, updatedStreak);
+    } else if (updatedStreak < lastEarnedStreak) {
+      // Reset milestone tracker if streak ever resets
+      await settingsRepo.setLastFreezeEarnedStreak(uid, 0);
+    }
 
     await settingsRepo.setLastCelebratedReadDate(uid, todayString);
-    return updatedStreak > 0 ? updatedStreak : 1;
+
+    // Pass updatedFreezes so tomorrow's midnight alert knows about the newly earned shield:
+    unawaited(
+      NotificationService().syncStreakEscalationAlerts(
+        streak: updatedStreak,
+        availableFreezes: updatedFreezes,
+        isStreakFrozen: false,
+        readToday: true,
+      ),
+    );
+
+    return updatedStreak;
   }
 
   void _scheduleRefresh() {
@@ -151,6 +188,22 @@ class ReadingService {
     _ref.invalidate(activityLogProvider);
     _ref.invalidate(todayChaptersProvider);
     _ref.invalidate(continueReadingProvider);
+
+    // Keep streak countdowns in sync with latest read state
+    Future.microtask(_syncStreakCountdowns);
+  }
+
+  Future<void> _syncStreakCountdowns() async {
+    try {
+      final stats = await _ref.read(userStatsProvider.future);
+      final todayCount = await _ref.read(todayChaptersProvider.future);
+      await NotificationService().syncStreakEscalationAlerts(
+        streak: stats.streak,
+        availableFreezes: stats.availableFreezes,
+        isStreakFrozen: stats.isStreakFrozen,
+        readToday: todayCount > 0,
+      );
+    } catch (_) {}
   }
 
   void _triggerSync() {
