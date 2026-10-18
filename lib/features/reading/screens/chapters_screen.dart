@@ -3,10 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/design/components/verso_circular_progress.dart';
 import 'package:verso/core/design/components/verso_confetti.dart';
 import 'package:verso/core/design/components/verso_progress_bar.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
+import 'package:verso/core/design/components/verso_streak_freeze_overlay.dart';
 import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/shadows.dart';
@@ -30,6 +32,30 @@ class ChaptersScreen extends ConsumerStatefulWidget {
 
 class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
   bool _isMarkingRead = false;
+
+  Future<void> _celebrateStreak(int streak) async {
+    VersoConfetti.show(context, streak: streak);
+    if (streak >= 5 && streak % 5 == 0) {
+      final uid = Supabase.instance.client.auth.currentUser?.id ?? '';
+      if (uid.isNotEmpty) {
+        final settingsRepo = ref.read(settingsRepositoryProvider);
+        final lastEarned = await settingsRepo.getLastFreezeEarnedStreak(uid);
+        if (lastEarned == streak) {
+          final count = await settingsRepo.getStreakFreezesAvailable(uid);
+          if (mounted) {
+            Future.delayed(const Duration(milliseconds: 1400), () {
+              if (mounted) {
+                VersoStreakFreezeOverlay.showEarned(
+                  context,
+                  freezesCount: count,
+                );
+              }
+            });
+          }
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -185,7 +211,7 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
                                 newStatus,
                               );
                       if (newStreak != null && context.mounted) {
-                        VersoConfetti.show(context, streak: newStreak);
+                        _celebrateStreak(newStreak);
                       }
                     } catch (e) {
                       if (context.mounted) {
@@ -236,7 +262,7 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
             .markBookAsRead(widget.book.id, widget.book.chapters);
         if (mounted) {
           if (newStreak != null) {
-            VersoConfetti.show(context, streak: newStreak);
+            _celebrateStreak(newStreak);
           } else {
             VersoSnackbar.success(context, message: 'Marked as read!');
           }

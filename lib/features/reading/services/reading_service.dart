@@ -8,6 +8,7 @@ import 'package:verso/data/local/entities/reading_progress.dart';
 import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/reading/data/bible_repository.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
+import 'package:verso/features/settings/data/settings_repository.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
 import 'package:verso/features/stats/providers/activity_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
@@ -132,10 +133,35 @@ class ReadingService {
       isRead: true,
       readAt: now,
     );
-    final updatedStreak = calculateStreak([...cached, simulatedTodayRecord]);
+
+    final availableFreezes = await settingsRepo.getStreakFreezesAvailable(uid);
+    final frozenDates = await settingsRepo.getFrozenDates(uid);
+
+    final streakResult = calculateStreakWithFreezes(
+      [...cached, simulatedTodayRecord],
+      initialFreezes: availableFreezes,
+      existingFrozenDates: frozenDates,
+    );
+    final updatedStreak = streakResult.streak > 0 ? streakResult.streak : 1;
+
+    // Award +1 Streak Freeze on every 5-day streak milestone if below max capacity
+    final lastEarnedStreak = await settingsRepo.getLastFreezeEarnedStreak(uid);
+    if (updatedStreak >= 5 &&
+        updatedStreak % 5 == 0 &&
+        updatedStreak > lastEarnedStreak &&
+        streakResult.availableFreezes < SettingsRepository.maxStreakFreezes) {
+      await settingsRepo.setStreakFreezesAvailable(
+        uid,
+        streakResult.availableFreezes + 1,
+      );
+      await settingsRepo.setLastFreezeEarnedStreak(uid, updatedStreak);
+    } else if (updatedStreak < lastEarnedStreak) {
+      // Reset milestone tracker if streak ever resets
+      await settingsRepo.setLastFreezeEarnedStreak(uid, 0);
+    }
 
     await settingsRepo.setLastCelebratedReadDate(uid, todayString);
-    return updatedStreak > 0 ? updatedStreak : 1;
+    return updatedStreak;
   }
 
   void _scheduleRefresh() {
