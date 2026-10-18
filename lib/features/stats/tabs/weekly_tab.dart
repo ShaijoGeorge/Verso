@@ -252,7 +252,8 @@ class WeeklyTab extends ConsumerWidget {
                                             ? [
                                                 freezeColor,
                                                 freezeColor.withValues(
-                                                    alpha: 0.65),
+                                                  alpha: 0.65,
+                                                ),
                                               ]
                                             : isToday
                                                 ? [
@@ -264,11 +265,13 @@ class WeeklyTab extends ConsumerWidget {
                                                     ? [
                                                         context.palette.primary
                                                             .withValues(
-                                                                alpha: 0.7),
+                                                          alpha: 0.7,
+                                                        ),
                                                         context.palette
                                                             .primaryHover
                                                             .withValues(
-                                                                alpha: 0.5),
+                                                          alpha: 0.5,
+                                                        ),
                                                       ]
                                                     : [
                                                         scheme.outline

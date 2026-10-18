@@ -240,7 +240,9 @@ class SettingsRepository {
     final key = _userKey(_kStreakFreezesAvailableKey, userId);
     if (!prefs.containsKey(key)) {
       await prefs.setInt(
-          key, 1); // Start every user with 1 starter Streak Freeze
+        key,
+        1,
+      ); // Start every user with 1 starter Streak Freeze
       return 1;
     }
     return (prefs.getInt(key) ?? 1).clamp(0, maxStreakFreezes);

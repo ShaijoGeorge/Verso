@@ -972,7 +972,8 @@ class _WeeklyChart extends StatelessWidget {
                                     ? [
                                         BoxShadow(
                                           color: freezeColor.withValues(
-                                              alpha: 0.35),
+                                            alpha: 0.35,
+                                          ),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
                                         ),
