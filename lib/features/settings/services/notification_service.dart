@@ -13,9 +13,28 @@ class NotificationService {
 
   bool _isInitialized = false;
 
+  void Function(String? payload)? _onNotificationTap;
+
   /// Initialize the notification plugin
-  Future<void> init() async {
-    if (_isInitialized) return;
+  Future<void> init({void Function(String? payload)? onNotificationTap}) async {
+    if (onNotificationTap != null) {
+      _onNotificationTap = onNotificationTap;
+    }
+    if (_isInitialized) {
+      if (onNotificationTap != null) {
+        final launchDetails =
+            await _notificationsPlugin.getNotificationAppLaunchDetails();
+        if (launchDetails?.didNotificationLaunchApp ?? false) {
+          final payload = launchDetails!.notificationResponse?.payload;
+          if (payload != null) {
+            Future.delayed(const Duration(milliseconds: 600), () {
+              _onNotificationTap?.call(payload);
+            });
+          }
+        }
+      }
+      return;
+    }
 
     await _initializeTimezone();
 
@@ -24,8 +43,25 @@ class NotificationService {
       iOS: DarwinInitializationSettings(),
     );
 
-    _isInitialized =
-        await _notificationsPlugin.initialize(settings: settings) ?? false;
+    _isInitialized = await _notificationsPlugin.initialize(
+          settings: settings,
+          onDidReceiveNotificationResponse: (response) {
+            _onNotificationTap?.call(response.payload);
+          },
+        ) ??
+        false;
+
+    // Handle cold-start launch if the user tapped a notification while app was terminated
+    final launchDetails =
+        await _notificationsPlugin.getNotificationAppLaunchDetails();
+    if (launchDetails?.didNotificationLaunchApp ?? false) {
+      final payload = launchDetails!.notificationResponse?.payload;
+      if (payload != null) {
+        Future.delayed(const Duration(milliseconds: 600), () {
+          _onNotificationTap?.call(payload);
+        });
+      }
+    }
   }
 
   /// Timezone setup
@@ -70,6 +106,10 @@ class NotificationService {
   /// Dedicated Android notification channels
   static const String dailyReminderChannelId = 'daily_reminder';
   static const String dailyVerseChannelId = 'daily_verse_channel';
+
+  /// Dedicated notification ID and channel for Birthday Wishes
+  static const int birthdayNotificationId = 400;
+  static const String birthdayChannelId = 'birthday_wish_channel';
 
   /// Dedicated high-urgency Android channel for streak countdowns
   static const String streakEscalationChannelId = 'streak_escalation_channel';
@@ -396,6 +436,91 @@ class NotificationService {
     }
 
     return date;
+  }
+
+  /// Schedules an annual birthday notification at 8:00 AM local time.
+  Future<void> scheduleBirthdayNotification({
+    required DateTime birthday,
+    String? userName,
+    int hour = 8,
+    int minute = 0,
+  }) async {
+    if (!_isInitialized) await init();
+
+    await cancelBirthdayNotification();
+
+    final hasPermission = await requestPermissions();
+    if (!hasPermission) return;
+
+    final scheduledDate = _nextBirthdayInstance(
+      birthday.month,
+      birthday.day,
+      hour,
+      minute,
+    );
+
+    final cleanName = userName?.trim();
+    final title = (cleanName != null && cleanName.isNotEmpty)
+        ? 'Happy Birthday, $cleanName! 🎂'
+        : 'Happy Birthday! 🎂';
+
+    const body =
+        'May the Lord bless you and keep you in this new year of your life! Tap for your birthday blessing ✨';
+
+    await _notificationsPlugin.zonedSchedule(
+      id: birthdayNotificationId,
+      title: title,
+      body: body,
+      scheduledDate: scheduledDate,
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          birthdayChannelId,
+          'Birthday Wishes',
+          channelDescription: 'Annual birthday blessing and Scripture verse',
+          importance: Importance.max,
+          priority: Priority.high,
+          styleInformation: BigTextStyleInformation(body),
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.dayOfMonthAndTime,
+      payload: 'birthday_wish',
+    );
+  }
+
+  /// Cancel only the birthday notification
+  Future<void> cancelBirthdayNotification() async {
+    if (!_isInitialized) await init();
+    await _notificationsPlugin.cancel(id: birthdayNotificationId);
+  }
+
+  /// Helper: Find next occurrence of [month]/[day] at [hour]:[minute]
+  /// Safely handles Feb 29 on non-leap years by celebrating on Feb 28.
+  tz.TZDateTime _nextBirthdayInstance(
+    int month,
+    int day,
+    int hour,
+    int minute,
+  ) {
+    final now = tz.TZDateTime.now(tz.local);
+
+    tz.TZDateTime buildForYear(int year) {
+      final isLeapYear =
+          (year % 4 == 0) && ((year % 100 != 0) || (year % 400 == 0));
+      final safeDay = (month == 2 && day == 29 && !isLeapYear) ? 28 : day;
+      return tz.TZDateTime(tz.local, year, month, safeDay, hour, minute);
+    }
+
+    var scheduled = buildForYear(now.year);
+    if (scheduled.isBefore(now)) {
+      scheduled = buildForYear(now.year + 1);
+    }
+    return scheduled;
   }
 }
 

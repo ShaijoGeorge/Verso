@@ -34,6 +34,8 @@ class SettingsRepository {
   static const _kLastActiveUserIdKey = 'last_active_user_id';
   // Tracks the last local calendar date (YYYY-MM-DD) a daily read was celebrated
   static const _kLastCelebratedReadDateKey = 'last_celebrated_read_date';
+  // Tracks the last calendar year (e.g. 2026) the user saw the birthday wish screen
+  static const _kLastShownBirthdayYearKey = 'last_shown_birthday_year';
   static const _kStreakFreezesAvailableKey = 'streak_freezes_available';
   static const _kFrozenDatesKey = 'streak_frozen_dates';
   static const _kLastFreezeEarnedStreakKey = 'last_freeze_earned_streak';
@@ -205,12 +207,41 @@ class SettingsRepository {
     return prefs.getString(_userKey(_kUserGenderKey, userId));
   }
 
-  /// Returns the saved birthday as a DateTime, or null if not yet set.
+  /// Returns the saved birthday as a DateTime, checking local prefs first
+  /// and falling back to Supabase user_metadata if available.
   Future<DateTime?> getUserBirthday(String userId) async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_userKey(_kUserBirthdayKey, userId));
-    if (raw == null) return null;
-    return DateTime.tryParse(raw);
+    if (raw != null) {
+      return DateTime.tryParse(raw);
+    }
+
+    // Fallback: Check Supabase user_metadata if local cache was cleared
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null && user.id == userId) {
+      final metaBday = user.userMetadata?['birthday'] as String? ??
+          user.userMetadata?['birth_date'] as String?;
+      if (metaBday != null) {
+        final parsed = DateTime.tryParse(metaBday);
+        if (parsed != null) {
+          await prefs.setString(_userKey(_kUserBirthdayKey, userId), metaBday);
+          return parsed;
+        }
+      }
+    }
+    return null;
+  }
+
+  /// Returns the last year (e.g. 2026) the birthday screen was automatically shown.
+  Future<int?> getLastShownBirthdayYear(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_userKey(_kLastShownBirthdayYearKey, userId));
+  }
+
+  /// Records that the birthday celebration was shown for [year].
+  Future<void> setLastShownBirthdayYear(String userId, int year) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_userKey(_kLastShownBirthdayYearKey, userId), year);
   }
 
   // ── Daily First-Read Celebration ─────────────────────────────────────────
