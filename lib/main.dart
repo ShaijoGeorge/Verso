@@ -108,6 +108,15 @@ class _VersoAppState extends ConsumerState<VersoApp>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
+    // Connect notification tap routing
+    NotificationService().init(
+      onNotificationTap: (payload) {
+        if (payload == 'birthday_wish') {
+          ref.read(routerProvider).push('/birthday-wish');
+        }
+      },
+    );
+
     // Listen for Auth Events
     Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
       final event = data.event;
@@ -203,6 +212,9 @@ class _VersoAppState extends ConsumerState<VersoApp>
         await NotificationService().scheduleDailyVerseNotification();
       }
 
+      // Schedule annual Birthday Notification & check if today is the user's birthday
+      await _checkAndScheduleBirthday();
+
       // Automatic streak saver countdowns (no user toggle needed)
       final stats = await ref.read(userStatsProvider.future);
       final todayCount = await ref.read(todayChaptersProvider.future);
@@ -214,6 +226,45 @@ class _VersoAppState extends ConsumerState<VersoApp>
       );
     } catch (e) {
       // Silently ignore if settings/stats fail to load
+    }
+  }
+
+  Future<void> _checkAndScheduleBirthday() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    final settingsRepo = ref.read(settingsRepositoryProvider);
+    final birthday = await settingsRepo.getUserBirthday(user.id);
+    if (birthday == null) return;
+
+    final userName = user.userMetadata?['full_name'] as String? ??
+        user.userMetadata?['name'] as String?;
+
+    // 1. Always keep the annual 8:00 AM birthday notification scheduled
+    await NotificationService().scheduleBirthdayNotification(
+      birthday: birthday,
+      userName: userName,
+    );
+
+    // 2. Check if today is the user's birthday (handling Feb 29 on non-leap years)
+    final now = DateTime.now();
+    final isLeapYear =
+        (now.year % 4 == 0) && ((now.year % 100 != 0) || (now.year % 400 == 0));
+    final bdayMonth = birthday.month;
+    final bdayDay = (bdayMonth == 2 && birthday.day == 29 && !isLeapYear)
+        ? 28
+        : birthday.day;
+
+    final isBirthdayToday = now.month == bdayMonth && now.day == bdayDay;
+    if (!isBirthdayToday) return;
+
+    // 3. Show the in-app celebration screen once per year automatically
+    final lastShownYear = await settingsRepo.getLastShownBirthdayYear(user.id);
+    if (lastShownYear != now.year) {
+      await settingsRepo.setLastShownBirthdayYear(user.id, now.year);
+      if (mounted) {
+        ref.read(routerProvider).push('/birthday-wish');
+      }
     }
   }
 
