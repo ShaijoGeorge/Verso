@@ -16,6 +16,7 @@ export 'components/verso_empty_state.dart';
 export 'components/verso_progress_bar.dart';
 export 'components/verso_section_header.dart';
 export 'components/verso_snackbar.dart';
+export 'components/verso_streak_freeze_overlay.dart';
 export 'extensions.dart';
 // Profiles
 export 'profiles/theme_profiles.dart';

@@ -363,7 +363,12 @@ class _GreetingSection extends StatelessWidget {
         ),
         const Gap(6),
         Text(
-          getMotivationalMessage(streak, progress, todayCount),
+          getMotivationalMessage(
+            streak,
+            progress,
+            todayCount,
+            isFrozen: isFrozen,
+          ),
           style: textTheme.bodyMedium?.copyWith(
             color: scheme.onSurfaceVariant,
           ),
