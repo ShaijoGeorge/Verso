@@ -357,9 +357,8 @@ class _CelebrationCard extends StatelessWidget {
         point2Desc = subValue > 0
             ? 'You have $subValue shield left for future emergencies. Read daily to keep your habit safe.'
             : 'You used your last shield! Be sure to read daily to prevent losing your streak tomorrow.';
-        point2Icon = subValue > 0
-            ? Icons.shield_rounded
-            : Icons.warning_amber_rounded;
+        point2Icon =
+            subValue > 0 ? Icons.shield_rounded : Icons.warning_amber_rounded;
         point2Color = subValue > 0 ? freezeColor : Colors.amber[700]!;
         ctaText = 'Relight My Flame 🔥';
 
@@ -869,7 +868,8 @@ class _IceStormPainter extends CustomPainter {
 
       final y = (p.vy * t + 0.5 * p.gravity * t * t) % (size.height + 40);
       final startX = size.width * p.startXPercent;
-      final x = (startX + p.vx * t + sin(p.swayFreq * t) * p.swayAmp) % size.width;
+      final x =
+          (startX + p.vx * t + sin(p.swayFreq * t) * p.swayAmp) % size.width;
 
       final paint = Paint()
         ..color = p.color.withValues(alpha: 0.65)
