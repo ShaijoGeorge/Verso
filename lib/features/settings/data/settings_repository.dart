@@ -34,6 +34,11 @@ class SettingsRepository {
   static const _kLastActiveUserIdKey = 'last_active_user_id';
   // Tracks the last local calendar date (YYYY-MM-DD) a daily read was celebrated
   static const _kLastCelebratedReadDateKey = 'last_celebrated_read_date';
+  static const _kStreakFreezesAvailableKey = 'streak_freezes_available';
+  static const _kFrozenDatesKey = 'streak_frozen_dates';
+  static const _kLastFreezeEarnedStreakKey = 'last_freeze_earned_streak';
+  static const _kLastShownFreezeSavedDateKey = 'last_shown_freeze_saved_date';
+  static const int maxStreakFreezes = 2;
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -223,6 +228,69 @@ class SettingsRepository {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       _userKey(_kLastCelebratedReadDateKey, userId),
+      dateString,
+    );
+  }
+
+  // ── Streak Freeze Persistence ──────────────────────────────────────────────
+
+  /// Returns available streak freezes (defaults to 1 for new users).
+  Future<int> getStreakFreezesAvailable(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = _userKey(_kStreakFreezesAvailableKey, userId);
+    if (!prefs.containsKey(key)) {
+      await prefs.setInt(
+          key, 1); // Start every user with 1 starter Streak Freeze
+      return 1;
+    }
+    return (prefs.getInt(key) ?? 1).clamp(0, maxStreakFreezes);
+  }
+
+  Future<void> setStreakFreezesAvailable(String userId, int count) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(
+      _userKey(_kStreakFreezesAvailableKey, userId),
+      count.clamp(0, maxStreakFreezes),
+    );
+  }
+
+  /// Returns the set of local date strings ('YYYY-MM-DD') protected by a Streak Freeze.
+  Future<Set<String>> getFrozenDates(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = prefs.getStringList(_userKey(_kFrozenDatesKey, userId)) ?? [];
+    return list.toSet();
+  }
+
+  Future<void> saveFrozenDates(String userId, Set<String> dates) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _userKey(_kFrozenDatesKey, userId),
+      dates.toList()..sort(),
+    );
+  }
+
+  Future<int> getLastFreezeEarnedStreak(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_userKey(_kLastFreezeEarnedStreakKey, userId)) ?? 0;
+  }
+
+  Future<void> setLastFreezeEarnedStreak(String userId, int streak) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_userKey(_kLastFreezeEarnedStreakKey, userId), streak);
+  }
+
+  Future<String?> getLastShownFreezeSavedDate(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_userKey(_kLastShownFreezeSavedDateKey, userId));
+  }
+
+  Future<void> setLastShownFreezeSavedDate(
+    String userId,
+    String dateString,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _userKey(_kLastShownFreezeSavedDateKey, userId),
       dateString,
     );
   }

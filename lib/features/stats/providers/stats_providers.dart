@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/reading_progress.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
 
 part 'stats_providers.g.dart';
 
@@ -25,6 +27,10 @@ class UserStats {
     required this.totalProgress,
     required this.totalBooksInCanon,
     required this.totalChaptersInCanon,
+    this.availableFreezes = 1,
+    this.frozenDates = const {},
+    this.isStreakFrozen = false,
+    this.newlyFrozenDate,
   });
   final int streak;
   final int totalChaptersRead;
@@ -32,48 +38,148 @@ class UserStats {
   final double totalProgress;
   final int totalBooksInCanon;
   final int totalChaptersInCanon;
+  final int availableFreezes;
+  final Set<String> frozenDates;
+  final bool isStreakFrozen;
+  final String? newlyFrozenDate;
 }
 
-int calculateStreak(List<ReadingProgress> history) {
-  if (history.isEmpty) return 0;
+class StreakCalculationResult {
+  const StreakCalculationResult({
+    required this.streak,
+    required this.availableFreezes,
+    required this.frozenDates,
+    required this.isFrozenTodayOrYesterday,
+    this.newlyFrozenDate,
+  });
+
+  final int streak;
+  final int availableFreezes;
+  final Set<String> frozenDates;
+  final bool isFrozenTodayOrYesterday;
+  final String? newlyFrozenDate; // Non-null if a freeze was just auto-consumed
+}
+
+String formatDateKey(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
+    '${d.month.toString().padLeft(2, '0')}-'
+    '${d.day.toString().padLeft(2, '0')}';
+
+/// Calculates the active streak while factoring in and auto-applying Streak Freezes.
+StreakCalculationResult calculateStreakWithFreezes(
+  List<ReadingProgress> history, {
+  required int initialFreezes,
+  required Set<String> existingFrozenDates,
+}) {
+  if (history.isEmpty) {
+    return StreakCalculationResult(
+      streak: 0,
+      availableFreezes: initialFreezes,
+      frozenDates: existingFrozenDates,
+      isFrozenTodayOrYesterday: false,
+    );
+  }
 
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
   final yesterday = today.subtract(const Duration(days: 1));
 
-  final readDates = history
+  final readDatesSet = history
       .where((p) => p.isRead && p.readAt != null)
-      .map((p) => p.readAt!.toLocal()) // Convert to local time
+      .map((p) => p.readAt!.toLocal())
       .map((dt) {
-        final d = DateTime(dt.year, dt.month, dt.day);
-        // Sanitization: If an old record was saved with the timezone bug,
-        // it might appear as "tomorrow". Clamp it to today to avoid breaking streaks.
-        if (d.isAfter(today)) return today;
-        return d;
-      })
-      .toSet()
-      .toList()
-    ..sort((a, b) => b.compareTo(a)); // Descending
+    final d = DateTime(dt.year, dt.month, dt.day);
+    return d.isAfter(today) ? today : d;
+  }).toSet();
 
-  if (readDates.isEmpty) return 0;
+  if (readDatesSet.isEmpty) {
+    return StreakCalculationResult(
+      streak: 0,
+      availableFreezes: initialFreezes,
+      frozenDates: existingFrozenDates,
+      isFrozenTodayOrYesterday: false,
+    );
+  }
 
-  // If the most recent read is not today or yesterday, streak is broken
-  if (readDates.first != today && readDates.first != yesterday) {
-    return 0;
+  final sortedReads = readDatesSet.toList()..sort((a, b) => b.compareTo(a));
+  final mostRecentRead = sortedReads.first;
+
+  var availableFreezes = initialFreezes;
+  final frozenDates = Set<String>.from(existingFrozenDates);
+  String? newlyFrozenDate;
+
+  // Determine starting anchor for the walk-back:
+  // If user hasn't read today, we check from yesterday backward.
+  var cursor = readDatesSet.contains(today) ? today : yesterday;
+
+  // If the gap between cursor and mostRecentRead is larger than available freezes + existing frozen dates,
+  // check if we can bridge from yesterday back to their last read.
+  final daysSinceLastRead = cursor.difference(mostRecentRead).inDays;
+  if (daysSinceLastRead < 0) {
+    cursor = today;
+  }
+
+  // Count unread, unfrozen days strictly between cursor (inclusive) and mostRecentRead (exclusive)
+  var unbridgedDays = 0;
+  var checkCursor = cursor;
+  while (checkCursor.isAfter(mostRecentRead)) {
+    final key = formatDateKey(checkCursor);
+    if (!readDatesSet.contains(checkCursor) && !frozenDates.contains(key)) {
+      unbridgedDays++;
+    }
+    checkCursor = checkCursor.subtract(const Duration(days: 1));
+  }
+
+  if (unbridgedDays > availableFreezes) {
+    // Gap cannot be bridged even with all available freezes. Streak is broken.
+    return StreakCalculationResult(
+      streak: 0,
+      availableFreezes: initialFreezes,
+      frozenDates: existingFrozenDates,
+      isFrozenTodayOrYesterday: false,
+    );
   }
 
   var streak = 0;
-  var targetDate = readDates.first;
 
-  for (final day in readDates) {
-    if (day == targetDate) {
+  while (true) {
+    final key = formatDateKey(cursor);
+
+    if (readDatesSet.contains(cursor)) {
       streak++;
-      targetDate = targetDate.subtract(const Duration(days: 1));
+      cursor = cursor.subtract(const Duration(days: 1));
+    } else if (frozenDates.contains(key)) {
+      // Already frozen in the past — bridges the streak (doesn't increment read count, but preserves continuity)
+      cursor = cursor.subtract(const Duration(days: 1));
+    } else if (cursor.isAfter(mostRecentRead) && availableFreezes > 0) {
+      // User missed `cursor` (e.g., yesterday), but has an active streak before it and a freeze equipped!
+      availableFreezes--;
+      frozenDates.add(key);
+      newlyFrozenDate ??= key;
+      cursor = cursor.subtract(const Duration(days: 1));
     } else {
       break;
     }
   }
-  return streak;
+
+  final yesterdayKey = formatDateKey(yesterday);
+  final isFrozenRecent =
+      !readDatesSet.contains(today) && frozenDates.contains(yesterdayKey);
+
+  return StreakCalculationResult(
+    streak: streak,
+    availableFreezes: availableFreezes,
+    frozenDates: frozenDates,
+    isFrozenTodayOrYesterday: isFrozenRecent,
+    newlyFrozenDate: newlyFrozenDate,
+  );
+}
+
+int calculateStreak(List<ReadingProgress> history) {
+  return calculateStreakWithFreezes(
+    history,
+    initialFreezes: 0,
+    existingFrozenDates: const {},
+  ).streak;
 }
 
 @riverpod
@@ -95,7 +201,28 @@ Future<UserStats> userStats(Ref ref) async {
       .where((p) => p.isRead && activeBookIds.contains(p.bookId))
       .toList();
   final totalRead = activeReadHistory.length;
-  final streak = calculateStreak(history);
+
+  final uid = Supabase.instance.client.auth.currentUser?.id ?? '';
+  final settingsRepo = ref.read(settingsRepositoryProvider);
+  final initialFreezes =
+      uid.isNotEmpty ? await settingsRepo.getStreakFreezesAvailable(uid) : 1;
+  final existingFrozenDates =
+      uid.isNotEmpty ? await settingsRepo.getFrozenDates(uid) : <String>{};
+
+  final streakResult = calculateStreakWithFreezes(
+    history,
+    initialFreezes: initialFreezes,
+    existingFrozenDates: existingFrozenDates,
+  );
+
+  // Persist if a freeze was automatically consumed today
+  if (uid.isNotEmpty && streakResult.newlyFrozenDate != null) {
+    await settingsRepo.setStreakFreezesAvailable(
+      uid,
+      streakResult.availableFreezes,
+    );
+    await settingsRepo.saveFrozenDates(uid, streakResult.frozenDates);
+  }
 
   // Calculate Books Completed
   var completedBooksCount = 0;
@@ -116,12 +243,16 @@ Future<UserStats> userStats(Ref ref) async {
       totalChaptersInCanon > 0 ? (totalRead / totalChaptersInCanon) * 100 : 0.0;
 
   return UserStats(
-    streak: streak,
+    streak: streakResult.streak,
     totalChaptersRead: totalRead,
     booksCompleted: completedBooksCount,
     totalProgress: progress,
     totalBooksInCanon: totalBooksInCanon,
     totalChaptersInCanon: totalChaptersInCanon,
+    availableFreezes: streakResult.availableFreezes,
+    frozenDates: streakResult.frozenDates,
+    isStreakFrozen: streakResult.isFrozenTodayOrYesterday,
+    newlyFrozenDate: streakResult.newlyFrozenDate,
   );
 }
 
@@ -148,6 +279,9 @@ class DetailedStats {
     required this.totalOTBooks,
     required this.totalNTBooks,
     required this.totalBooks,
+    this.availableFreezes = 1,
+    this.frozenDates = const {},
+    this.isStreakFrozen = false,
   });
   final int otRead;
   final int ntRead;
@@ -174,6 +308,10 @@ class DetailedStats {
   final int totalOTBooks;
   final int totalNTBooks;
   final int totalBooks;
+
+  final int availableFreezes;
+  final Set<String> frozenDates;
+  final bool isStreakFrozen;
 }
 
 @riverpod
@@ -288,6 +426,19 @@ Future<DetailedStats> detailedStats(Ref ref) async {
   final recentTotal = last7DaysCounts.reduce((a, b) => a + b);
   final dailyRate = recentTotal > 0 ? recentTotal / 7.0 : 0.0;
 
+  final uid = Supabase.instance.client.auth.currentUser?.id ?? '';
+  final settingsRepo = ref.read(settingsRepositoryProvider);
+  final initialFreezes =
+      uid.isNotEmpty ? await settingsRepo.getStreakFreezesAvailable(uid) : 1;
+  final existingFrozenDates =
+      uid.isNotEmpty ? await settingsRepo.getFrozenDates(uid) : <String>{};
+
+  final streakResult = calculateStreakWithFreezes(
+    history,
+    initialFreezes: initialFreezes,
+    existingFrozenDates: existingFrozenDates,
+  );
+
   return DetailedStats(
     otRead: otRead,
     ntRead: ntRead,
@@ -302,7 +453,7 @@ Future<DetailedStats> detailedStats(Ref ref) async {
     currentMonthDailyCounts: currentMonthDailyCounts,
     currentYearMonthlyCounts: currentYearMonthlyCounts,
     averageChaptersPerDay: dailyRate,
-    streak: calculateStreak(history),
+    streak: streakResult.streak,
     bookCompletionMap: bookCompletionMap,
     totalOTChapters: totalOT,
     totalNTChapters: totalNT,
@@ -310,6 +461,9 @@ Future<DetailedStats> detailedStats(Ref ref) async {
     totalOTBooks: totalOTBooks,
     totalNTBooks: totalNTBooks,
     totalBooks: totalBooks,
+    availableFreezes: streakResult.availableFreezes,
+    frozenDates: streakResult.frozenDates,
+    isStreakFrozen: streakResult.isFrozenTodayOrYesterday,
   );
 }
 
