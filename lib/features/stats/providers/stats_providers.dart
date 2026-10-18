@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/reading_progress.dart';
+import 'package:verso/features/auth/providers/auth_providers.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
 
@@ -201,8 +202,10 @@ Future<UserStats> userStats(Ref ref) async {
       .where((p) => p.isRead && activeBookIds.contains(p.bookId))
       .toList();
   final totalRead = activeReadHistory.length;
-
-  final uid = Supabase.instance.client.auth.currentUser?.id ?? '';
+  ref.watch(authUserProvider);
+  final user = Supabase.instance.client.auth.currentUser ??
+      ref.watch(authUserProvider).value;
+  final uid = user?.id ?? '';
   final settingsRepo = ref.read(settingsRepositoryProvider);
   final initialFreezes =
       uid.isNotEmpty ? await settingsRepo.getStreakFreezesAvailable(uid) : 1;
@@ -425,8 +428,9 @@ Future<DetailedStats> detailedStats(Ref ref) async {
   // 4. Average
   final recentTotal = last7DaysCounts.reduce((a, b) => a + b);
   final dailyRate = recentTotal > 0 ? recentTotal / 7.0 : 0.0;
-
-  final uid = Supabase.instance.client.auth.currentUser?.id ?? '';
+  final user = Supabase.instance.client.auth.currentUser ??
+      ref.watch(authUserProvider).value;
+  final uid = user?.id ?? '';
   final settingsRepo = ref.read(settingsRepositoryProvider);
   final initialFreezes =
       uid.isNotEmpty ? await settingsRepo.getStreakFreezesAvailable(uid) : 1;

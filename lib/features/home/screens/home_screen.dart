@@ -20,6 +20,7 @@ import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/data/bible_book_names.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
+import 'package:verso/features/auth/providers/auth_providers.dart';
 import 'package:verso/features/home/data/daily_verse.dart';
 import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/home/widgets/streak_freeze_sheet.dart';
@@ -36,15 +37,24 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _checkedFreezeSavedThisSession = false;
+  bool _checkedWelcomeFreezeThisSession = false;
+
+  void _checkOverlays(UserStats stats) {
+    _checkFreezeSaved(stats);
+    _checkWelcomeFreeze(stats);
+  }
 
   void _checkFreezeSaved(UserStats stats) {
     if (_checkedFreezeSavedThisSession) return;
     if (stats.newlyFrozenDate != null || stats.isStreakFrozen) {
+      final user = Supabase.instance.client.auth.currentUser ??
+          ref.read(authUserProvider).value;
+      final uid = user?.id ?? '';
+      if (uid.isEmpty) return;
+
       _checkedFreezeSavedThisSession = true;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
-        final uid = Supabase.instance.client.auth.currentUser?.id ?? '';
-        if (uid.isEmpty) return;
         final settingsRepo = ref.read(settingsRepositoryProvider);
         final lastShown = await settingsRepo.getLastShownFreezeSavedDate(uid);
         final todayStr = formatDateKey(DateTime.now());
@@ -62,14 +72,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
+  void _checkWelcomeFreeze(UserStats stats) {
+    if (_checkedWelcomeFreezeThisSession) return;
+    if (stats.availableFreezes <= 0) return;
+
+    final user = Supabase.instance.client.auth.currentUser ??
+        ref.read(authUserProvider).value;
+    final uid = user?.id ?? '';
+    if (uid.isEmpty) return;
+
+    _checkedWelcomeFreezeThisSession = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final settingsRepo = ref.read(settingsRepositoryProvider);
+      final hasShown = await settingsRepo.hasShownWelcomeFreeze(uid);
+      if (!hasShown) {
+        await settingsRepo.setHasShownWelcomeFreeze(uid);
+        if (mounted) {
+          await Future<void>.delayed(const Duration(milliseconds: 650));
+          if (mounted) {
+            VersoStreakFreezeOverlay.showWelcome(
+              context,
+              streak: stats.streak,
+            );
+          }
+        }
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<AsyncValue<UserStats>>(userStatsProvider, (_, next) {
-      next.whenData(_checkFreezeSaved);
+      next.whenData(_checkOverlays);
     });
 
     final statsAsync = ref.watch(userStatsProvider);
-    statsAsync.whenData(_checkFreezeSaved);
+    statsAsync.whenData(_checkOverlays);
     final detailedAsync = ref.watch(detailedStatsProvider);
     final continueAsync = ref.watch(continueReadingProvider);
     final activityAsync = ref.watch(activityLogProvider);

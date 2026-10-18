@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 
-enum FreezeOverlayMode { streakSaved, freezeEarned }
+enum FreezeOverlayMode { streakSaved, freezeEarned, welcomeGift }
 
 /// Celebratory ice crystal & shield animation overlay for Streak Freeze events.
 class VersoStreakFreezeOverlay {
@@ -25,7 +25,7 @@ class VersoStreakFreezeOverlay {
     );
   }
 
-  /// Shows the "+1 Streak Freeze Earned!" animation on a 5-day streak milestone.
+  /// Shows the "+1 Streak Freeze Earned!" animation on a 30-day streak milestone.
   static void showEarned(
     BuildContext context, {
     required int freezesCount,
@@ -35,6 +35,21 @@ class VersoStreakFreezeOverlay {
       mode: FreezeOverlayMode.freezeEarned,
       value: freezesCount,
       subValue: 2,
+    );
+  }
+
+  /// Shows the "Welcome Gift: Streak Freeze Equipped!" celebration overlay.
+  /// Works for both new readers and existing users with an active streak.
+  static void showWelcome(
+    BuildContext context, {
+    int streak = 0,
+    int freezesCount = 1,
+  }) {
+    _insertOverlay(
+      context,
+      mode: FreezeOverlayMode.welcomeGift,
+      value: streak,
+      subValue: freezesCount,
     );
   }
 
@@ -348,7 +363,11 @@ class _IceShieldCelebrationBadge extends StatelessWidget {
                         Text(
                           mode == FreezeOverlayMode.streakSaved
                               ? '$value DAY STREAK'
-                              : '+1 STREAK FREEZE',
+                              : (mode == FreezeOverlayMode.welcomeGift
+                                  ? (value > 0
+                                      ? 'STREAK SHIELD GIFT!'
+                                      : 'WELCOME GIFT!')
+                                  : '+1 STREAK FREEZE'),
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
@@ -363,7 +382,11 @@ class _IceShieldCelebrationBadge extends StatelessWidget {
                     Text(
                       mode == FreezeOverlayMode.streakSaved
                           ? 'FROZEN & PROTECTED · $subValue LEFT'
-                          : 'EQUIPPED ($value/$subValue SHIELDS)',
+                          : (mode == FreezeOverlayMode.welcomeGift
+                              ? (value > 0
+                                  ? '1 FREEZE EQUIPPED · $value-DAY HABIT SAFE'
+                                  : '1 FREEZE EQUIPPED · STREAK SHIELD')
+                              : 'EQUIPPED ($value/$subValue SHIELDS)'),
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 10,
                         fontWeight: FontWeight.w800,

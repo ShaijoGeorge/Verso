@@ -38,6 +38,8 @@ class SettingsRepository {
   static const _kFrozenDatesKey = 'streak_frozen_dates';
   static const _kLastFreezeEarnedStreakKey = 'last_freeze_earned_streak';
   static const _kLastShownFreezeSavedDateKey = 'last_shown_freeze_saved_date';
+  static const _kHasShownWelcomeFreezeKey = 'has_shown_welcome_freeze';
+  static const _kWelcomeFreezeAwardedKey = 'welcome_freeze_awarded';
   static const int maxStreakFreezes = 2;
 
   // ── Helpers ──────────────────────────────────────────────────────────────
@@ -234,18 +236,31 @@ class SettingsRepository {
 
   // ── Streak Freeze Persistence ──────────────────────────────────────────────
 
-  /// Returns available streak freezes (defaults to 1 for new users).
+  /// Returns available streak freezes (defaults to exactly 1 welcome gift freeze).
   Future<int> getStreakFreezesAvailable(String userId) async {
     final prefs = await SharedPreferences.getInstance();
-    final key = _userKey(_kStreakFreezesAvailableKey, userId);
-    if (!prefs.containsKey(key)) {
-      await prefs.setInt(
-        key,
-        1,
-      ); // Start every user with 1 starter Streak Freeze
+    final freezeKey = _userKey(_kStreakFreezesAvailableKey, userId);
+    final welcomeKey = _userKey(_kWelcomeFreezeAwardedKey, userId);
+    final lastEarnedKey = _userKey(_kLastFreezeEarnedStreakKey, userId);
+
+    final hasAwardedWelcome = prefs.getBool(welcomeKey) ?? false;
+    final lastEarned = prefs.getInt(lastEarnedKey) ?? 0;
+
+    if (!hasAwardedWelcome) {
+      // Award exactly 1 welcome gift freeze
+      await prefs.setInt(freezeKey, 1);
+      await prefs.setBool(welcomeKey, true);
       return 1;
     }
-    return (prefs.getInt(key) ?? 1).clamp(0, maxStreakFreezes);
+
+    final stored = prefs.getInt(freezeKey) ?? 1;
+    // Self-heal: If user has not earned a milestone yet, clamp to max 1 welcome freeze
+    if (lastEarned == 0 && stored > 1) {
+      await prefs.setInt(freezeKey, 1);
+      return 1;
+    }
+
+    return stored.clamp(0, maxStreakFreezes);
   }
 
   Future<void> setStreakFreezesAvailable(String userId, int count) async {
@@ -295,6 +310,17 @@ class SettingsRepository {
       _userKey(_kLastShownFreezeSavedDateKey, userId),
       dateString,
     );
+  }
+
+  /// Returns whether the user has already seen the welcome gift Streak Freeze celebration.
+  Future<bool> hasShownWelcomeFreeze(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_userKey(_kHasShownWelcomeFreezeKey, userId)) ?? false;
+  }
+
+  Future<void> setHasShownWelcomeFreeze(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_userKey(_kHasShownWelcomeFreezeKey, userId), true);
   }
 
   // ── Theme ─────────────────────────────────────────────────────────────────
