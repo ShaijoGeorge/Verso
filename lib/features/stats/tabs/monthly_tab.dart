@@ -82,6 +82,9 @@ class MonthlyTab extends ConsumerWidget {
                       year: chartData.year,
                       month: chartData.month,
                       dailyCounts: chartData.dailyCounts,
+                      frozenDates:
+                          ref.watch(userStatsProvider).value?.frozenDates ??
+                              const <String>{},
                     ),
                     const Gap(18),
                     // Intensity legend
@@ -266,10 +269,12 @@ class _HeatmapCalendar extends StatelessWidget {
     required this.year,
     required this.month,
     required this.dailyCounts,
+    this.frozenDates = const {},
   });
   final int year;
   final int month;
   final Map<int, int> dailyCounts;
+  final Set<String> frozenDates;
 
   @override
   Widget build(BuildContext context) {
@@ -327,6 +332,9 @@ class _HeatmapCalendar extends StatelessWidget {
                 final intensity = maxCount > 0 ? count / maxCount : 0.0;
                 final cellDate = DateTime(year, month, dayNum);
                 final isToday = cellDate == today;
+                final dateKey = formatDateKey(cellDate);
+                final isFrozenDay = count == 0 && frozenDates.contains(dateKey);
+                final freezeColor = context.appColors.streakFreeze;
 
                 return Expanded(
                   child: AspectRatio(
@@ -334,28 +342,76 @@ class _HeatmapCalendar extends StatelessWidget {
                     child: Padding(
                       padding: const EdgeInsets.all(2.5),
                       child: Tooltip(
-                        message: '$count chapter${count == 1 ? '' : 's'}',
+                        message: isFrozenDay
+                            ? 'Streak Protected by Freeze'
+                            : '$count chapter${count == 1 ? '' : 's'}',
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 400),
                           decoration: BoxDecoration(
-                            color: _heatColor(context, intensity),
+                            color: isFrozenDay
+                                ? freezeColor.withValues(alpha: 0.20)
+                                : _heatColor(context, intensity),
+                            gradient: isFrozenDay
+                                ? LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      freezeColor.withValues(alpha: 0.35),
+                                      freezeColor.withValues(alpha: 0.15),
+                                    ],
+                                  )
+                                : null,
                             borderRadius: BorderRadius.circular(7),
                             border: isToday
                                 ? Border.all(color: scheme.primary, width: 2)
+                                : (isFrozenDay
+                                    ? Border.all(
+                                        color:
+                                            freezeColor.withValues(alpha: 0.55),
+                                      )
+                                    : null),
+                            boxShadow: isFrozenDay
+                                ? [
+                                    BoxShadow(
+                                      color:
+                                          freezeColor.withValues(alpha: 0.22),
+                                      blurRadius: 6,
+                                    ),
+                                  ]
                                 : null,
                           ),
                           alignment: Alignment.center,
-                          child: Text(
-                            '$dayNum',
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontWeight:
-                                  isToday ? FontWeight.w800 : FontWeight.w600,
-                              color: intensity > 0.25
-                                  ? Colors.white.withValues(alpha: 0.95)
-                                  : scheme.onSurfaceVariant,
-                            ),
-                          ),
+                          child: isFrozenDay
+                              ? Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.ac_unit_rounded,
+                                      size: 15,
+                                      color: freezeColor.withValues(alpha: 0.4),
+                                    ),
+                                    Text(
+                                      '$dayNum',
+                                      style: TextStyle(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w800,
+                                        color: freezeColor,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Text(
+                                  '$dayNum',
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: isToday
+                                        ? FontWeight.w800
+                                        : FontWeight.w600,
+                                    color: intensity > 0.25
+                                        ? Colors.white.withValues(alpha: 0.95)
+                                        : scheme.onSurfaceVariant,
+                                  ),
+                                ),
                         ),
                       ),
                     ),
@@ -433,6 +489,33 @@ class _IntensityLegend extends StatelessWidget {
         const Gap(6),
         Text(
           'More',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+        const Gap(14),
+        Container(
+          width: 14,
+          height: 14,
+          decoration: BoxDecoration(
+            color: context.appColors.streakFreeze.withValues(alpha: 0.25),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+              color: context.appColors.streakFreeze.withValues(alpha: 0.6),
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Icon(
+            Icons.ac_unit_rounded,
+            size: 9,
+            color: context.appColors.streakFreeze,
+          ),
+        ),
+        const Gap(4),
+        Text(
+          'Frozen',
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,

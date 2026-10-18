@@ -19,6 +19,8 @@ class WeeklyTab extends ConsumerWidget {
 
     final offset = ref.watch(weeklyOffsetProvider);
     final asyncData = ref.watch(weeklyChartStatsProvider(offset));
+    final frozenDates =
+        ref.watch(userStatsProvider).value?.frozenDates ?? const <String>{};
 
     return asyncData.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -102,8 +104,14 @@ class WeeklyTab extends ConsumerWidget {
                                   getTooltipItem:
                                       (group, groupIndex, rod, rodIndex) {
                                     final count = chartData.counts[group.x];
+                                    final dateKey =
+                                        formatDateKey(chartData.dates[group.x]);
+                                    final isFrozen = count == 0 &&
+                                        frozenDates.contains(dateKey);
                                     return BarTooltipItem(
-                                      '$count chapters',
+                                      isFrozen
+                                          ? 'Protected by Streak Freeze'
+                                          : '$count chapters',
                                       TextStyle(
                                         color: scheme.onPrimaryContainer,
                                         fontWeight: FontWeight.w700,
@@ -217,12 +225,22 @@ class WeeklyTab extends ConsumerWidget {
                                   chartData.dates[index].day,
                                 );
                                 final isToday = dayDate == today;
+                                final dateKey = formatDateKey(dayDate);
+                                final isFrozenDay =
+                                    chartData.counts[index] == 0 &&
+                                        frozenDates.contains(dateKey);
+                                final freezeColor =
+                                    context.appColors.streakFreeze;
 
                                 return BarChartGroupData(
                                   x: index,
                                   barRods: [
                                     BarChartRodData(
-                                      toY: isAnimated ? count : 0,
+                                      toY: isAnimated
+                                          ? (isFrozenDay
+                                              ? (maxY * 0.25).clamp(1.5, maxY)
+                                              : count)
+                                          : 0,
                                       width: 24,
                                       borderRadius: const BorderRadius.vertical(
                                         top: Radius.circular(8),
@@ -230,26 +248,38 @@ class WeeklyTab extends ConsumerWidget {
                                       gradient: LinearGradient(
                                         begin: Alignment.bottomCenter,
                                         end: Alignment.topCenter,
-                                        colors: isToday
+                                        colors: isFrozenDay
                                             ? [
-                                                scheme.primary,
-                                                context.palette.primaryHover,
+                                                freezeColor,
+                                                freezeColor.withValues(
+                                                    alpha: 0.65),
                                               ]
-                                            : count > 0
+                                            : isToday
                                                 ? [
-                                                    context.palette.primary
-                                                        .withValues(alpha: 0.7),
-                                                    context.palette.primaryHover
-                                                        .withValues(alpha: 0.5),
+                                                    scheme.primary,
+                                                    context
+                                                        .palette.primaryHover,
                                                   ]
-                                                : [
-                                                    scheme.outline.withValues(
-                                                      alpha: 0.15,
-                                                    ),
-                                                    scheme.outline.withValues(
-                                                      alpha: 0.08,
-                                                    ),
-                                                  ],
+                                                : count > 0
+                                                    ? [
+                                                        context.palette.primary
+                                                            .withValues(
+                                                                alpha: 0.7),
+                                                        context.palette
+                                                            .primaryHover
+                                                            .withValues(
+                                                                alpha: 0.5),
+                                                      ]
+                                                    : [
+                                                        scheme.outline
+                                                            .withValues(
+                                                          alpha: 0.15,
+                                                        ),
+                                                        scheme.outline
+                                                            .withValues(
+                                                          alpha: 0.08,
+                                                        ),
+                                                      ],
                                       ),
                                     ),
                                   ],

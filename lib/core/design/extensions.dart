@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:verso/core/design/profiles/current_profile.dart';
 import 'package:verso/core/design/profiles/verso_palette.dart';
 import 'package:verso/core/design/tokens/colors.dart';
@@ -33,6 +33,8 @@ class AppSemanticColors {
 
   Color get success => _isDark ? AppColors.successDark : AppColors.successLight;
   Color get streak => _isDark ? AppColors.streakDark : AppColors.streakLight;
+  Color get streakFreeze =>
+      _isDark ? AppColors.streakFreezeDark : AppColors.streakFreezeLight;
   Color get chapters =>
       _isDark ? AppColors.chaptersDark : AppColors.chaptersLight;
   Color get books => _isDark ? AppColors.booksDark : AppColors.booksLight;
