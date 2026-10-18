@@ -12,6 +12,7 @@ import 'package:verso/features/auth/services/saved_accounts_service.dart';
 import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
+import 'package:verso/features/settings/services/notification_service.dart';
 import 'package:verso/features/stats/providers/activity_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 
@@ -92,6 +93,7 @@ class _DeleteAccountDialogState extends ConsumerState<DeleteAccountDialog> {
       await ref.read(authRepositoryProvider).reauthenticate(password);
 
       // 2. Invoke the database RPC to permanently remove user and cascade all remote data
+      await NotificationService().cancelStreakEscalationAlerts();
       await ref.read(authRepositoryProvider).deleteAccount();
 
       // 3. Clean up local device storage and saved account entries

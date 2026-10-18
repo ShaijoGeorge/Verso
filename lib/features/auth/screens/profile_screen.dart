@@ -26,6 +26,7 @@ import 'package:verso/features/auth/widgets/account_switch_bottom_sheet.dart';
 import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
+import 'package:verso/features/settings/services/notification_service.dart';
 import 'package:verso/features/stats/providers/activity_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 
@@ -963,6 +964,8 @@ class _SignOutTile extends ConsumerWidget {
                                     widgetRef
                                         .invalidate(continueReadingProvider);
                                     widgetRef.invalidate(userNameProvider);
+                                    await NotificationService()
+                                        .cancelStreakEscalationAlerts();
                                     await widgetRef
                                         .read(authRepositoryProvider)
                                         .signOut();
