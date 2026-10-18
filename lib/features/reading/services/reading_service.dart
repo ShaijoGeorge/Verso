@@ -146,15 +146,14 @@ class ReadingService {
     final updatedStreak = streakResult.streak > 0 ? streakResult.streak : 1;
 
     // Award +1 Streak Freeze on every 5-day streak milestone if below max capacity
+    var updatedFreezes = streakResult.availableFreezes;
     final lastEarnedStreak = await settingsRepo.getLastFreezeEarnedStreak(uid);
     if (updatedStreak >= 5 &&
         updatedStreak % 5 == 0 &&
         updatedStreak > lastEarnedStreak &&
-        streakResult.availableFreezes < SettingsRepository.maxStreakFreezes) {
-      await settingsRepo.setStreakFreezesAvailable(
-        uid,
-        streakResult.availableFreezes + 1,
-      );
+        updatedFreezes < SettingsRepository.maxStreakFreezes) {
+      updatedFreezes += 1;
+      await settingsRepo.setStreakFreezesAvailable(uid, updatedFreezes);
       await settingsRepo.setLastFreezeEarnedStreak(uid, updatedStreak);
     } else if (updatedStreak < lastEarnedStreak) {
       // Reset milestone tracker if streak ever resets
@@ -163,11 +162,11 @@ class ReadingService {
 
     await settingsRepo.setLastCelebratedReadDate(uid, todayString);
 
-    // User just read today! Cancel tonight's 8PM–12AM countdowns and arm tomorrow night's:
+    // Pass updatedFreezes so tomorrow's midnight alert knows about the newly earned shield:
     unawaited(
       NotificationService().syncStreakEscalationAlerts(
         streak: updatedStreak,
-        availableFreezes: availableFreezes,
+        availableFreezes: updatedFreezes,
         isStreakFrozen: false,
         readToday: true,
       ),
