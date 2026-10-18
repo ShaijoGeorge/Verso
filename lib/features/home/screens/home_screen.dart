@@ -8,6 +8,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/design/components/verso_card.dart';
 import 'package:verso/core/design/components/verso_circular_progress.dart';
+import 'package:verso/core/design/components/verso_frost_effect.dart';
 import 'package:verso/core/design/components/verso_progress_bar.dart';
 import 'package:verso/core/design/components/verso_section_header.dart';
 import 'package:verso/core/design/components/verso_streak_freeze_overlay.dart';
@@ -696,15 +697,23 @@ class _QuickStatsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
+    final isFrozen = stats.isStreakFrozen;
+    final freezeColor = context.appColors.streakFreeze;
 
     return Row(
       children: [
         Expanded(
           child: _QuickStatCard(
-            icon: Icons.local_fire_department_rounded,
+            icon: isFrozen
+                ? Icons.ac_unit_rounded
+                : Icons.local_fire_department_rounded,
             value: '${stats.streak}',
             label: 'Day Streak',
-            iconColor: isLight ? AppColors.streakLight : AppColors.streakDark,
+            subtitle: isFrozen ? 'Frozen ❄️' : null,
+            iconColor: isFrozen
+                ? freezeColor
+                : (isLight ? AppColors.streakLight : AppColors.streakDark),
+            isFrozen: isFrozen,
           ),
         ),
         const Gap(Spacing.sm),
@@ -737,11 +746,15 @@ class _QuickStatCard extends StatelessWidget {
     required this.value,
     required this.label,
     required this.iconColor,
+    this.subtitle,
+    this.isFrozen = false,
   });
   final IconData icon;
   final String value;
   final String label;
   final Color iconColor;
+  final String? subtitle;
+  final bool isFrozen;
 
   @override
   Widget build(BuildContext context) {
@@ -749,16 +762,24 @@ class _QuickStatCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
     final isAmoled = context.palette.style == AppearanceStyle.amoled;
+    final freezeColor = context.appColors.streakFreeze;
 
-    return Container(
+    final card = Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: scheme.surface,
+        color: isFrozen
+            ? Color.alphaBlend(
+                freezeColor.withValues(alpha: isLight ? 0.08 : 0.12),
+                scheme.surface,
+              )
+            : scheme.surface,
         borderRadius: AppRadii.borderRadiusLG,
         border: Border.all(
-          color: isAmoled
-              ? scheme.outline.withValues(alpha: 0.85)
-              : scheme.outline.withValues(alpha: isLight ? 0.65 : 0.25),
+          color: isFrozen
+              ? freezeColor.withValues(alpha: 0.55)
+              : (isAmoled
+                  ? scheme.outline.withValues(alpha: 0.85)
+                  : scheme.outline.withValues(alpha: isLight ? 0.65 : 0.25)),
         ),
         boxShadow: isLight ? AppShadows.sm : AppShadows.none,
       ),
@@ -798,7 +819,8 @@ class _QuickStatCard extends StatelessWidget {
                       color: iconColor.withValues(alpha: isLight ? 0.1 : 0.16),
                       borderRadius: AppRadii.borderRadiusSM,
                       border: Border.all(
-                        color: iconColor.withValues(alpha: 0.2),
+                        color:
+                            iconColor.withValues(alpha: isFrozen ? 0.35 : 0.2),
                       ),
                     ),
                     child: Icon(icon, size: 19, color: iconColor),
@@ -817,6 +839,7 @@ class _QuickStatCard extends StatelessWidget {
                           style: textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w800,
                             letterSpacing: -0.5,
+                            color: isFrozen ? freezeColor : null,
                           ),
                         ),
                       );
@@ -826,10 +849,11 @@ class _QuickStatCard extends StatelessWidget {
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      label,
+                      subtitle ?? label,
                       style: textTheme.labelSmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
+                        color: isFrozen ? freezeColor : scheme.onSurfaceVariant,
+                        fontWeight:
+                            isFrozen ? FontWeight.w700 : FontWeight.w600,
                       ),
                     ),
                   ),
@@ -839,6 +863,13 @@ class _QuickStatCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+
+    return VersoFrostEffect(
+      isFrozen: isFrozen,
+      borderRadius: AppRadii.borderRadiusLG,
+      showSnowflakeWatermark: isFrozen,
+      child: card,
     );
   }
 }

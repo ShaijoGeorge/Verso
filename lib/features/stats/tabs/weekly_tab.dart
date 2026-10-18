@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:verso/core/design/components/verso_card.dart';
+import 'package:verso/core/design/components/verso_frost_effect.dart';
 import 'package:verso/core/design/components/verso_section_header.dart';
 import 'package:verso/core/design/extensions.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
@@ -151,33 +152,68 @@ class WeeklyTab extends ConsumerWidget {
                                         date.day,
                                       );
                                       final isTodayCell = dayDate == today;
+                                      final dateKey = formatDateKey(dayDate);
+                                      final isFrozenCell =
+                                          chartData.counts[index] == 0 &&
+                                              frozenDates.contains(dateKey);
+                                      final freezeColor =
+                                          context.appColors.streakFreeze;
 
                                       return Padding(
-                                        padding: const EdgeInsets.only(top: 8),
+                                        padding: const EdgeInsets.only(top: 6),
                                         child: Column(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Text(
-                                              days[date.weekday - 1],
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: isTodayCell
-                                                    ? FontWeight.w800
-                                                    : FontWeight.w600,
-                                                color: isTodayCell
-                                                    ? scheme.primary
-                                                    : scheme.onSurfaceVariant,
-                                              ),
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                if (isFrozenCell) ...[
+                                                  Icon(
+                                                    Icons.ac_unit_rounded,
+                                                    size: 10,
+                                                    color: freezeColor,
+                                                  ),
+                                                  const SizedBox(width: 2),
+                                                ],
+                                                Text(
+                                                  days[date.weekday - 1],
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: (isTodayCell ||
+                                                            isFrozenCell)
+                                                        ? FontWeight.w800
+                                                        : FontWeight.w600,
+                                                    color: isFrozenCell
+                                                        ? freezeColor
+                                                        : (isTodayCell
+                                                            ? scheme.primary
+                                                            : scheme
+                                                                .onSurfaceVariant),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                             Text(
                                               '${date.day}',
                                               style: TextStyle(
                                                 fontSize: 9.5,
-                                                color: isTodayCell
-                                                    ? scheme.primary
-                                                        .withValues(alpha: 0.85)
-                                                    : scheme.onSurfaceVariant
-                                                        .withValues(alpha: 0.6),
+                                                fontWeight: isFrozenCell
+                                                    ? FontWeight.w700
+                                                    : FontWeight.normal,
+                                                color: isFrozenCell
+                                                    ? freezeColor.withValues(
+                                                        alpha: 0.85,
+                                                      )
+                                                    : (isTodayCell
+                                                        ? scheme.primary
+                                                            .withValues(
+                                                            alpha: 0.85,
+                                                          )
+                                                        : scheme
+                                                            .onSurfaceVariant
+                                                            .withValues(
+                                                            alpha: 0.6,
+                                                          )),
                                               ),
                                             ),
                                           ],
@@ -238,22 +274,41 @@ class WeeklyTab extends ConsumerWidget {
                                     BarChartRodData(
                                       toY: isAnimated
                                           ? (isFrozenDay
-                                              ? (maxY * 0.25).clamp(1.5, maxY)
+                                              ? (maxY * 0.28).clamp(2.0, maxY)
                                               : count)
                                           : 0,
                                       width: 24,
                                       borderRadius: const BorderRadius.vertical(
                                         top: Radius.circular(8),
                                       ),
+                                      borderSide: isFrozenDay
+                                          ? BorderSide(
+                                              color: Colors.white
+                                                  .withValues(alpha: 0.65),
+                                              width: 1.2,
+                                            )
+                                          : BorderSide.none,
+                                      backDrawRodData:
+                                          BackgroundBarChartRodData(
+                                        show: isFrozenDay,
+                                        toY: maxY,
+                                        color:
+                                            freezeColor.withValues(alpha: 0.06),
+                                      ),
                                       gradient: LinearGradient(
                                         begin: Alignment.bottomCenter,
                                         end: Alignment.topCenter,
                                         colors: isFrozenDay
                                             ? [
-                                                freezeColor,
                                                 freezeColor.withValues(
-                                                  alpha: 0.65,
+                                                  alpha: 0.55,
                                                 ),
+                                                freezeColor,
+                                                Color.lerp(
+                                                  freezeColor,
+                                                  Colors.white,
+                                                  0.45,
+                                                )!,
                                               ]
                                             : isToday
                                                 ? [
@@ -311,6 +366,10 @@ class WeeklyTab extends ConsumerWidget {
                     final count = chartData.counts[index];
                     final dayDate = DateTime(date.year, date.month, date.day);
                     final isToday = dayDate == today;
+                    final dateKey = formatDateKey(dayDate);
+                    final isFrozenDay =
+                        count == 0 && frozenDates.contains(dateKey);
+                    final freezeColor = context.appColors.streakFreeze;
 
                     return Padding(
                       padding: EdgeInsets.only(bottom: index == 6 ? 0 : 12),
@@ -324,44 +383,76 @@ class WeeklyTab extends ConsumerWidget {
                                   : '${months[date.month - 1]} ${date.day}',
                               style: TextStyle(
                                 fontSize: 13,
-                                fontWeight:
-                                    isToday ? FontWeight.w800 : FontWeight.w600,
-                                color: isToday
-                                    ? scheme.primary
-                                    : scheme.onSurfaceVariant,
+                                fontWeight: (isToday || isFrozenDay)
+                                    ? FontWeight.w800
+                                    : FontWeight.w600,
+                                color: isFrozenDay
+                                    ? freezeColor
+                                    : (isToday
+                                        ? scheme.primary
+                                        : scheme.onSurfaceVariant),
                               ),
                             ),
                           ),
                           Expanded(
-                            child: ClipRRect(
+                            child: VersoFrostEffect(
+                              isFrozen: isFrozenDay,
                               borderRadius: BorderRadius.circular(99),
-                              child: LinearProgressIndicator(
-                                value: maxCount > 0 ? count / maxCount : 0,
-                                minHeight: 8,
-                                backgroundColor:
-                                    scheme.outline.withValues(alpha: 0.1),
-                                valueColor: AlwaysStoppedAnimation(
-                                  isToday
-                                      ? scheme.primary
-                                      : scheme.primary.withValues(alpha: 0.5),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(99),
+                                child: LinearProgressIndicator(
+                                  value: isFrozenDay
+                                      ? 1.0
+                                      : (maxCount > 0 ? count / maxCount : 0),
+                                  minHeight: 8,
+                                  backgroundColor:
+                                      scheme.outline.withValues(alpha: 0.1),
+                                  valueColor: AlwaysStoppedAnimation(
+                                    isFrozenDay
+                                        ? freezeColor.withValues(alpha: 0.35)
+                                        : (isToday
+                                            ? scheme.primary
+                                            : scheme.primary
+                                                .withValues(alpha: 0.5)),
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                           const Gap(12),
                           SizedBox(
-                            width: 28,
-                            child: Text(
-                              '$count',
-                              textAlign: TextAlign.end,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                                color: count > 0
-                                    ? scheme.onSurface
-                                    : scheme.onSurfaceVariant,
-                              ),
-                            ),
+                            width: 44,
+                            child: isFrozenDay
+                                ? Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      Icon(
+                                        Icons.ac_unit_rounded,
+                                        size: 13,
+                                        color: freezeColor,
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        'Saved',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w800,
+                                          color: freezeColor,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Text(
+                                    '$count',
+                                    textAlign: TextAlign.end,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w800,
+                                      color: count > 0
+                                          ? scheme.onSurface
+                                          : scheme.onSurfaceVariant,
+                                    ),
+                                  ),
                           ),
                         ],
                       ),

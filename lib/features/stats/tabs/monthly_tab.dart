@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:verso/core/design/components/verso_card.dart';
+import 'package:verso/core/design/components/verso_frost_effect.dart';
 import 'package:verso/core/design/components/verso_section_header.dart';
 import 'package:verso/core/design/extensions.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
@@ -343,75 +344,80 @@ class _HeatmapCalendar extends StatelessWidget {
                       padding: const EdgeInsets.all(2.5),
                       child: Tooltip(
                         message: isFrozenDay
-                            ? 'Streak Protected by Freeze'
+                            ? 'Streak Protected by Freeze ❄️'
                             : '$count chapter${count == 1 ? '' : 's'}',
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 400),
-                          decoration: BoxDecoration(
-                            color: isFrozenDay
-                                ? freezeColor.withValues(alpha: 0.20)
-                                : _heatColor(context, intensity),
-                            gradient: isFrozenDay
-                                ? LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      freezeColor.withValues(alpha: 0.35),
-                                      freezeColor.withValues(alpha: 0.15),
+                        child: VersoFrostEffect(
+                          isFrozen: isFrozenDay,
+                          borderRadius: BorderRadius.circular(7),
+                          intensity: 0.9,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 400),
+                            decoration: BoxDecoration(
+                              color: isFrozenDay
+                                  ? freezeColor.withValues(alpha: 0.22)
+                                  : _heatColor(context, intensity),
+                              gradient: isFrozenDay
+                                  ? LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        freezeColor.withValues(alpha: 0.42),
+                                        freezeColor.withValues(alpha: 0.16),
+                                      ],
+                                    )
+                                  : null,
+                              borderRadius: BorderRadius.circular(7),
+                              border: isToday
+                                  ? Border.all(color: scheme.primary, width: 2)
+                                  : null,
+                            ),
+                            alignment: Alignment.center,
+                            child: isFrozenDay
+                                ? Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      // Subtle background crystal
+                                      Icon(
+                                        Icons.ac_unit_rounded,
+                                        size: 20,
+                                        color:
+                                            freezeColor.withValues(alpha: 0.22),
+                                      ),
+                                      // Top-right mini snowflake badge
+                                      Positioned(
+                                        top: 2,
+                                        right: 2,
+                                        child: Icon(
+                                          Icons.ac_unit_rounded,
+                                          size: 8.5,
+                                          color: freezeColor.withValues(
+                                            alpha: 0.9,
+                                          ),
+                                        ),
+                                      ),
+                                      Text(
+                                        '$dayNum',
+                                        style: TextStyle(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w900,
+                                          color: freezeColor,
+                                        ),
+                                      ),
                                     ],
                                   )
-                                : null,
-                            borderRadius: BorderRadius.circular(7),
-                            border: isToday
-                                ? Border.all(color: scheme.primary, width: 2)
-                                : (isFrozenDay
-                                    ? Border.all(
-                                        color:
-                                            freezeColor.withValues(alpha: 0.55),
-                                      )
-                                    : null),
-                            boxShadow: isFrozenDay
-                                ? [
-                                    BoxShadow(
-                                      color:
-                                          freezeColor.withValues(alpha: 0.22),
-                                      blurRadius: 6,
+                                : Text(
+                                    '$dayNum',
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: isToday
+                                          ? FontWeight.w800
+                                          : FontWeight.w600,
+                                      color: intensity > 0.25
+                                          ? Colors.white.withValues(alpha: 0.95)
+                                          : scheme.onSurfaceVariant,
                                     ),
-                                  ]
-                                : null,
-                          ),
-                          alignment: Alignment.center,
-                          child: isFrozenDay
-                              ? Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.ac_unit_rounded,
-                                      size: 15,
-                                      color: freezeColor.withValues(alpha: 0.4),
-                                    ),
-                                    Text(
-                                      '$dayNum',
-                                      style: TextStyle(
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w800,
-                                        color: freezeColor,
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : Text(
-                                  '$dayNum',
-                                  style: TextStyle(
-                                    fontSize: 10.5,
-                                    fontWeight: isToday
-                                        ? FontWeight.w800
-                                        : FontWeight.w600,
-                                    color: intensity > 0.25
-                                        ? Colors.white.withValues(alpha: 0.95)
-                                        : scheme.onSurfaceVariant,
                                   ),
-                                ),
+                          ),
                         ),
                       ),
                     ),
