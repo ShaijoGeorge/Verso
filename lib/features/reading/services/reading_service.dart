@@ -10,6 +10,7 @@ import 'package:verso/features/reading/data/bible_repository.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 import 'package:verso/features/settings/data/settings_repository.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
+import 'package:verso/features/settings/services/notification_service.dart';
 import 'package:verso/features/stats/providers/activity_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 
@@ -161,6 +162,17 @@ class ReadingService {
     }
 
     await settingsRepo.setLastCelebratedReadDate(uid, todayString);
+
+    // User just read today! Cancel tonight's 8PM–12AM countdowns and arm tomorrow night's:
+    unawaited(
+      NotificationService().syncStreakEscalationAlerts(
+        streak: updatedStreak,
+        availableFreezes: availableFreezes,
+        isStreakFrozen: false,
+        readToday: true,
+      ),
+    );
+
     return updatedStreak;
   }
 
@@ -177,6 +189,22 @@ class ReadingService {
     _ref.invalidate(activityLogProvider);
     _ref.invalidate(todayChaptersProvider);
     _ref.invalidate(continueReadingProvider);
+
+    // Keep streak countdowns in sync with latest read state
+    Future.microtask(_syncStreakCountdowns);
+  }
+
+  Future<void> _syncStreakCountdowns() async {
+    try {
+      final stats = await _ref.read(userStatsProvider.future);
+      final todayCount = await _ref.read(todayChaptersProvider.future);
+      await NotificationService().syncStreakEscalationAlerts(
+        streak: stats.streak,
+        availableFreezes: stats.availableFreezes,
+        isStreakFrozen: stats.isStreakFrozen,
+        readToday: todayCount > 0,
+      );
+    } catch (_) {}
   }
 
   void _triggerSync() {
