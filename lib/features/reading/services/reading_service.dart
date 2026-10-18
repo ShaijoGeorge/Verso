@@ -145,11 +145,11 @@ class ReadingService {
     );
     final updatedStreak = streakResult.streak > 0 ? streakResult.streak : 1;
 
-    // Award +1 Streak Freeze on every 5-day streak milestone if below max capacity
+    // Award +1 Streak Freeze on every 30-day streak milestone if below max capacity
     var updatedFreezes = streakResult.availableFreezes;
     final lastEarnedStreak = await settingsRepo.getLastFreezeEarnedStreak(uid);
-    if (updatedStreak >= 5 &&
-        updatedStreak % 5 == 0 &&
+    if (updatedStreak >= 30 &&
+        updatedStreak % 30 == 0 &&
         updatedStreak > lastEarnedStreak &&
         updatedFreezes < SettingsRepository.maxStreakFreezes) {
       updatedFreezes += 1;

@@ -219,8 +219,8 @@ class _StreakFreezeBottomSheetState extends State<StreakFreezeBottomSheet>
     final streakColor = context.appColors.streak;
 
     const maxFreezes = SettingsRepository.maxStreakFreezes;
-    final daysUntilNextFreeze = 5 - (widget.streak % 5);
-    final milestoneProgress = (widget.streak % 5) / 5.0;
+    final daysUntilNextFreeze = 30 - (widget.streak % 30);
+    final milestoneProgress = (widget.streak % 30) / 30.0;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
@@ -525,7 +525,7 @@ class _StreakFreezeBottomSheetState extends State<StreakFreezeBottomSheet>
                 ),
                 const Gap(8),
                 Text(
-                  'Earn +1 Streak Freeze automatically every 5 consecutive days of reading (up to 2 equipped).',
+                  'Awarded 1 Streak Freeze as a welcome gift. Earn +1 Streak Freeze on every 30-day streak milestone (up to 2 equipped).',
                   style: textTheme.bodySmall?.copyWith(
                     fontSize: 11.5,
                     color: scheme.onSurfaceVariant,

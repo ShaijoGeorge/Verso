@@ -35,7 +35,7 @@ class _ChaptersScreenState extends ConsumerState<ChaptersScreen> {
 
   Future<void> _celebrateStreak(int streak) async {
     VersoConfetti.show(context, streak: streak);
-    if (streak >= 5 && streak % 5 == 0) {
+    if (streak >= 30 && streak % 30 == 0) {
       final uid = Supabase.instance.client.auth.currentUser?.id ?? '';
       if (uid.isNotEmpty) {
         final settingsRepo = ref.read(settingsRepositoryProvider);
