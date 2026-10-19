@@ -100,7 +100,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                     ),
                     // Using your app logo
                     child: Image.asset(
-                      'assets/app_logo.png',
+                      'assets/verso1.png',
                       width: 120,
                       height: 120,
                     ),
@@ -116,7 +116,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   ),
                   const Gap(6),
                   Text(
-                    'SACRED SCRIPTURE TRACKER',
+                    'JOURNEY THROUGH THE WORD',
                     style: GoogleFonts.plusJakartaSans(
                       color: const Color(0xFFE2B45A),
                       fontSize: 10.5,
@@ -136,22 +136,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'CRAFTED BY SHAIJO GEORGE',
-                    style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 10,
-                      fontFamily: 'Metropolis',
-                      letterSpacing: 1.6,
+                  Text(
+                    'Crafted by Shaijo George',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white.withValues(alpha: 0.55),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.4,
                     ),
                   ),
                   const Gap(4),
                   Text(
                     'v${ref.watch(packageInfoProvider).version}',
-                    style: const TextStyle(
-                      color: Colors.white30,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white.withValues(alpha: 0.35),
                       fontSize: 10,
-                      fontFamily: 'Metropolis',
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ],
