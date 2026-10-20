@@ -153,7 +153,7 @@ class ProfileScreen extends ConsumerWidget {
                                   "and track my daily progress. It's been a "
                                   'game changer for my Bible reading habit.\n\n'
                                   'Join me on the journey: '
-                                  'https://play.google.com/store/apps/details?id=com.shaijo.verso',
+                                  'https://versobibletracker.netlify.app/',
                             ),
                           );
                         },

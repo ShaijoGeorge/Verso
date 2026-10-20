@@ -9,6 +9,7 @@
   [![Supabase](https://img.shields.io/badge/Backend-Supabase-3ECF8E?logo=supabase)](https://supabase.com)
   [![Drift SQLite](https://img.shields.io/badge/Local%20DB-Drift%20(SQLite)-003B57?logo=sqlite)](https://drift.simonbinder.eu)
   [![Firebase](https://img.shields.io/badge/Observability-Firebase-FFCA28?logo=firebase)](https://firebase.google.com)
+  [![Website](https://img.shields.io/badge/Website-versobibletracker.netlify.app-00C7B7?logo=netlify)](https://versobibletracker.netlify.app/)
   [![Version](https://img.shields.io/badge/Version-v2.0.0-6C63FF)](#)
 </div>
 
@@ -27,10 +28,10 @@ Verso is released independently without dependence on proprietary app stores, gi
 
 | Platform | Distribution Channel | Notes |
 |:---|:---|:---|
-| **Android** | **[Direct APK Download](https://github.com/ShaijoGeorge/Verso/releases)** | Download the latest `.apk` from GitHub Releases or the Verso landing page and install directly. |
-| **Web / PWA** | **Direct Web Access** | Open the web version in any modern browser. Supports **Add to Home Screen** on Android and iOS with offline capability and standalone app experience. |
-| **iOS** | **PWA & Direct Sideloading** | Install via Safari (**Share → Add to Home Screen**) for full-screen PWA support, or install via TestFlight / signed `.ipa`. |
-| **Desktop** | **Local Build** | Native builds available for Windows, macOS, and Linux via Flutter. |
+| **Android** | **[Download APK (Official Site)](https://versobibletracker.netlify.app/#download)** • **[GitHub Releases](https://github.com/ShaijoGeorge/Verso/releases)** | Download the latest signed `.apk` directly from the [Verso Landing Page](https://versobibletracker.netlify.app/) or GitHub Releases. |
+| **Web / PWA** | **[Visit Landing Page & Web](https://versobibletracker.netlify.app/)** | Learn more and access Verso on the web. Supports **Add to Home Screen** on Android and iOS with offline capability and standalone app experience. |
+| **iOS** | **PWA & Direct Sideloading** | Install via Safari (**Share → Add to Home Screen**) for full-screen PWA support, or install via TestFlight / signed `.ipa`. Apple App Store release in development. |
+| **Desktop** | **Local Build** | Native builds available for Windows, macOS, and Linux via Flutter. Windows desktop release coming soon. |
 
 ---
 
@@ -255,7 +256,8 @@ Contributions, feedback, and issue reports are always welcome!
 
 ## 👨‍💻 Author
 
-**Developed by:** [Shaijo George](https://github.com/ShaijoGeorge)
+- **Developer:** [Shaijo George](https://github.com/ShaijoGeorge)
+- **Official Website:** [versobibletracker.netlify.app](https://versobibletracker.netlify.app/)
 
 ---
 

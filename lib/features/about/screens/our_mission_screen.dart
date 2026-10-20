@@ -398,7 +398,7 @@ class _MissionHeader extends StatelessWidget {
                     ],
                   ),
                 ),
-                // Social Badges (LinkedIn, Portfolio)
+                // Social Badges (LinkedIn, Portfolio, Website)
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -413,6 +413,14 @@ class _MissionHeader extends StatelessWidget {
                       isDark: isDark,
                       onTap: () => _openUrl('https://shaijogeorge.vercel.app/'),
                     ),
+                    const Gap(8),
+                    _SocialIconButton(
+                      icon: Icons.public_rounded,
+                      tooltip: 'Official Website',
+                      isDark: isDark,
+                      onTap: () =>
+                          _openUrl('https://versobibletracker.netlify.app/'),
+                    ),
                   ],
                 ),
               ],
@@ -422,23 +430,23 @@ class _MissionHeader extends StatelessWidget {
       ),
     );
   }
+}
 
-  static Future<void> _openUrl(String url) async {
-    final uri = Uri.parse(url);
+Future<void> _openUrl(String url) async {
+  final uri = Uri.parse(url);
+  try {
+    final launched = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched) {
+      await launchUrl(uri);
+    }
+  } catch (_) {
     try {
-      final launched = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
-      if (!launched) {
-        await launchUrl(uri);
-      }
-    } catch (_) {
-      try {
-        await launchUrl(uri);
-      } catch (e) {
-        debugPrint('Could not launch $url: $e');
-      }
+      await launchUrl(uri);
+    } catch (e) {
+      debugPrint('Could not launch $url: $e');
     }
   }
 }
@@ -1001,6 +1009,30 @@ class _ContactFooter extends StatelessWidget {
                 },
                 child: Text(
                   'contact us',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    decoration: TextDecoration.underline,
+                    color: isDark ? Colors.white : paletteText,
+                  ),
+                ),
+              ),
+              Text(
+                ' or visit our ',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13.5,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.65)
+                      : const Color(0xFF64748B),
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  _openUrl('https://versobibletracker.netlify.app/');
+                },
+                child: Text(
+                  'website',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,

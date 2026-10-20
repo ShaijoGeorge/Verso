@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:verso/core/design/design.dart';
 import 'package:verso/core/providers/package_info_provider.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
@@ -1005,6 +1006,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         },
                       ),
                       _SettingsActionTile(
+                        title: 'Official Website',
+                        icon: Icons.language_rounded,
+                        iconColor: const Color(0xFF00C7B7),
+                        onTap: () async {
+                          final uri = Uri.parse(
+                            'https://versobibletracker.netlify.app/',
+                          );
+                          try {
+                            final launched = await launchUrl(
+                              uri,
+                              mode: LaunchMode.externalApplication,
+                            );
+                            if (!launched) {
+                              await launchUrl(uri);
+                            }
+                          } catch (e) {
+                            debugPrint('Could not launch website: $e');
+                          }
+                        },
+                      ),
+                      _SettingsActionTile(
                         title: 'Legal',
                         icon: Icons.gavel_outlined,
                         iconColor: const Color(0xFF8B5CF6),
@@ -1024,7 +1046,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   "and track my daily progress. It's been a "
                                   'game changer for my Bible reading habit.\n\n'
                                   'Join me on the journey: '
-                                  'https://play.google.com/store/apps/details?id=com.shaijo.verso',
+                                  'https://versobibletracker.netlify.app/',
                             ),
                           );
                         },
