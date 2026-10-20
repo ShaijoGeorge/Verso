@@ -4,16 +4,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:verso/core/constants.dart';
 import 'package:verso/core/transitions/animated_branch_container.dart';
 import 'package:verso/core/transitions/app_page_transitions.dart';
 import 'package:verso/core/widgets/main_wrapper.dart';
 import 'package:verso/core/widgets/not_found_screen.dart';
 import 'package:verso/data/bible_data.dart';
+import 'package:verso/features/about/screens/legal_screen.dart';
 import 'package:verso/features/about/screens/our_mission_screen.dart';
+import 'package:verso/features/about/screens/privacy_policy_screen.dart';
+import 'package:verso/features/about/screens/terms_of_use_screen.dart';
+import 'package:verso/features/auth/providers/auth_providers.dart';
+import 'package:verso/features/auth/screens/email_change_success_screen.dart';
 import 'package:verso/features/auth/screens/forgot_password_screen.dart';
 import 'package:verso/features/auth/screens/login_screen.dart';
 import 'package:verso/features/auth/screens/profile_screen.dart';
 import 'package:verso/features/auth/screens/update_password_screen.dart';
+import 'package:verso/features/home/screens/birthday_wish_screen.dart';
 import 'package:verso/features/home/screens/home_screen.dart';
 import 'package:verso/features/intro/screens/onboarding_screen.dart';
 import 'package:verso/features/intro/screens/profile_setup_screen.dart';
@@ -32,12 +39,14 @@ final routerProvider = Provider<GoRouter>((ref) {
   // This ensures a fresh key is generated whenever the Router is rebuilt.
   final rootNavigatorKey = GlobalKey<NavigatorState>();
 
-  return GoRouter(
+  final refreshStream = GoRouterRefreshStream(authStream);
+
+  final router = GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: '/',
 
     // Refresh the router whenever Auth State changes (Login, Logout, Recovery)
-    refreshListenable: GoRouterRefreshStream(authStream),
+    refreshListenable: refreshStream,
 
     // Debug Log to help us see errors
     errorBuilder: (context, state) {
@@ -45,13 +54,47 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
 
     redirect: (context, state) {
-      // --- CRITICAL FIX START ---
-      // Intercept the raw deep link from Android and convert it to a valid path
-      if (state.uri.scheme == 'io.supabase.flutter' &&
-          state.uri.host == 'reset-callback') {
-        return '/reset-callback';
+      // --- CRITICAL DEEP LINK INTERCEPTION ---
+      if (state.uri.scheme == AppConstants.appScheme ||
+          state.uri.scheme == 'io.supabase.flutter') {
+        final host = state.uri.host;
+        final fragment = state.uri.fragment;
+        final queryParams = state.uri.queryParameters;
+
+        final isEmailChange = host == 'email-callback' ||
+            state.uri.path.contains('email-callback') ||
+            fragment.contains('type=email_change') ||
+            queryParams['type'] == 'email_change' ||
+            fragment.contains('type%3Demail_change');
+
+        final isEmailStepOne = fragment
+                .contains('message=Confirmation+link+accepted') ||
+            (queryParams['message']?.contains('Confirmation link accepted') ??
+                false);
+
+        if (isEmailChange) {
+          final pending = ref.read(authRepositoryProvider).pendingEmail;
+          final userEmail =
+              Supabase.instance.client.auth.currentUser?.email ?? pending;
+          return '/email-change-success${userEmail != null ? '?email=${Uri.encodeComponent(userEmail)}' : ''}';
+        }
+
+        if (isEmailStepOne) {
+          return '/email-change-success?step=1';
+        }
+
+        if (host == 'reset-callback' ||
+            state.uri.path.contains('reset-callback')) {
+          // If this was an email change flow where pending email is stored and it's not a password recovery
+          final isRecovery = fragment.contains('type=recovery') ||
+              queryParams['type'] == 'recovery';
+          final pending = ref.read(authRepositoryProvider).pendingEmail;
+          if (!isRecovery && pending != null) {
+            return '/email-change-success?email=${Uri.encodeComponent(pending)}';
+          }
+          return '/reset-callback';
+        }
       }
-      // --- CRITICAL FIX END ---
 
       final session = Supabase.instance.client.auth.currentSession;
       final isLoggedIn = session != null;
@@ -65,9 +108,12 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       final isSplash = path == '/';
       final isLoginRoute = cleanPath == '/login';
+      final isAddAccountLogin =
+          isLoginRoute && state.uri.queryParameters['addAccount'] == 'true';
       final isForgotRoute = cleanPath == '/forgot-password';
       final isUpdatePasswordRoute = cleanPath == '/update-password';
       final isResetCallback = cleanPath == '/reset-callback';
+      final isEmailSuccessRoute = cleanPath == '/email-change-success';
 
       final isOnboardingRoute = cleanPath == '/onboarding';
       final isProfileSetupRoute = cleanPath == '/profile-setup';
@@ -84,6 +130,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             !isForgotRoute &&
             !isUpdatePasswordRoute &&
             !isResetCallback &&
+            !isEmailSuccessRoute &&
             !isOnboardingRoute) {
           return '/login';
         }
@@ -104,13 +151,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           return '/profile-setup';
         }
 
-        // Once profile is complete, bounce away from all pre-auth screens.
-        // Also bounce off /profile-setup itself (so back-button can't return there).
-        // Note: isForgotRoute removed so logged-in users can reset their password from the profile screen.
-        if (isLoginRoute ||
-            isResetCallback ||
+        // Once profile is complete, bounce away from pre-auth screens.
+        // Note: isForgotRoute and isEmailSuccessRoute are allowed while logged in.
+        if ((isLoginRoute && !isAddAccountLogin) ||
             isOnboardingRoute ||
-            isProfileSetupRoute) {
+            (hasProfileData && isProfileSetupRoute)) {
           return '/home';
         }
       }
@@ -141,10 +186,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/login',
-        pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
-          key: state.pageKey,
-          child: const LoginScreen(),
-        ),
+        pageBuilder: (context, state) {
+          final extra = state.extra;
+          return AppPageTransitions.fadeThrough(
+            key: state.pageKey,
+            child: LoginScreen(
+              initialEmail: extra is String ? extra : null,
+              isAddingAccount:
+                  state.uri.queryParameters['addAccount'] == 'true',
+            ),
+          );
+        },
       ),
       GoRoute(
         path: '/forgot-password',
@@ -166,20 +218,52 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/reset-callback',
         pageBuilder: (context, state) {
-          // SAFETY NET:
-          // If we are here, but Supabase already has a session, go Home immediately.
-          // This handles cases where the auth state changed faster than the router could react.
           final session = Supabase.instance.client.auth.currentSession;
           if (session != null) {
             // Capture the navigator before the async gap to avoid BuildContext misuse.
             final go = context.go;
-            Future.microtask(() => go('/home'));
+            Future.microtask(() async {
+              final pending = await ref
+                  .read(authRepositoryProvider)
+                  .getPendingEmailChange();
+              if (pending != null &&
+                  session.user.email?.toLowerCase() == pending.toLowerCase()) {
+                await ref
+                    .read(authRepositoryProvider)
+                    .clearPendingEmailChange();
+                go('/email-change-success?email=${Uri.encodeComponent(pending)}');
+              } else {
+                go('/home');
+              }
+            });
           }
 
           return AppPageTransitions.fade(
             key: state.pageKey,
             child: const Scaffold(
               body: Center(child: CircularProgressIndicator()),
+            ),
+          );
+        },
+      ),
+
+      // Email Change Success Screen
+      GoRoute(
+        path: '/email-change-success',
+        pageBuilder: (context, state) {
+          final emailQuery = state.uri.queryParameters['email'];
+          final isStepOne = state.uri.queryParameters['step'] == '1';
+          final extra = state.extra;
+          final emailExtra = extra is String ? extra : null;
+          final email = emailQuery ??
+              emailExtra ??
+              Supabase.instance.client.auth.currentUser?.email;
+
+          return AppPageTransitions.fadeThrough(
+            key: state.pageKey,
+            child: EmailChangeSuccessScreen(
+              email: email,
+              isStepOne: isStepOne,
             ),
           );
         },
@@ -276,7 +360,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/book/:bookId',
         parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) {
-          final bookId = int.parse(state.pathParameters['bookId']!);
+          final bookIdStr = state.pathParameters['bookId'];
+          final bookId =
+              bookIdStr != null ? (int.tryParse(bookIdStr) ?? -1) : -1;
           final book =
               BibleData.findBookById(bookId) ?? BibleData.catholicCanon.first;
           return AppPageTransitions.slideFromRight(
@@ -296,6 +382,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
+      // Birthday Wish Route
+      GoRoute(
+        path: '/birthday-wish',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.slideFromBottom(
+          key: state.pageKey,
+          child: const BirthdayWishScreen(),
+        ),
+      ),
+
       // Our Mission Route
       GoRoute(
         path: '/our-mission',
@@ -306,22 +402,58 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
+      // Legal Routes
+      GoRoute(
+        path: '/legal',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.slideFromRight(
+          key: state.pageKey,
+          child: const LegalScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/terms-of-use',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.slideFromRight(
+          key: state.pageKey,
+          child: const TermsOfUseScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/privacy-policy',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.slideFromRight(
+          key: state.pageKey,
+          child: const PrivacyPolicyScreen(),
+        ),
+      ),
+
       // Old detailed-stats and detailed-activity routes removed
       // Stats are now consolidated into the tabbed StatsScreen on Home
     ],
   );
+
+  ref.onDispose(() {
+    refreshStream.dispose();
+    router.dispose();
+  });
+
+  return router;
 });
 
 // Helper class to make Stream listenable for GoRouter
 class GoRouterRefreshStream extends ChangeNotifier {
-  GoRouterRefreshStream(Stream<dynamic> stream) {
+  GoRouterRefreshStream(Stream<AuthState> stream) {
     notifyListeners();
-    _subscription = stream.listen((dynamic _) {
+    _subscription = stream.listen((authState) {
+      if (authState.event == AuthChangeEvent.userUpdated) {
+        return; // Ignore user updates to prevent unexpected redirects (e.g. during profile setup)
+      }
       notifyListeners();
     });
   }
 
-  late final StreamSubscription<dynamic> _subscription;
+  late final StreamSubscription<AuthState> _subscription;
 
   @override
   void dispose() {

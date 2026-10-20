@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 
@@ -16,26 +16,35 @@ class VersoBottomSheet extends StatelessWidget {
     required this.child,
     super.key,
     this.title,
+    this.contentPadding,
   });
   final String? title;
   final Widget child;
+  final EdgeInsetsGeometry? contentPadding;
 
   /// Shows this bottom sheet as a modal.
   static Future<T?> show<T>({
     required BuildContext context,
     required Widget child,
     String? title,
+    Color? backgroundColor,
+    EdgeInsetsGeometry? contentPadding,
   }) {
     return showModalBottomSheet<T>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: backgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(AppRadii.xl),
-          topRight: Radius.circular(AppRadii.xl),
+          topLeft: Radius.circular(AppRadii.xxl),
+          topRight: Radius.circular(AppRadii.xxl),
         ),
       ),
-      builder: (_) => VersoBottomSheet(title: title, child: child),
+      builder: (_) => VersoBottomSheet(
+        title: title,
+        contentPadding: contentPadding,
+        child: child,
+      ),
     );
   }
 
@@ -53,28 +62,42 @@ class VersoBottomSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: Spacing.sm),
+          const SizedBox(height: 12),
           // Drag handle
           Container(
-            width: 36,
+            width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: scheme.onSurfaceVariant.withValues(alpha: 0.3),
+              color: scheme.onSurfaceVariant.withValues(alpha: 0.25),
               borderRadius: AppRadii.borderRadiusFull,
             ),
           ),
           if (title != null) ...[
-            const SizedBox(height: Spacing.md),
-            Text(title!, style: textTheme.titleMedium),
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+              child: Text(
+                title!,
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.2,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Divider(
+              height: 1,
+              color: scheme.outline.withValues(alpha: 0.15),
+            ),
           ],
-          const SizedBox(height: Spacing.md),
+          const SizedBox(height: Spacing.sm),
           Flexible(
             child: Padding(
-              padding: Spacing.horizontalLG,
+              padding: contentPadding ?? Spacing.horizontalLG,
               child: child,
             ),
           ),
-          const SizedBox(height: Spacing.lg),
         ],
       ),
     );

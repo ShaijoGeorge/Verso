@@ -16,6 +16,7 @@ class SettingsRepository {
   static const _kReminderEnabledKey = 'is_reminder_enabled';
   static const _kReminderHourKey = 'reminder_hour';
   static const _kReminderMinuteKey = 'reminder_minute';
+  static const _kDailyVerseEnabledKey = 'is_daily_verse_enabled';
   static const _kOnboardingKey = 'has_seen_onboarding';
   // Profile Setup keys (collected before login)
   static const _kProfileSetupKey = 'has_completed_profile_setup';
@@ -24,6 +25,7 @@ class SettingsRepository {
   static const _kThemeProfileKey = 'theme_profile_id';
   static const _kFontScaleFactorKey = 'in_app_font_scale_factor';
   static const _kCanonTypeKey = 'canon_type';
+  static const _kBibleLanguageKey = 'bible_language';
   // Legacy key - migrated on first read
   static const _kLegacyThemeKey = 'is_dark_mode';
 
@@ -32,6 +34,15 @@ class SettingsRepository {
   static const _kLastActiveUserIdKey = 'last_active_user_id';
   // Tracks the last local calendar date (YYYY-MM-DD) a daily read was celebrated
   static const _kLastCelebratedReadDateKey = 'last_celebrated_read_date';
+  // Tracks the last calendar year (e.g. 2026) the user saw the birthday wish screen
+  static const _kLastShownBirthdayYearKey = 'last_shown_birthday_year';
+  static const _kStreakFreezesAvailableKey = 'streak_freezes_available';
+  static const _kFrozenDatesKey = 'streak_frozen_dates';
+  static const _kLastFreezeEarnedStreakKey = 'last_freeze_earned_streak';
+  static const _kLastShownFreezeSavedDateKey = 'last_shown_freeze_saved_date';
+  static const _kHasShownWelcomeFreezeKey = 'has_shown_welcome_freeze';
+  static const _kWelcomeFreezeAwardedKey = 'welcome_freeze_awarded';
+  static const int maxStreakFreezes = 2;
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -137,6 +148,9 @@ class SettingsRepository {
           _readScoped(prefs, _kReminderHourKey, uid, prefs.getInt) ?? 7,
       reminderMinute:
           _readScoped(prefs, _kReminderMinuteKey, uid, prefs.getInt) ?? 0,
+      isDailyVerseEnabled:
+          _readScoped(prefs, _kDailyVerseEnabledKey, uid, prefs.getBool) ??
+              true,
       themeProfileId:
           _readScoped(prefs, _kThemeProfileKey, uid, prefs.getString) ??
               'current',
@@ -144,6 +158,8 @@ class SettingsRepository {
           _readScoped(prefs, _kFontScaleFactorKey, uid, prefs.getDouble) ?? 1.0,
       canonType: _readScoped(prefs, _kCanonTypeKey, uid, prefs.getString) ??
           'catholic',
+      bibleLanguage:
+          _readScoped(prefs, _kBibleLanguageKey, uid, prefs.getString) ?? 'en',
     );
   }
 
@@ -191,12 +207,41 @@ class SettingsRepository {
     return prefs.getString(_userKey(_kUserGenderKey, userId));
   }
 
-  /// Returns the saved birthday as a DateTime, or null if not yet set.
+  /// Returns the saved birthday as a DateTime, checking local prefs first
+  /// and falling back to Supabase user_metadata if available.
   Future<DateTime?> getUserBirthday(String userId) async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_userKey(_kUserBirthdayKey, userId));
-    if (raw == null) return null;
-    return DateTime.tryParse(raw);
+    if (raw != null) {
+      return DateTime.tryParse(raw);
+    }
+
+    // Fallback: Check Supabase user_metadata if local cache was cleared
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null && user.id == userId) {
+      final metaBday = user.userMetadata?['birthday'] as String? ??
+          user.userMetadata?['birth_date'] as String?;
+      if (metaBday != null) {
+        final parsed = DateTime.tryParse(metaBday);
+        if (parsed != null) {
+          await prefs.setString(_userKey(_kUserBirthdayKey, userId), metaBday);
+          return parsed;
+        }
+      }
+    }
+    return null;
+  }
+
+  /// Returns the last year (e.g. 2026) the birthday screen was automatically shown.
+  Future<int?> getLastShownBirthdayYear(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_userKey(_kLastShownBirthdayYearKey, userId));
+  }
+
+  /// Records that the birthday celebration was shown for [year].
+  Future<void> setLastShownBirthdayYear(String userId, int year) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_userKey(_kLastShownBirthdayYearKey, userId), year);
   }
 
   // ── Daily First-Read Celebration ─────────────────────────────────────────
@@ -218,6 +263,95 @@ class SettingsRepository {
       _userKey(_kLastCelebratedReadDateKey, userId),
       dateString,
     );
+  }
+
+  // ── Streak Freeze Persistence ──────────────────────────────────────────────
+
+  /// Returns available streak freezes (defaults to exactly 1 welcome gift freeze).
+  Future<int> getStreakFreezesAvailable(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final freezeKey = _userKey(_kStreakFreezesAvailableKey, userId);
+    final welcomeKey = _userKey(_kWelcomeFreezeAwardedKey, userId);
+    final lastEarnedKey = _userKey(_kLastFreezeEarnedStreakKey, userId);
+
+    final hasAwardedWelcome = prefs.getBool(welcomeKey) ?? false;
+    final lastEarned = prefs.getInt(lastEarnedKey) ?? 0;
+
+    if (!hasAwardedWelcome) {
+      // Award exactly 1 welcome gift freeze
+      await prefs.setInt(freezeKey, 1);
+      await prefs.setBool(welcomeKey, true);
+      return 1;
+    }
+
+    final stored = prefs.getInt(freezeKey) ?? 1;
+    // Self-heal: If user has not earned a milestone yet, clamp to max 1 welcome freeze
+    if (lastEarned == 0 && stored > 1) {
+      await prefs.setInt(freezeKey, 1);
+      return 1;
+    }
+
+    return stored.clamp(0, maxStreakFreezes);
+  }
+
+  Future<void> setStreakFreezesAvailable(String userId, int count) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(
+      _userKey(_kStreakFreezesAvailableKey, userId),
+      count.clamp(0, maxStreakFreezes),
+    );
+  }
+
+  /// Returns the set of local date strings ('YYYY-MM-DD') protected by a Streak Freeze.
+  Future<Set<String>> getFrozenDates(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = prefs.getStringList(_userKey(_kFrozenDatesKey, userId)) ?? [];
+    return list.toSet();
+  }
+
+  Future<void> saveFrozenDates(String userId, Set<String> dates) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _userKey(_kFrozenDatesKey, userId),
+      dates.toList()..sort(),
+    );
+  }
+
+  Future<int> getLastFreezeEarnedStreak(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_userKey(_kLastFreezeEarnedStreakKey, userId)) ?? 0;
+  }
+
+  Future<void> setLastFreezeEarnedStreak(String userId, int streak) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_userKey(_kLastFreezeEarnedStreakKey, userId), streak);
+  }
+
+  Future<String?> getLastShownFreezeSavedDate(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_userKey(_kLastShownFreezeSavedDateKey, userId));
+  }
+
+  Future<void> setLastShownFreezeSavedDate(
+    String userId,
+    String dateString,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _userKey(_kLastShownFreezeSavedDateKey, userId),
+      dateString,
+    );
+  }
+
+  /// Returns whether the user has already seen the welcome gift Streak Freeze celebration.
+  Future<bool> hasShownWelcomeFreeze(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_userKey(_kHasShownWelcomeFreezeKey, userId)) ?? false;
+  }
+
+  Future<void> setHasShownWelcomeFreeze(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_userKey(_kHasShownWelcomeFreezeKey, userId), true);
   }
 
   // ── Theme ─────────────────────────────────────────────────────────────────
@@ -339,6 +473,20 @@ class SettingsRepository {
     );
   }
 
+  Future<void> updateDailyVerse(
+    bool isEnabled, {
+    String? userId,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final uid = _resolveUserId(userId);
+    await _writeScoped(
+      prefs,
+      _kDailyVerseEnabledKey,
+      uid,
+      (k) => prefs.setBool(k, isEnabled),
+    );
+  }
+
   Future<void> setFontScaleFactor(double factor, {String? userId}) async {
     final prefs = await SharedPreferences.getInstance();
     final uid = _resolveUserId(userId);
@@ -364,6 +512,17 @@ class SettingsRepository {
   Future<void> updateCanonSetting(String canonString) =>
       setCanonType(canonString);
 
+  Future<void> setBibleLanguage(String langCode, {String? userId}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final uid = _resolveUserId(userId);
+    await _writeScoped(
+      prefs,
+      _kBibleLanguageKey,
+      uid,
+      (key) => prefs.setString(key, langCode),
+    );
+  }
+
   /// Syncs the user's selected Bible canon to Supabase cloud.
   /// Updates user_metadata (default for Verso) and attempts updating
   /// 'profiles' table if configured in Supabase.
@@ -384,6 +543,25 @@ class SettingsRepository {
       await client
           .from('profiles')
           .update({'canon_type': canonType}).eq('id', user.id);
+    } catch (_) {}
+  }
+
+  /// Syncs the user's selected Bible language to Supabase cloud.
+  Future<void> syncBibleLanguageToCloud(String langCode) async {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      await client.auth.updateUser(
+        UserAttributes(data: {'bible_language': langCode}),
+      );
+    } catch (_) {}
+
+    try {
+      await client
+          .from('profiles')
+          .update({'bible_language': langCode}).eq('id', user.id);
     } catch (_) {}
   }
 

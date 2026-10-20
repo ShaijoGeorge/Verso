@@ -13,7 +13,7 @@
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>biblia</string>
+    <string>Verso</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -51,9 +51,11 @@
       <dict>
         <key>CFBundleTypeRole</key>
         <string>Editor</string>
+        <key>CFBundleURLName</key>
+        <string>verso</string>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>io.supabase.flutter</string>
+          <string>verso</string>
         </array>
       </dict>
     </array>

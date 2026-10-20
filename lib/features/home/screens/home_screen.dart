@@ -2,28 +2,114 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/design/components/verso_card.dart';
 import 'package:verso/core/design/components/verso_circular_progress.dart';
+import 'package:verso/core/design/components/verso_frost_effect.dart';
 import 'package:verso/core/design/components/verso_progress_bar.dart';
 import 'package:verso/core/design/components/verso_section_header.dart';
+import 'package:verso/core/design/components/verso_streak_freeze_overlay.dart';
 import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/shadows.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
+import 'package:verso/data/bible_book_names.dart';
+import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
+import 'package:verso/features/auth/providers/auth_providers.dart';
+import 'package:verso/features/home/data/daily_verse.dart';
 import 'package:verso/features/home/providers/home_providers.dart';
+import 'package:verso/features/home/widgets/streak_freeze_sheet.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
 import 'package:verso/features/stats/providers/activity_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  bool _checkedFreezeSavedThisSession = false;
+  bool _checkedWelcomeFreezeThisSession = false;
+
+  void _checkOverlays(UserStats stats) {
+    _checkFreezeSaved(stats);
+    _checkWelcomeFreeze(stats);
+  }
+
+  void _checkFreezeSaved(UserStats stats) {
+    if (_checkedFreezeSavedThisSession) return;
+    if (stats.newlyFrozenDate != null || stats.isStreakFrozen) {
+      final user = Supabase.instance.client.auth.currentUser ??
+          ref.read(authUserProvider).value;
+      final uid = user?.id ?? '';
+      if (uid.isEmpty) return;
+
+      _checkedFreezeSavedThisSession = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        final settingsRepo = ref.read(settingsRepositoryProvider);
+        final lastShown = await settingsRepo.getLastShownFreezeSavedDate(uid);
+        final todayStr = formatDateKey(DateTime.now());
+        if (lastShown != todayStr) {
+          await settingsRepo.setLastShownFreezeSavedDate(uid, todayStr);
+          if (mounted) {
+            VersoStreakFreezeOverlay.showSaved(
+              context,
+              streak: stats.streak,
+              remainingFreezes: stats.availableFreezes,
+            );
+          }
+        }
+      });
+    }
+  }
+
+  void _checkWelcomeFreeze(UserStats stats) {
+    if (_checkedWelcomeFreezeThisSession) return;
+    if (stats.availableFreezes <= 0) return;
+
+    final user = Supabase.instance.client.auth.currentUser ??
+        ref.read(authUserProvider).value;
+    final uid = user?.id ?? '';
+    if (uid.isEmpty) return;
+
+    _checkedWelcomeFreezeThisSession = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final settingsRepo = ref.read(settingsRepositoryProvider);
+      final hasShown = await settingsRepo.hasShownWelcomeFreeze(uid);
+      if (!hasShown) {
+        await settingsRepo.setHasShownWelcomeFreeze(uid);
+        if (mounted) {
+          await Future<void>.delayed(const Duration(milliseconds: 650));
+          if (mounted) {
+            VersoStreakFreezeOverlay.showWelcome(
+              context,
+              streak: stats.streak,
+            );
+          }
+        }
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen<AsyncValue<UserStats>>(userStatsProvider, (_, next) {
+      next.whenData(_checkOverlays);
+    });
+
     final statsAsync = ref.watch(userStatsProvider);
+    statsAsync.whenData(_checkOverlays);
     final detailedAsync = ref.watch(detailedStatsProvider);
     final continueAsync = ref.watch(continueReadingProvider);
     final activityAsync = ref.watch(activityLogProvider);
@@ -36,6 +122,7 @@ class HomeScreen extends ConsumerWidget {
     final highlightColor = isLight ? Colors.grey[100]! : Colors.grey[700]!;
 
     return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Center(
         child: ConstrainedBox(
@@ -52,7 +139,20 @@ class HomeScreen extends ConsumerWidget {
                       baseColor: baseColor,
                       highlightColor: highlightColor,
                       child: Container(
-                        width: 150,
+                        width: 110,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                    ),
+                    const Gap(10),
+                    Shimmer.fromColors(
+                      baseColor: baseColor,
+                      highlightColor: highlightColor,
+                      child: Container(
+                        width: 200,
                         height: 32,
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -65,7 +165,7 @@ class HomeScreen extends ConsumerWidget {
                       baseColor: baseColor,
                       highlightColor: highlightColor,
                       child: Container(
-                        width: 240,
+                        width: 260,
                         height: 16,
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -86,10 +186,12 @@ class HomeScreen extends ConsumerWidget {
                     streak: stats.streak,
                     progress: stats.totalProgress,
                     todayCount: todayCount,
+                    availableFreezes: stats.availableFreezes,
+                    isFrozen: stats.isStreakFrozen,
                   );
                 },
               ),
-              const Gap(Spacing.md),
+              const Gap(Spacing.lg),
 
               // DAILY VERSE
               _DailyVerseCard(verseAsync: verseAsync),
@@ -107,7 +209,7 @@ class HomeScreen extends ConsumerWidget {
                   );
                 },
               ),
-              const Gap(Spacing.lg),
+              const Gap(Spacing.md),
 
               // QUICK STATS
               statsAsync.when(
@@ -118,47 +220,103 @@ class HomeScreen extends ConsumerWidget {
               const Gap(Spacing.xl),
 
               // THIS WEEK
-              if (detailedAsync.hasValue) ...[
-                VersoSectionHeader(
-                  title: 'This week',
-                  action: 'Details',
-                  onAction: () => context.go('/stats?tab=weekly'),
+              detailedAsync.when(
+                data: (detailed) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    VersoSectionHeader(
+                      title: 'This Week',
+                      action: 'Details',
+                      onAction: () => context.go('/stats?tab=weekly'),
+                    ),
+                    const Gap(Spacing.md),
+                    _WeeklyChart(
+                      counts: detailed.last7DaysCounts,
+                      dates: detailed.last7DaysDates,
+                      frozenDates:
+                          statsAsync.value?.frozenDates ?? detailed.frozenDates,
+                    ),
+                    const Gap(Spacing.xl),
+                  ],
                 ),
-                const Gap(Spacing.md),
-                _WeeklyChart(
-                  counts: detailedAsync.value!.last7DaysCounts,
-                  dates: detailedAsync.value!.last7DaysDates,
+                error: (err, _) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const VersoSectionHeader(title: 'This Week'),
+                    const Gap(Spacing.md),
+                    _InlineErrorCard(
+                      title: 'weekly stats',
+                      onRetry: () => ref.invalidate(detailedStatsProvider),
+                    ),
+                    const Gap(Spacing.xl),
+                  ],
                 ),
-                const Gap(Spacing.xl),
-              ],
+                loading: () => const SizedBox.shrink(),
+              ),
 
               // CONTINUE READING
-              if (continueAsync.hasValue && continueAsync.value != null) ...[
-                const VersoSectionHeader(title: 'Continue reading'),
-                const Gap(Spacing.md),
-                _ContinueReadingCard(info: continueAsync.value!),
-                const Gap(Spacing.xl),
-              ],
+              continueAsync.when(
+                data: (info) => info != null
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const VersoSectionHeader(title: 'Continue Reading'),
+                          const Gap(Spacing.md),
+                          _ContinueReadingCard(info: info),
+                          const Gap(Spacing.xl),
+                        ],
+                      )
+                    : const SizedBox.shrink(),
+                error: (err, _) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const VersoSectionHeader(title: 'Continue Reading'),
+                    const Gap(Spacing.md),
+                    _InlineErrorCard(
+                      title: 'reading progress',
+                      onRetry: () => ref.invalidate(continueReadingProvider),
+                    ),
+                    const Gap(Spacing.xl),
+                  ],
+                ),
+                loading: () => const SizedBox.shrink(),
+              ),
 
               // RECENT ACTIVITY
-              if (activityAsync.hasValue &&
-                  activityAsync.value!.isNotEmpty) ...[
-                VersoSectionHeader(
-                  title: 'Recent activity',
-                  action: 'See all',
-                  onAction: () => context.go('/history'),
+              activityAsync.when(
+                data: (groups) => groups.isNotEmpty
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          VersoSectionHeader(
+                            title: 'Recent Activity',
+                            action: 'See All',
+                            onAction: () => context.go('/history'),
+                          ),
+                          const Gap(Spacing.md),
+                          _RecentActivityList(
+                            groups:
+                                groups.values.expand((g) => g).take(3).toList(),
+                          ),
+                        ],
+                      )
+                    : const SizedBox.shrink(),
+                error: (err, _) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const VersoSectionHeader(title: 'Recent Activity'),
+                    const Gap(Spacing.md),
+                    _InlineErrorCard(
+                      title: 'activity log',
+                      onRetry: () => ref.invalidate(activityLogProvider),
+                    ),
+                  ],
                 ),
-                const Gap(Spacing.md),
-                _RecentActivityList(
-                  groups: activityAsync.value!.values
-                      .expand((g) => g)
-                      .take(3)
-                      .toList(),
-                ),
-              ],
+                loading: () => const SizedBox.shrink(),
+              ),
 
               // Extra space so content isn't hidden behind the floating nav bar
-              const Gap(100),
+              const Gap(110),
             ],
           ),
         ),
@@ -175,27 +333,82 @@ class _GreetingSection extends StatelessWidget {
     required this.streak,
     required this.progress,
     required this.todayCount,
+    this.availableFreezes = 1,
+    this.isFrozen = false,
   });
   final String userName;
   final int streak;
   final double progress;
   final int todayCount;
+  final int availableFreezes;
+  final bool isFrozen;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
+    final dateStr = DateFormat('EEEE, MMM d').format(DateTime.now());
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Top date eyebrow + live streak badge
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.calendar_today_rounded,
+                  size: 12,
+                  color: scheme.primary.withValues(alpha: 0.75),
+                ),
+                const Gap(6),
+                Text(
+                  dateStr.toUpperCase(),
+                  style: textTheme.labelSmall?.copyWith(
+                    color: scheme.primary.withValues(alpha: 0.8),
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.4,
+                    fontSize: 10.5,
+                  ),
+                ),
+              ],
+            ),
+            if (streak > 0 || availableFreezes > 0)
+              AnimatedStreakBadge(
+                streak: streak,
+                availableFreezes: availableFreezes,
+                isFrozen: isFrozen,
+                onTap: () {
+                  StreakFreezeBottomSheet.show(
+                    context,
+                    streak: streak,
+                    availableFreezes: availableFreezes,
+                    isFrozen: isFrozen,
+                    todayCount: todayCount,
+                  );
+                },
+              ),
+          ],
+        ),
+        const Gap(8),
         Text(
           '${getGreeting()}, $userName',
-          style: textTheme.headlineLarge,
+          style: textTheme.displaySmall?.copyWith(
+            color: scheme.onSurface,
+            height: 1.15,
+          ),
         ),
-        const Gap(Spacing.xs),
+        const Gap(6),
         Text(
-          getMotivationalMessage(streak, progress, todayCount),
+          getMotivationalMessage(
+            streak,
+            progress,
+            todayCount,
+            isFrozen: isFrozen,
+          ),
           style: textTheme.bodyMedium?.copyWith(
             color: scheme.onSurfaceVariant,
           ),
@@ -215,128 +428,206 @@ class _HeroProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final palette = context.palette;
     final textTheme = Theme.of(context).textTheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isNarrow = constraints.maxWidth < 360;
-        final circleSize = isNarrow ? 102.0 : 124.0;
-        final strokeWidth = isNarrow ? 8.0 : 10.0;
+        final circleSize = isNarrow ? 104.0 : 124.0;
+        final strokeWidth = isNarrow ? 8.5 : 10.0;
 
         return Container(
           width: double.infinity,
-          padding: EdgeInsets.all(isNarrow ? Spacing.md : Spacing.lg),
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: isLight
                   ? [
-                      scheme.primary,
-                      scheme.primary.withValues(alpha: 0.85),
+                      palette.primary,
+                      palette.primaryHover,
                     ]
                   : [
-                      scheme.primaryContainer,
-                      scheme.primaryContainer.withValues(alpha: 0.7),
+                      palette.accentSoft,
+                      scheme.surface,
                     ],
             ),
             borderRadius: AppRadii.borderRadiusXL,
-            boxShadow: AppShadows.lg,
+            border: Border.all(
+              color: isLight
+                  ? Colors.white.withValues(alpha: 0.14)
+                  : palette.primary.withValues(alpha: 0.25),
+            ),
+            boxShadow: isLight
+                ? AppShadows.glow(palette.primary, opacity: 0.22)
+                : AppShadows.md,
           ),
-          child: Row(
+          child: Stack(
             children: [
-              // Progress circle
-              TweenAnimationBuilder<double>(
-                tween: Tween<double>(begin: 0, end: stats.totalProgress),
-                duration: const Duration(milliseconds: 1500),
-                curve: Curves.easeOutCubic,
-                builder: (context, animatedProgress, _) {
-                  return VersoCircularProgress(
-                    progress: animatedProgress,
-                    size: circleSize,
-                    strokeWidth: strokeWidth,
-                    color: isLight ? Colors.white : scheme.primary,
-                    trackColor: isLight
-                        ? Colors.white.withValues(alpha: 0.2)
-                        : scheme.primary.withValues(alpha: 0.2),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            '${animatedProgress.toStringAsFixed(1)}%',
+              // Decorative architectural light rings
+              Positioned(
+                right: -45,
+                top: -45,
+                child: Container(
+                  width: 170,
+                  height: 170,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: (isLight ? Colors.white : palette.primary)
+                          .withValues(alpha: 0.08),
+                      width: 24,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: -30,
+                bottom: -50,
+                child: Container(
+                  width: 130,
+                  height: 130,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        palette.secondary.withValues(alpha: 0.16),
+                        palette.secondary.withValues(alpha: 0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              Padding(
+                padding: EdgeInsets.all(isNarrow ? Spacing.md : Spacing.lg),
+                child: Row(
+                  children: [
+                    // Progress circle
+                    TweenAnimationBuilder<double>(
+                      tween: Tween<double>(begin: 0, end: stats.totalProgress),
+                      duration: const Duration(milliseconds: 1500),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, animatedProgress, _) {
+                        return VersoCircularProgress(
+                          progress: animatedProgress,
+                          size: circleSize,
+                          strokeWidth: strokeWidth,
+                          color: isLight ? Colors.white : scheme.primary,
+                          trackColor: isLight
+                              ? Colors.white.withValues(alpha: 0.18)
+                              : scheme.primary.withValues(alpha: 0.18),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  '${animatedProgress.toStringAsFixed(1)}%',
+                                  style: (isNarrow
+                                          ? textTheme.titleMedium
+                                          : textTheme.titleLarge)
+                                      ?.copyWith(
+                                    color: isLight
+                                        ? Colors.white
+                                        : scheme.onPrimaryContainer,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                'COMPLETE',
+                                style: textTheme.labelSmall?.copyWith(
+                                  color: isLight
+                                      ? Colors.white.withValues(alpha: 0.75)
+                                      : scheme.onPrimaryContainer
+                                          .withValues(alpha: 0.65),
+                                  fontSize: isNarrow ? 8.5 : 9.5,
+                                  letterSpacing: 1.2,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    Gap(isNarrow ? Spacing.md : Spacing.lg),
+
+                    // Right side info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isLight
+                                  ? Colors.white.withValues(alpha: 0.15)
+                                  : scheme.primary.withValues(alpha: 0.15),
+                              borderRadius: AppRadii.borderRadiusFull,
+                            ),
+                            child: Text(
+                              'OVERALL PROGRESS',
+                              style: textTheme.labelSmall?.copyWith(
+                                fontSize: 9.5,
+                                letterSpacing: 1.1,
+                                fontWeight: FontWeight.w700,
+                                color: isLight
+                                    ? Colors.white.withValues(alpha: 0.9)
+                                    : scheme.primary,
+                              ),
+                            ),
+                          ),
+                          const Gap(6),
+                          Text(
+                            'Bible Journey',
                             style: (isNarrow
                                     ? textTheme.titleMedium
-                                    : textTheme.titleLarge)
+                                    : textTheme.headlineSmall)
                                 ?.copyWith(
                               color: isLight
                                   ? Colors.white
                                   : scheme.onPrimaryContainer,
-                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ),
-                        Text(
-                          'complete',
-                          style: textTheme.labelSmall?.copyWith(
-                            color: isLight
-                                ? Colors.white.withValues(alpha: 0.8)
-                                : scheme.onPrimaryContainer
-                                    .withValues(alpha: 0.7),
-                            fontSize: isNarrow ? 10 : null,
+                          const Gap(Spacing.sm),
+                          _HeroStatRow(
+                            icon: Icons.emoji_events_rounded,
+                            text:
+                                '${stats.booksCompleted} / ${stats.totalBooksInCanon} Books',
+                            isLight: isLight,
+                            scheme: scheme,
                           ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-              Gap(isNarrow ? Spacing.md : Spacing.lg),
-
-              // Right side info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Bible journey',
-                      style: (isNarrow
-                              ? textTheme.titleSmall
-                              : textTheme.titleMedium)
-                          ?.copyWith(
-                        color:
-                            isLight ? Colors.white : scheme.onPrimaryContainer,
-                        fontWeight: FontWeight.bold,
+                          const Gap(6),
+                          _HeroStatRow(
+                            icon: Icons.menu_book_rounded,
+                            text:
+                                '${stats.totalChaptersRead} / ${stats.totalChaptersInCanon} Chapters',
+                            isLight: isLight,
+                            scheme: scheme,
+                          ),
+                          if (todayCount > 0) ...[
+                            const Gap(6),
+                            _HeroStatRow(
+                              icon: Icons.bolt_rounded,
+                              text:
+                                  '+$todayCount Chapter${todayCount == 1 ? '' : 's'} Today',
+                              isLight: isLight,
+                              scheme: scheme,
+                              isHighlight: true,
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                    const Gap(Spacing.sm),
-                    _HeroStatRow(
-                      icon: Icons.emoji_events_rounded,
-                      text:
-                          '${stats.booksCompleted}/${stats.totalBooksInCanon} Books',
-                      isLight: isLight,
-                      scheme: scheme,
-                    ),
-                    const Gap(Spacing.xs),
-                    _HeroStatRow(
-                      icon: Icons.menu_book_rounded,
-                      text:
-                          '${stats.totalChaptersRead}/${stats.totalChaptersInCanon} Chapters',
-                      isLight: isLight,
-                      scheme: scheme,
-                    ),
-                    if (todayCount > 0) ...[
-                      const Gap(Spacing.xs),
-                      _HeroStatRow(
-                        icon: Icons.today_rounded,
-                        text:
-                            '$todayCount Chapter${todayCount == 1 ? '' : 's'} Today',
-                        isLight: isLight,
-                        scheme: scheme,
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -354,27 +645,42 @@ class _HeroStatRow extends StatelessWidget {
     required this.text,
     required this.isLight,
     required this.scheme,
+    this.isHighlight = false,
   });
   final IconData icon;
   final String text;
   final bool isLight;
   final ColorScheme scheme;
+  final bool isHighlight;
 
   @override
   Widget build(BuildContext context) {
     final color = isLight
-        ? Colors.white.withValues(alpha: 0.9)
-        : scheme.onPrimaryContainer.withValues(alpha: 0.8);
+        ? Colors.white.withValues(alpha: isHighlight ? 1.0 : 0.9)
+        : (isHighlight
+            ? scheme.primary
+            : scheme.onPrimaryContainer.withValues(alpha: 0.85));
 
     return Row(
       children: [
-        Icon(icon, size: 16, color: color),
-        const Gap(Spacing.sm),
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: isLight
+                ? Colors.white.withValues(alpha: 0.14)
+                : scheme.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Icon(icon, size: 13, color: color),
+        ),
+        const Gap(8),
         Flexible(
           child: Text(
             text,
-            style:
-                Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: color,
+                  fontWeight: isHighlight ? FontWeight.w700 : FontWeight.w600,
+                ),
           ),
         ),
       ],
@@ -391,18 +697,23 @@ class _QuickStatsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
+    final isFrozen = stats.isStreakFrozen;
+    final freezeColor = context.appColors.streakFreeze;
 
     return Row(
       children: [
         Expanded(
           child: _QuickStatCard(
-            icon: Icons.local_fire_department_rounded,
+            icon: isFrozen
+                ? Icons.ac_unit_rounded
+                : Icons.local_fire_department_rounded,
             value: '${stats.streak}',
-            label: 'Day streak',
-            iconColor: isLight ? AppColors.streakLight : AppColors.streakDark,
-            bgColor: isLight
-                ? AppColors.streakLight.withValues(alpha: 0.1)
-                : AppColors.streakDark.withValues(alpha: 0.15),
+            label: 'Day Streak',
+            subtitle: isFrozen ? 'Frozen ❄️' : null,
+            iconColor: isFrozen
+                ? freezeColor
+                : (isLight ? AppColors.streakLight : AppColors.streakDark),
+            isFrozen: isFrozen,
           ),
         ),
         const Gap(Spacing.sm),
@@ -413,9 +724,6 @@ class _QuickStatsRow extends StatelessWidget {
             label: 'Chapters',
             iconColor:
                 isLight ? AppColors.chaptersLight : AppColors.chaptersDark,
-            bgColor: isLight
-                ? AppColors.chaptersLight.withValues(alpha: 0.1)
-                : AppColors.chaptersDark.withValues(alpha: 0.15),
           ),
         ),
         const Gap(Spacing.sm),
@@ -423,11 +731,8 @@ class _QuickStatsRow extends StatelessWidget {
           child: _QuickStatCard(
             icon: Icons.emoji_events_rounded,
             value: '${stats.booksCompleted}',
-            label: 'Books',
+            label: 'Books Done',
             iconColor: isLight ? AppColors.booksLight : AppColors.booksDark,
-            bgColor: isLight
-                ? AppColors.booksLight.withValues(alpha: 0.1)
-                : AppColors.booksDark.withValues(alpha: 0.15),
           ),
         ),
       ],
@@ -441,13 +746,15 @@ class _QuickStatCard extends StatelessWidget {
     required this.value,
     required this.label,
     required this.iconColor,
-    required this.bgColor,
+    this.subtitle,
+    this.isFrozen = false,
   });
   final IconData icon;
   final String value;
   final String label;
   final Color iconColor;
-  final Color bgColor;
+  final String? subtitle;
+  final bool isFrozen;
 
   @override
   Widget build(BuildContext context) {
@@ -455,76 +762,129 @@ class _QuickStatCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
     final isAmoled = context.palette.style == AppearanceStyle.amoled;
+    final freezeColor = context.appColors.streakFreeze;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        vertical: Spacing.md,
-        horizontal: Spacing.xs,
-      ),
+    final card = Container(
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: scheme.surface,
+        color: isFrozen
+            ? Color.alphaBlend(
+                freezeColor.withValues(alpha: isLight ? 0.08 : 0.12),
+                scheme.surface,
+              )
+            : scheme.surface,
         borderRadius: AppRadii.borderRadiusLG,
         border: Border.all(
-          color: isAmoled
-              ? scheme.outline
-              : scheme.outline.withValues(alpha: isLight ? 0.5 : 0.15),
+          color: isFrozen
+              ? freezeColor.withValues(alpha: 0.55)
+              : (isAmoled
+                  ? scheme.outline.withValues(alpha: 0.85)
+                  : scheme.outline.withValues(alpha: isLight ? 0.65 : 0.25)),
         ),
-        boxShadow: AppShadows.sm,
+        boxShadow: isLight ? AppShadows.sm : AppShadows.none,
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
+      child: Stack(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: AppRadii.borderRadiusSM,
-            ),
-            child: Icon(icon, size: 20, color: iconColor),
-          ),
-          const Gap(Spacing.sm),
-          TweenAnimationBuilder<int>(
-            key: ValueKey('stat_$label'),
-            tween: IntTween(begin: 0, end: int.tryParse(value) ?? 0),
-            duration: const Duration(milliseconds: 1200),
-            curve: Curves.easeOutCubic,
-            builder: (context, animatedVal, _) {
-              return FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  '$animatedVal',
-                  style: textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+          // Top-right ambient color glow
+          Positioned(
+            top: -18,
+            right: -18,
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    iconColor.withValues(alpha: isLight ? 0.16 : 0.22),
+                    iconColor.withValues(alpha: 0),
+                  ],
                 ),
-              );
-            },
+              ),
+            ),
           ),
-          const Gap(2),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              label,
-              style: textTheme.labelSmall?.copyWith(
-                color: scheme.onSurfaceVariant,
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: 16,
+              horizontal: 10,
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(9),
+                    decoration: BoxDecoration(
+                      color: iconColor.withValues(alpha: isLight ? 0.1 : 0.16),
+                      borderRadius: AppRadii.borderRadiusSM,
+                      border: Border.all(
+                        color:
+                            iconColor.withValues(alpha: isFrozen ? 0.35 : 0.2),
+                      ),
+                    ),
+                    child: Icon(icon, size: 19, color: iconColor),
+                  ),
+                  const Gap(10),
+                  TweenAnimationBuilder<int>(
+                    key: ValueKey('stat_$label'),
+                    tween: IntTween(begin: 0, end: int.tryParse(value) ?? 0),
+                    duration: const Duration(milliseconds: 1200),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, animatedVal, _) {
+                      return FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          '$animatedVal',
+                          style: textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                            color: isFrozen ? freezeColor : null,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const Gap(2),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      subtitle ?? label,
+                      style: textTheme.labelSmall?.copyWith(
+                        color: isFrozen ? freezeColor : scheme.onSurfaceVariant,
+                        fontWeight:
+                            isFrozen ? FontWeight.w700 : FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
         ],
       ),
     );
+
+    return VersoFrostEffect(
+      isFrozen: isFrozen,
+      borderRadius: AppRadii.borderRadiusLG,
+      showSnowflakeWatermark: isFrozen,
+      child: card,
+    );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // WEEKLY CHART (mini bar chart)
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _WeeklyChart extends StatelessWidget {
-  const _WeeklyChart({required this.counts, required this.dates});
+  const _WeeklyChart({
+    required this.counts,
+    required this.dates,
+    this.frozenDates = const {},
+  });
   final List<int> counts;
   final List<DateTime> dates;
+  final Set<String> frozenDates;
 
   @override
   Widget build(BuildContext context) {
@@ -534,77 +894,206 @@ class _WeeklyChart extends StatelessWidget {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final total = counts.reduce((a, b) => a + b);
+    final activeDays = counts.where((c) => c > 0).length;
+    final freezeColor = context.appColors.streakFreeze;
 
     const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
     return VersoCard(
+      padding: const EdgeInsets.all(Spacing.lg),
       child: Column(
         children: [
           // Summary row
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              '$total chapters',
-              style: textTheme.titleSmall,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$total ${total == 1 ? 'Chapter' : 'Chapters'}',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const Gap(2),
+                  Text(
+                    'Last 7 days · $activeDays/7 days active',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.1),
+                  borderRadius: AppRadii.borderRadiusFull,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.bar_chart_rounded,
+                      size: 14,
+                      color: scheme.primary,
+                    ),
+                    const Gap(4),
+                    Text(
+                      '7-Day Rhythm',
+                      style: textTheme.labelSmall?.copyWith(
+                        color: scheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const Gap(Spacing.md),
+          const Gap(Spacing.lg),
 
           // Bar chart
           SizedBox(
-            height: 100,
+            height: 112,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: List.generate(7, (i) {
+                final dateKey = formatDateKey(dates[i]);
+                final isFrozenDay =
+                    counts[i] == 0 && frozenDates.contains(dateKey);
                 final isToday = dates[i].year == today.year &&
                     dates[i].month == today.month &&
                     dates[i].day == today.day;
                 final fraction = maxCount > 0 ? counts[i] / maxCount : 0.0;
+                final targetHeightFactor = isFrozenDay ? 0.35 : fraction;
 
                 return Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         if (counts[i] > 0)
                           Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
+                            padding: const EdgeInsets.only(bottom: 5),
                             child: Text(
                               '${counts[i]}',
                               style: textTheme.labelSmall?.copyWith(
-                                color: scheme.onSurfaceVariant,
+                                color: isToday
+                                    ? scheme.primary
+                                    : scheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w700,
                                 fontSize: 10,
                               ),
                             ),
+                          )
+                        else if (isFrozenDay)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 5),
+                            child: Icon(
+                              Icons.ac_unit_rounded,
+                              size: 11,
+                              color: freezeColor,
+                            ),
                           ),
                         TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 0, end: fraction),
-                          duration: const Duration(milliseconds: 800),
+                          tween: Tween(begin: 0, end: targetHeightFactor),
+                          duration: const Duration(milliseconds: 850),
                           curve: Curves.easeOutCubic,
                           builder: (context, val, _) {
                             return Container(
-                              height: (val * 60).clamp(4.0, 60.0),
+                              height: (val * 64).clamp(6.0, 64.0),
                               decoration: BoxDecoration(
-                                color: isToday
-                                    ? scheme.primary
-                                    : (counts[i] > 0
-                                        ? scheme.primary.withValues(alpha: 0.4)
-                                        : scheme.surfaceContainerHighest),
-                                borderRadius: AppRadii.borderRadiusXS,
+                                gradient: isFrozenDay
+                                    ? LinearGradient(
+                                        begin: Alignment.bottomCenter,
+                                        end: Alignment.topCenter,
+                                        colors: [
+                                          freezeColor,
+                                          freezeColor.withValues(alpha: 0.65),
+                                        ],
+                                      )
+                                    : isToday
+                                        ? LinearGradient(
+                                            begin: Alignment.bottomCenter,
+                                            end: Alignment.topCenter,
+                                            colors: [
+                                              scheme.primary,
+                                              context.palette.primaryHover,
+                                            ],
+                                          )
+                                        : (counts[i] > 0
+                                            ? LinearGradient(
+                                                begin: Alignment.bottomCenter,
+                                                end: Alignment.topCenter,
+                                                colors: [
+                                                  scheme.primary
+                                                      .withValues(alpha: 0.45),
+                                                  scheme.primary
+                                                      .withValues(alpha: 0.28),
+                                                ],
+                                              )
+                                            : null),
+                                color:
+                                    !isToday && counts[i] == 0 && !isFrozenDay
+                                        ? scheme.surfaceContainerHighest
+                                            .withValues(alpha: 0.7)
+                                        : null,
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: isFrozenDay
+                                    ? [
+                                        BoxShadow(
+                                          color: freezeColor.withValues(
+                                            alpha: 0.35,
+                                          ),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ]
+                                    : (isToday && counts[i] > 0
+                                        ? [
+                                            BoxShadow(
+                                              color: scheme.primary
+                                                  .withValues(alpha: 0.28),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ]
+                                        : null),
                               ),
                             );
                           },
                         ),
-                        const Gap(Spacing.xs),
-                        Text(
-                          dayLabels[dates[i].weekday - 1],
-                          style: textTheme.labelSmall?.copyWith(
+                        const Gap(6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
                             color: isToday
-                                ? scheme.primary
-                                : scheme.onSurfaceVariant,
-                            fontWeight: isToday ? FontWeight.bold : null,
-                            fontSize: 11,
+                                ? scheme.primary.withValues(alpha: 0.12)
+                                : isFrozenDay
+                                    ? freezeColor.withValues(alpha: 0.12)
+                                    : Colors.transparent,
+                            borderRadius: AppRadii.borderRadiusFull,
+                          ),
+                          child: Text(
+                            dayLabels[dates[i].weekday - 1],
+                            style: textTheme.labelSmall?.copyWith(
+                              color: isToday
+                                  ? scheme.primary
+                                  : isFrozenDay
+                                      ? freezeColor
+                                      : scheme.onSurfaceVariant,
+                              fontWeight: (isToday || isFrozenDay)
+                                  ? FontWeight.w800
+                                  : FontWeight.w600,
+                              fontSize: 10.5,
+                            ),
                           ),
                         ),
                       ],
@@ -620,44 +1109,58 @@ class _WeeklyChart extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // CONTINUE READING CARD
-// ─────────────────────────────────────────────────────────────────────────────
 
-class _ContinueReadingCard extends StatelessWidget {
+class _ContinueReadingCard extends ConsumerWidget {
   const _ContinueReadingCard({required this.info});
   final ContinueReadingInfo info;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final isLight = Theme.of(context).brightness == Brightness.light;
     final isOT = info.book.testament.name == 'old';
+    final testamentColor = isOT
+        ? (isLight ? AppColors.otColorLight : AppColors.otColorDark)
+        : (isLight ? AppColors.ntColorLight : AppColors.ntColorDark);
+
+    final settings = switch (ref.watch(currentSettingsProvider)) {
+      AsyncData(:final value) => value,
+      _ => null,
+    };
+    final bibleLanguage = settings?.bibleLanguage ?? 'en';
+    final canon = settings?.canon ?? CanonType.catholic;
+    final pct = (info.progress * 100).toInt();
 
     return VersoCard(
       onTap: () => context.push('/book/${info.book.id}'),
+      padding: const EdgeInsets.all(Spacing.md),
       child: Row(
         children: [
           // Book icon with testament color
-          Builder(
-            builder: (context) {
-              final isLight = Theme.of(context).brightness == Brightness.light;
-              final testamentColor = isOT
-                  ? (isLight ? AppColors.otColorLight : AppColors.otColorDark)
-                  : (isLight ? AppColors.ntColorLight : AppColors.ntColorDark);
-              return Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: testamentColor.withValues(alpha: 0.1),
-                  borderRadius: AppRadii.borderRadiusMD,
-                ),
-                child: Icon(
-                  Icons.menu_book_rounded,
-                  color: testamentColor,
-                  size: 28,
-                ),
-              );
-            },
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  testamentColor.withValues(alpha: 0.18),
+                  testamentColor.withValues(alpha: 0.08),
+                ],
+              ),
+              borderRadius: AppRadii.borderRadiusMD,
+              border: Border.all(
+                color: testamentColor.withValues(alpha: 0.28),
+              ),
+            ),
+            child: Icon(
+              Icons.menu_book_rounded,
+              color: testamentColor,
+              size: 26,
+            ),
           ),
           const Gap(Spacing.md),
 
@@ -666,38 +1169,69 @@ class _ContinueReadingCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  info.book.name,
-                  style: textTheme.titleSmall,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        info.book.getLocalizedName(bibleLanguage, canon),
+                        style: textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const Gap(8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: testamentColor.withValues(alpha: 0.12),
+                        borderRadius: AppRadii.borderRadiusFull,
+                      ),
+                      child: Text(
+                        '$pct%',
+                        style: textTheme.labelSmall?.copyWith(
+                          color: testamentColor,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 10.5,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const Gap(2),
+                const Gap(3),
                 Text(
-                  '${info.chaptersRead} of ${info.book.chapters} chapters',
+                  '${info.chaptersRead} of ${info.book.chapters} chapters completed',
                   style: textTheme.bodySmall?.copyWith(
                     color: scheme.onSurfaceVariant,
                   ),
                 ),
-                const Gap(Spacing.sm),
+                const Gap(10),
                 VersoProgressBar(
                   value: info.progress,
                   height: 6,
-                  color: isOT
-                      ? (Theme.of(context).brightness == Brightness.light
-                          ? AppColors.otColorLight
-                          : AppColors.otColorDark)
-                      : (Theme.of(context).brightness == Brightness.light
-                          ? AppColors.ntColorLight
-                          : AppColors.ntColorDark),
+                  color: testamentColor,
                 ),
               ],
             ),
           ),
-          const Gap(Spacing.sm),
+          const Gap(Spacing.md),
 
           // Arrow
-          Icon(
-            Icons.chevron_right_rounded,
-            color: scheme.onSurfaceVariant,
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: scheme.surfaceContainerHighest.withValues(alpha: 0.7),
+            ),
+            child: Icon(
+              Icons.arrow_forward_rounded,
+              size: 18,
+              color: scheme.onSurface,
+            ),
           ),
         ],
       ),
@@ -709,25 +1243,33 @@ class _ContinueReadingCard extends StatelessWidget {
 // RECENT ACTIVITY LIST
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _RecentActivityList extends StatelessWidget {
+class _RecentActivityList extends ConsumerWidget {
   const _RecentActivityList({required this.groups});
   final List<ActivityGroup> groups;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+
+    final settings = switch (ref.watch(currentSettingsProvider)) {
+      AsyncData(:final value) => value,
+      _ => null,
+    };
+    final bibleLanguage = settings?.bibleLanguage ?? 'en';
+    final canon = settings?.canon ?? CanonType.catholic;
 
     return Column(
       children: groups.map((group) {
         final isFinish = group.isFinish;
 
         return Padding(
-          padding: const EdgeInsets.only(bottom: Spacing.sm),
+          padding: const EdgeInsets.only(bottom: 10),
           child: VersoCard(
+            onTap: () => context.push('/book/${group.book.id}'),
             border: isFinish
                 ? Border.all(
-                    color: scheme.secondary.withValues(alpha: 0.4),
+                    color: scheme.secondary.withValues(alpha: 0.45),
                     width: 1.5,
                   )
                 : null,
@@ -735,18 +1277,23 @@ class _RecentActivityList extends StatelessWidget {
               children: [
                 // Icon
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  width: 42,
+                  height: 42,
                   decoration: BoxDecoration(
                     color: isFinish
                         ? scheme.secondaryContainer
-                        : scheme.primaryContainer,
-                    shape: BoxShape.circle,
+                        : scheme.primaryContainer.withValues(alpha: 0.7),
+                    borderRadius: AppRadii.borderRadiusSM,
+                    border: Border.all(
+                      color: (isFinish ? scheme.secondary : scheme.primary)
+                          .withValues(alpha: 0.2),
+                    ),
                   ),
                   child: Icon(
                     isFinish
                         ? Icons.emoji_events_rounded
                         : Icons.auto_stories_rounded,
-                    size: 18,
+                    size: 19,
                     color: isFinish ? scheme.secondary : scheme.primary,
                   ),
                 ),
@@ -759,25 +1306,31 @@ class _RecentActivityList extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            group.book.name,
-                            style: textTheme.titleSmall,
+                          Flexible(
+                            child: Text(
+                              group.book.getLocalizedName(bibleLanguage, canon),
+                              style: textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                           if (isFinish) ...[
                             const Gap(Spacing.sm),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
+                                horizontal: 8,
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
                                 color: scheme.secondaryContainer,
-                                borderRadius: AppRadii.borderRadiusXS,
+                                borderRadius: AppRadii.borderRadiusFull,
                               ),
                               child: Text(
                                 'Completed',
                                 style: textTheme.labelSmall?.copyWith(
                                   color: scheme.secondary,
+                                  fontWeight: FontWeight.w700,
                                   fontSize: 10,
                                 ),
                               ),
@@ -796,11 +1349,22 @@ class _RecentActivityList extends StatelessWidget {
                   ),
                 ),
 
+                const Gap(8),
                 // Time
-                Text(
-                  _formatTime(group.timestamp),
-                  style: textTheme.labelSmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color:
+                        scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    borderRadius: AppRadii.borderRadiusXS,
+                  ),
+                  child: Text(
+                    _formatTime(group.timestamp),
+                    style: textTheme.labelSmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                      fontSize: 10.5,
+                    ),
                   ),
                 ),
               ],
@@ -835,16 +1399,21 @@ class _RecentActivityList extends StatelessWidget {
 
 // DAILY VERSE CARD
 
-class _DailyVerseCard extends StatelessWidget {
+class _DailyVerseCard extends ConsumerWidget {
   const _DailyVerseCard({required this.verseAsync});
-  final AsyncValue<Map<String, dynamic>> verseAsync;
+  final AsyncValue<DailyVerse> verseAsync;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
     final isAmoled = context.palette.style == AppearanceStyle.amoled;
+
+    final settings = ref.watch(currentSettingsProvider).value;
+    final lang = settings?.bibleLanguage ?? 'en';
+    final canon = settings?.canon ?? CanonType.catholic;
+    final isMalayalam = lang == 'ml';
 
     return verseAsync.when(
       loading: () => _buildShell(
@@ -857,36 +1426,33 @@ class _DailyVerseCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 5,
-                    height: 5,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const Gap(Spacing.sm),
-                  Container(width: 100, height: 10, color: Colors.white),
-                ],
+              Container(
+                width: 120,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: AppRadii.borderRadiusFull,
+                ),
               ),
               const Gap(Spacing.md),
               Container(
                 width: double.infinity,
-                height: 14,
+                height: 16,
                 color: Colors.white,
               ),
-              const Gap(6),
-              Container(width: 200, height: 14, color: Colors.white),
+              const Gap(8),
+              Container(width: 220, height: 16, color: Colors.white),
               const Gap(Spacing.lg),
-              Container(width: 80, height: 10, color: Colors.white),
+              Container(width: 90, height: 12, color: Colors.white),
             ],
           ),
         ),
       ),
       error: (_, __) => const SizedBox.shrink(),
       data: (verse) {
+        final verseText = verse.getText(lang, canon);
+        final verseRef = verse.getReference(lang, canon);
+
         return _buildShell(
           scheme: scheme,
           isLight: isLight,
@@ -895,56 +1461,96 @@ class _DailyVerseCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Eyebrow label
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: scheme.secondary.withValues(alpha: 0.14),
+                  borderRadius: AppRadii.borderRadiusFull,
+                  border: Border.all(
+                    color: scheme.secondary.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 12,
+                      color: scheme.secondary,
+                    ),
+                    const Gap(6),
+                    Text(
+                      isMalayalam ? 'ഇന്നത്തെ വചനം' : 'VERSE OF THE DAY',
+                      style: isMalayalam
+                          ? GoogleFonts.anekMalayalam(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1,
+                              color: scheme.secondary,
+                            )
+                          : textTheme.labelSmall?.copyWith(
+                              color: scheme.secondary,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.6,
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+              const Gap(Spacing.md),
+              // Verse text
+              Text(
+                verseText,
+                style: isMalayalam
+                    ? GoogleFonts.anekMalayalam(
+                        fontSize: 18.5,
+                        height: 1.6,
+                        fontWeight: FontWeight.w500,
+                        color: isLight
+                            ? scheme.onSurface.withValues(alpha: 0.94)
+                            : const Color(0xFFF8F4EC).withValues(alpha: 0.96),
+                      )
+                    : textTheme.headlineMedium?.copyWith(
+                        fontSize: 20.5,
+                        height: 1.45,
+                        color: isLight
+                            ? scheme.onSurface.withValues(alpha: 0.94)
+                            : const Color(0xFFF8F4EC).withValues(alpha: 0.96),
+                      ),
+              ),
+              const Gap(Spacing.md),
+              // Reference
               Row(
                 children: [
                   Container(
-                    width: 5,
-                    height: 5,
+                    width: 28,
+                    height: 1.5,
                     decoration: BoxDecoration(
-                      color: scheme.secondary,
-                      shape: BoxShape.circle,
+                      color: scheme.secondary.withValues(alpha: 0.8),
+                      borderRadius: AppRadii.borderRadiusFull,
                     ),
                   ),
-                  const Gap(Spacing.sm),
+                  const Gap(10),
                   Text(
-                    'VERSE OF THE DAY',
-                    style: textTheme.labelSmall?.copyWith(
-                      color: scheme.secondary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 2,
-                    ),
+                    isMalayalam ? verseRef : verseRef.toUpperCase(),
+                    style: isMalayalam
+                        ? GoogleFonts.anekMalayalam(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: scheme.secondary,
+                            letterSpacing: 0.6,
+                          )
+                        : textTheme.labelSmall?.copyWith(
+                            color: scheme.secondary,
+                            letterSpacing: 1.8,
+                            fontWeight: FontWeight.w700,
+                          ),
                   ),
                 ],
-              ),
-              const Gap(Spacing.md),
-              // Verse text - DM Serif Display
-              Text(
-                verse['text'] as String,
-                style: textTheme.headlineSmall?.copyWith(
-                  fontSize: 20,
-                  height: 1.45,
-                  color: isLight
-                      ? scheme.onSurface.withValues(alpha: 0.92)
-                      : const Color(0xFFF5EFE3).withValues(alpha: 0.95),
-                ),
-              ),
-              const Gap(Spacing.md),
-              // Gold hairline rule
-              Container(
-                width: 32,
-                height: 1,
-                color: scheme.secondary.withValues(alpha: 0.7),
-              ),
-              const Gap(Spacing.sm),
-              // Reference
-              Text(
-                (verse['ref'] as String).toUpperCase(),
-                style: textTheme.labelSmall?.copyWith(
-                  color: scheme.secondary,
-                  letterSpacing: 1.8,
-                  fontWeight: FontWeight.w600,
-                ),
               ),
             ],
           ),
@@ -961,15 +1567,15 @@ class _DailyVerseCard extends StatelessWidget {
   }) {
     // Theme-adaptive gradient stops
     final gradientColors = isAmoled
-        ? [const Color(0xFF0A0A0E), Colors.black]
+        ? [const Color(0xFF0B0D14), Colors.black]
         : isLight
             ? [
-                scheme.primaryContainer.withValues(alpha: 0.6),
                 scheme.surface,
+                scheme.primaryContainer.withValues(alpha: 0.45),
               ]
             : [
-                scheme.primaryContainer.withValues(alpha: 0.55),
                 scheme.surface,
+                scheme.primaryContainer.withValues(alpha: 0.5),
               ];
 
     // Multi-layer shadow: elevation drop + warm gold ambient
@@ -977,25 +1583,22 @@ class _DailyVerseCard extends StatelessWidget {
         ? [
             BoxShadow(
               color: scheme.secondary.withValues(alpha: 0.08),
-              blurRadius: 32,
+              blurRadius: 28,
               offset: const Offset(0, 4),
             ),
           ]
         : [
-            const BoxShadow(
-              color: Color(0x14000000),
-              blurRadius: 24,
-              offset: Offset(0, 8),
-            ),
+            ...AppShadows.md,
             BoxShadow(
               color: scheme.secondary.withValues(alpha: 0.08),
-              blurRadius: 32,
+              blurRadius: 28,
               offset: const Offset(0, 4),
             ),
           ];
 
     return Container(
       width: double.infinity,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         borderRadius: AppRadii.borderRadiusXL,
         gradient: LinearGradient(
@@ -1004,7 +1607,7 @@ class _DailyVerseCard extends StatelessWidget {
           colors: gradientColors,
         ),
         border: Border.all(
-          color: scheme.secondary.withValues(alpha: 0.28),
+          color: scheme.secondary.withValues(alpha: isLight ? 0.35 : 0.28),
         ),
         boxShadow: shadows,
       ),
@@ -1015,15 +1618,30 @@ class _DailyVerseCard extends StatelessWidget {
             top: -40,
             right: -40,
             child: Container(
-              width: 140,
-              height: 140,
+              width: 150,
+              height: 150,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    scheme.secondary.withValues(alpha: 0.16),
+                    scheme.secondary.withValues(alpha: 0.18),
                     scheme.secondary.withValues(alpha: 0),
                   ],
+                ),
+              ),
+            ),
+          ),
+          // Oversized decorative serif quotation watermark
+          Positioned(
+            right: 16,
+            bottom: -36,
+            child: IgnorePointer(
+              child: Text(
+                '“',
+                style: GoogleFonts.dmSerifDisplay(
+                  fontSize: 130,
+                  height: 1,
+                  color: scheme.secondary.withValues(alpha: 0.1),
                 ),
               ),
             ),
@@ -1039,9 +1657,7 @@ class _DailyVerseCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // SPECIFIC CARD SKELETONS (True Backgrounds, Shimmering Values)
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _HeroProgressCardSkeleton extends StatelessWidget {
   const _HeroProgressCardSkeleton();
@@ -1049,15 +1665,16 @@ class _HeroProgressCardSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final palette = context.palette;
     final isLight = Theme.of(context).brightness == Brightness.light;
 
     // Use specific highlight/base colors that look good over the primary gradient
     final baseColor = isLight
-        ? Colors.white.withValues(alpha: 0.3)
-        : scheme.onPrimaryContainer.withValues(alpha: 0.2);
+        ? Colors.white.withValues(alpha: 0.28)
+        : scheme.onPrimaryContainer.withValues(alpha: 0.18);
     final highlightColor = isLight
-        ? Colors.white.withValues(alpha: 0.6)
-        : scheme.onPrimaryContainer.withValues(alpha: 0.4);
+        ? Colors.white.withValues(alpha: 0.55)
+        : scheme.onPrimaryContainer.withValues(alpha: 0.35);
 
     return Container(
       width: double.infinity,
@@ -1067,14 +1684,11 @@ class _HeroProgressCardSkeleton extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isLight
-              ? [scheme.primary, scheme.primary.withValues(alpha: 0.85)]
-              : [
-                  scheme.primaryContainer,
-                  scheme.primaryContainer.withValues(alpha: 0.7),
-                ],
+              ? [palette.primary, palette.primaryHover]
+              : [palette.accentSoft, scheme.surface],
         ),
         borderRadius: AppRadii.borderRadiusXL,
-        boxShadow: AppShadows.lg,
+        boxShadow: AppShadows.md,
       ),
       child: Shimmer.fromColors(
         baseColor: baseColor,
@@ -1083,8 +1697,8 @@ class _HeroProgressCardSkeleton extends StatelessWidget {
           children: [
             // Shimmering circle outline
             Container(
-              width: 130,
-              height: 130,
+              width: 124,
+              height: 124,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 10),
@@ -1097,14 +1711,23 @@ class _HeroProgressCardSkeleton extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 120,
+                    width: 110,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  const Gap(10),
+                  Container(
+                    width: 130,
                     height: 24,
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                   ),
-                  const Gap(16),
+                  const Gap(14),
                   Container(
                     width: double.infinity,
                     height: 14,
@@ -1116,15 +1739,6 @@ class _HeroProgressCardSkeleton extends StatelessWidget {
                   const Gap(8),
                   Container(
                     width: double.infinity,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  const Gap(8),
-                  Container(
-                    width: 100,
                     height: 14,
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -1181,9 +1795,9 @@ class _QuickStatCardSkeleton extends StatelessWidget {
         border: Border.all(
           color: isAmoled
               ? scheme.outline
-              : scheme.outline.withValues(alpha: isLight ? 0.5 : 0.15),
+              : scheme.outline.withValues(alpha: isLight ? 0.65 : 0.25),
         ),
-        boxShadow: AppShadows.sm,
+        boxShadow: isLight ? AppShadows.sm : AppShadows.none,
       ),
       child: Shimmer.fromColors(
         baseColor: baseColor,
@@ -1191,8 +1805,8 @@ class _QuickStatCardSkeleton extends StatelessWidget {
         child: Column(
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: AppRadii.borderRadiusSM,
@@ -1200,7 +1814,7 @@ class _QuickStatCardSkeleton extends StatelessWidget {
             ),
             const Gap(Spacing.sm),
             Container(
-              width: 40,
+              width: 44,
               height: 24,
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -1218,6 +1832,46 @@ class _QuickStatCardSkeleton extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INLINE ERROR CARD
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _InlineErrorCard extends StatelessWidget {
+  const _InlineErrorCard({required this.title, required this.onRetry});
+  final String title;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return VersoCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline_rounded, color: scheme.error, size: 20),
+          const Gap(12),
+          Expanded(
+            child: Text(
+              'Could not load $title',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+            ),
+          ),
+          TextButton(
+            onPressed: onRetry,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              minimumSize: Size.zero,
+            ),
+            child: const Text('Retry'),
+          ),
+        ],
       ),
     );
   }

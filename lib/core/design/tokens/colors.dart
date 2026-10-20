@@ -2,98 +2,101 @@ import 'package:flutter/material.dart';
 
 /// "Sacred Blue" semantic color palette for Verso.
 ///
-/// Never use raw hex values in widgets - always reference these tokens
-/// or pull from [Theme.of(context).colorScheme].
+/// Every color used across the app must reference these semantic tokens rather
+/// than raw hex values, enabling clean dark mode and future theming support.
 abstract final class AppColors {
   // ──────────────── Primary ────────────────
-  static const Color primaryLight = Color(0xFF1B3A5C); // Deep Navy
-  static const Color primaryDark = Color(0xFF7EB8E0); // Soft Sky
+  static const Color primaryLight = Color(0xFF173254); // Deep Navy
+  static const Color primaryDark = Color(0xFF7CB8F7); // Soft Sky
 
-  static const Color primaryContainerLight = Color(0xFFD6E8F5); // Pale Blue
-  static const Color primaryContainerDark = Color(0xFF0F2640); // Dark Navy
+  static const Color primaryContainerLight = Color(0xFFE6F0FA); // Pale Blue
+  static const Color primaryContainerDark = Color(0xFF132642); // Dark Navy
 
   static const Color onPrimaryLight = Color(0xFFFFFFFF);
-  static const Color onPrimaryDark = Color(0xFF0F2640);
+  static const Color onPrimaryDark = Color(0xFF0A192F);
 
-  static const Color onPrimaryContainerLight = Color(0xFF1B3A5C);
-  static const Color onPrimaryContainerDark = Color(0xFFD6E8F5);
+  static const Color onPrimaryContainerLight = Color(0xFF173254);
+  static const Color onPrimaryContainerDark = Color(0xFFDCEBFA);
 
   // ──────────────── Secondary ────────────────
-  static const Color secondaryLight = Color(0xFFC4973B); // Warm Gold
-  static const Color secondaryDark = Color(0xFFA8864A); // Muted Gold
+  static const Color secondaryLight = Color(0xFFC59434); // Warm Gold
+  static const Color secondaryDark = Color(0xFFE2B45A); // Muted Gold
 
-  static const Color secondaryContainerLight = Color(0xFFFFF3DC);
-  static const Color secondaryContainerDark = Color(0xFF3D2E14);
+  static const Color secondaryContainerLight = Color(0xFFFEF6E4);
+  static const Color secondaryContainerDark = Color(0xFF332610);
 
   static const Color onSecondaryLight = Color(0xFFFFFFFF);
-  static const Color onSecondaryDark = Color(0xFF3D2E14);
+  static const Color onSecondaryDark = Color(0xFF2B1F0A);
 
   // ──────────────── Surface / Background ────────────────
-  static const Color surfaceLight = Color(0xFFFAFBFC); // Off-White
-  static const Color surfaceDark = Color(0xFF1A1A1E); // Charcoal
+  static const Color surfaceLight = Color(0xFFFFFFFF); // Off-White
+  static const Color surfaceDark = Color(0xFF131722); // Charcoal
 
-  static const Color backgroundLight = Color(0xFFF0F2F5); // Light Grey
-  static const Color backgroundDark = Color(0xFF0D0D0F); // True Black
+  static const Color backgroundLight = Color(0xFFF6F8FB); // Light Grey
+  static const Color backgroundDark = Color(0xFF0A0D14); // True Black
 
   // ──────────────── On Surface ────────────────
-  static const Color onSurfaceLight = Color(0xFF1C1C1E); // Near Black
-  static const Color onSurfaceDark = Color(0xFFF5F5F5); // White
+  static const Color onSurfaceLight = Color(0xFF0F172A); // Near Black
+  static const Color onSurfaceDark = Color(0xFFF8FAFC); // White
 
-  static const Color onSurfaceVariantLight = Color(0xFF6B7280); // Grey
-  static const Color onSurfaceVariantDark = Color(0xFF9CA3AF); // Grey
+  static const Color onSurfaceVariantLight = Color(0xFF64748B); // Grey
+  static const Color onSurfaceVariantDark = Color(0xFF94A3B8); // Grey
 
   // ──────────────── Status ────────────────
-  static const Color successLight = Color(0xFF2E7D4F); // Forest Green
-  static const Color successDark = Color(0xFF4CAF7D); // Mint
+  static const Color successLight = Color(0xFF0D9488); // Forest Green
+  static const Color successDark = Color(0xFF2DD4BF); // Mint
 
-  static const Color errorLight = Color(0xFFC62828); // Crimson
-  static const Color errorDark = Color(0xFFEF5350); // Salmon
+  static const Color errorLight = Color(0xFFE11D48); // Crimson
+  static const Color errorDark = Color(0xFFFB7185); // Salmon
 
   // ──────────────── Accent / Chart Colors ────────────────
-  static const Color streakLight = Color(0xFFFF8A00); // Vibrant Orange
-  static const Color streakDark = Color(0xFFFF9800); // Bright Orange
+  static const Color streakLight = Color(0xFFF97316); // Vibrant Orange
+  static const Color streakDark = Color(0xFFFB923C); // Bright Orange
+  static const Color streakFreezeLight = Color(0xFF0284C7); // Icy Sky Blue
+  static const Color streakFreezeDark = Color(0xFF38BDF8); // Radiant Cyan Ice
+  static const Color streakFreezeGlow = Color(0xFF7DD3FC); // Frost Highlight
   static const Color chaptersLight = Color(0xFF0D9488); // Teal
   static const Color chaptersDark = Color(0xFF2DD4BF);
-  static const Color booksLight = Color(0xFFEAB308); // Yellow/Gold
-  static const Color booksDark = Color(0xFFFACC15);
+  static const Color booksLight = Color(0xFFD97706); // Yellow/Gold
+  static const Color booksDark = Color(0xFFFBBF24);
 
-  static const Color chartPurpleLight = Color(0xFF7C3AED);
+  static const Color chartPurpleLight = Color(0xFF6D28D9);
   static const Color chartPurpleDark = Color(0xFFA78BFA);
-  static const Color chartPurpleContainerDark = Color(0xFF2D1B69);
-  static const Color chartPurpleDeepDark = Color(0xFF4C2E91);
+  static const Color chartPurpleContainerDark = Color(0xFF251652);
+  static const Color chartPurpleDeepDark = Color(0xFF3F2485);
 
   static const Color chartTealLight = Color(0xFF0D9488);
   static const Color chartTealDark = Color(0xFF5EEAD4);
 
-  static const Color otColorLight = Color(0xFFE65100); // Orange for OT
-  static const Color otColorDark = Color(0xFFFF9800);
-  static const Color otContainerLight = Color(0xFFFFE0B2);
-  static const Color otContainerDark = Color(0xFF3D2400);
+  static const Color otColorLight = Color(0xFFD95D14); // Orange for OT
+  static const Color otColorDark = Color(0xFFFB923C);
+  static const Color otContainerLight = Color(0xFFFFEDD5);
+  static const Color otContainerDark = Color(0xFF38200A);
 
-  static const Color ntColorLight = Color(0xFF1565C0); // Blue for NT
-  static const Color ntColorDark = Color(0xFF64B5F6);
-  static const Color ntContainerLight = Color(0xFFBBDEFB);
-  static const Color ntContainerDark = Color(0xFF0D2240);
-  static const Color completionEmptyLight = Color(0xFFE8E8E8);
-  static const Color completionEmptyDark = Color(0xFF2A2A2E);
+  static const Color ntColorLight = Color(0xFF2563EB); // Blue for NT
+  static const Color ntColorDark = Color(0xFF60A5FA);
+  static const Color ntContainerLight = Color(0xFFDBEAFE);
+  static const Color ntContainerDark = Color(0xFF102447);
+  static const Color completionEmptyLight = Color(0xFFE8ECF2);
+  static const Color completionEmptyDark = Color(0xFF1E2433);
 
-  static const Color primaryAccentLight = Color(0xFF2A5580);
-  static const Color primaryAccentDark = Color(0xFF4A8BBF);
-  static const Color primaryHighlightLight = Color(0xFF3B82C4);
-  static const Color primaryHighlightDark = Color(0xFF4A90D9);
+  static const Color primaryAccentLight = Color(0xFF234B7A);
+  static const Color primaryAccentDark = Color(0xFF5698E0);
+  static const Color primaryHighlightLight = Color(0xFF3674B8);
+  static const Color primaryHighlightDark = Color(0xFF63A4EB);
   static const Color secondaryAccentDark = Color(0xFF5C4520);
   static const Color secondaryOnContainerLight = Color(0xFF78350F);
 
   // ──────────────── Outline / Divider ────────────────
-  static const Color outlineLight = Color(0xFFD4D4D4);
-  static const Color outlineDark = Color(0xFF2E2E32);
+  static const Color outlineLight = Color(0xFFDFE4EE);
+  static const Color outlineDark = Color(0xFF242C3D);
 
-  static const Color outlineVariantLight = Color(0xFFE8E8E8);
-  static const Color outlineVariantDark = Color(0xFF1F1F23);
+  static const Color outlineVariantLight = Color(0xFFEEF1F6);
+  static const Color outlineVariantDark = Color(0xFF1A202E);
 
   // ──────────────── AMOLED overrides (true black) ────────────────
   static const Color backgroundAmoled = Color(0xFF000000);
-  static const Color surfaceAmoled = Color(0xFF101012);
-  static const Color outlineAmoled = Color(0xFF383838);
-  static const Color outlineVariantAmoled = Color(0xFF1A1A1A);
+  static const Color surfaceAmoled = Color(0xFF0B0D12);
+  static const Color outlineAmoled = Color(0xFF2A303C);
+  static const Color outlineVariantAmoled = Color(0xFF161A22);
 }

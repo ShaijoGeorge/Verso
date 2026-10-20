@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/colors.dart';
+import 'package:verso/data/bible_book_names.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
 
 /// A compact mosaic grid showing books for the active canon.
 /// Each cell's color intensity represents the completion fraction.
@@ -22,19 +24,19 @@ class BookCompletionGrid extends ConsumerWidget {
       children: [
         // Legend
         _Legend(isLight: isLight),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
 
         // Grid
         LayoutBuilder(
           builder: (context, constraints) {
             // Aim for ~10 columns — adapt to width
             const crossAxisCount = 10;
-            final cellSize = (constraints.maxWidth - (crossAxisCount - 1) * 4) /
+            final cellSize = (constraints.maxWidth - (crossAxisCount - 1) * 5) /
                 crossAxisCount;
 
             return Wrap(
-              spacing: 4,
-              runSpacing: 4,
+              spacing: 5,
+              runSpacing: 5,
               children: books.map((book) {
                 final fraction = bookCompletionMap[book.id] ?? 0.0;
                 return _BookCell(
@@ -51,7 +53,7 @@ class BookCompletionGrid extends ConsumerWidget {
   }
 }
 
-class _BookCell extends StatelessWidget {
+class _BookCell extends ConsumerWidget {
   const _BookCell({
     required this.book,
     required this.fraction,
@@ -86,11 +88,18 @@ class _BookCell extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final pct = (fraction * 100).toInt();
+    final settings = switch (ref.watch(currentSettingsProvider)) {
+      AsyncData(:final value) => value,
+      _ => null,
+    };
+    final bibleLanguage = settings?.bibleLanguage ?? 'en';
+    final canon = settings?.canon ?? CanonType.catholic;
+    final bookName = book.getLocalizedName(bibleLanguage, canon);
 
     return Tooltip(
-      message: '${book.name}: $pct% complete',
+      message: '$bookName: $pct% complete',
       preferBelow: false,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 600),
@@ -99,7 +108,7 @@ class _BookCell extends StatelessWidget {
         height: size,
         decoration: BoxDecoration(
           color: _cellColor(context),
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(6),
         ),
         child: fraction >= 1.0
             ? Icon(
@@ -119,26 +128,26 @@ class _Legend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Wrap(
+      spacing: 12,
+      runSpacing: 6,
       children: [
         // OT legend
         _LegendDot(
           color: context.appColors.otColor,
-          label: 'OT',
+          label: 'Old Testament',
         ),
-        const SizedBox(width: 16),
         // NT legend
         _LegendDot(
           color: context.appColors.ntColor,
-          label: 'NT',
+          label: 'New Testament',
         ),
-        const SizedBox(width: 16),
         // Empty legend
         _LegendDot(
           color: isLight
               ? AppColors.completionEmptyLight
               : AppColors.completionEmptyDark,
-          label: 'Not started',
+          label: 'Unread',
         ),
       ],
     );
@@ -152,26 +161,35 @@ class _LegendDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 9,
+            height: 9,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(3),
+            ),
           ),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: scheme.onSurfaceVariant,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

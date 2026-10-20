@@ -51,18 +51,17 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAOp_QAlSN7n67j0TgLX40FBA2AXPsSe_4',
-    appId: '1:589925757210:android:c77c05f15163d42805fca3',
+    appId: '1:589925757210:android:d5ebaa0d394edd0b05fca3',
     messagingSenderId: '589925757210',
     projectId: 'biblia-f545c',
     storageBucket: 'biblia-f545c.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyC53JVmPMN0MCgQrHHx8tegauSBa4EjjPI',
-    appId: '1:589925757210:ios:7642703457cab6f805fca3',
+    appId: '1:589925757210:ios:cd444d3f2adba00205fca3',
     messagingSenderId: '589925757210',
     projectId: 'biblia-f545c',
     storageBucket: 'biblia-f545c.firebasestorage.app',
-    iosBundleId: 'com.example.biblia',
+    iosBundleId: 'com.shaijo.verso',
   );
 }

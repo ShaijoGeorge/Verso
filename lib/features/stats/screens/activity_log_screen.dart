@@ -3,10 +3,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
+import 'package:verso/core/design/components/verso_bottom_sheet.dart';
 import 'package:verso/core/design/components/verso_card.dart';
+import 'package:verso/core/design/components/verso_chip.dart';
+import 'package:verso/core/design/components/verso_empty_state.dart';
 import 'package:verso/core/design/extensions.dart';
+import 'package:verso/core/design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/shadows.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
+import 'package:verso/data/bible_book_names.dart';
 import 'package:verso/data/bible_data.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
 import 'package:verso/features/stats/providers/activity_providers.dart';
 import 'package:verso/features/stats/widgets/shimmer_skeletons.dart';
 
@@ -31,9 +38,37 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
     final filter = ref.watch(activityFilterStateProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Screen Header
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'CHRONOLOGICAL TIMELINE',
+                style: textTheme.labelSmall?.copyWith(
+                  color: colorScheme.primary.withValues(alpha: 0.8),
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.3,
+                  fontSize: 10,
+                ),
+              ),
+              const Gap(4),
+              Text(
+                'Reading Journal',
+                style: textTheme.headlineLarge?.copyWith(
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+        ),
+
         // Filter Bar
         _FilterBar(ref: ref, filter: filter, colorScheme: colorScheme),
 
@@ -47,13 +82,24 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
             ),
             data: (grouped) {
               if (grouped.isEmpty) {
-                return _EmptyState(
-                  isFiltered: filter.isActive,
-                  onClearFilters: () {
-                    ref
-                        .read(activityFilterStateProvider.notifier)
-                        .clearFilters();
-                  },
+                return VersoEmptyState(
+                  icon: filter.isActive
+                      ? Icons.filter_list_off_rounded
+                      : Icons.history_edu_rounded,
+                  title: filter.isActive
+                      ? 'No Matching Entries'
+                      : 'Your Journal is Empty',
+                  subtitle: filter.isActive
+                      ? 'Try adjusting or clearing your book and date filters.'
+                      : 'Chapters you mark as read will appear here in a chronological timeline.',
+                  actionLabel: filter.isActive ? 'Clear Filters' : null,
+                  onAction: filter.isActive
+                      ? () {
+                          ref
+                              .read(activityFilterStateProvider.notifier)
+                              .clearFilters();
+                        }
+                      : null,
                 );
               }
 
@@ -70,7 +116,7 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
                   ),
                   slivers: [
                     // Top padding
-                    const SliverPadding(padding: EdgeInsets.only(top: 8)),
+                    const SliverPadding(padding: EdgeInsets.only(top: 6)),
 
                     for (int di = 0; di < dateKeys.length; di++) ...[
                       SliverMainAxisGroup(
@@ -106,7 +152,7 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
                     ],
 
                     // Bottom safe area
-                    const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
+                    const SliverPadding(padding: EdgeInsets.only(bottom: 110)),
                   ],
                 ),
               );
@@ -133,17 +179,10 @@ class _FilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final booksAsync = ref.watch(booksWithActivityProvider);
+    final isLight = Theme.of(context).brightness == Brightness.light;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        border: Border(
-          bottom: BorderSide(
-            color: colorScheme.outline.withValues(alpha: 0.08),
-          ),
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 10),
       child: Row(
         children: [
           // Book Filter Chip
@@ -152,26 +191,44 @@ class _FilterBar extends StatelessWidget {
               loading: () => _buildPlaceholder(colorScheme),
               error: (_, __) => _buildPlaceholder(colorScheme),
               data: (books) {
+                final settings = switch (ref.watch(currentSettingsProvider)) {
+                  AsyncData(:final value) => value,
+                  _ => null,
+                };
+                final bibleLanguage = settings?.bibleLanguage ?? 'en';
+                final canon = settings?.canon ?? CanonType.catholic;
+
                 final selectedBook = filter.bookId != null
                     ? BibleData.findBookById(filter.bookId!)
                     : null;
 
+                final isActive = filter.bookId != null;
+
                 return GestureDetector(
-                  onTap: () => _showBookPicker(context, books),
+                  onTap: () => _showBookPicker(
+                    context,
+                    books,
+                    bibleLanguage,
+                    canon,
+                  ),
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
-                      color: filter.bookId != null
-                          ? colorScheme.primaryContainer
-                          : colorScheme.surfaceContainerHighest
-                              .withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(10),
-                      border: filter.bookId != null
-                          ? Border.all(
-                              color: colorScheme.primary.withValues(alpha: 0.3),
-                            )
-                          : null,
+                      color: isActive
+                          ? colorScheme.primary.withValues(alpha: 0.1)
+                          : colorScheme.surface,
+                      borderRadius: AppRadii.borderRadiusMD,
+                      border: Border.all(
+                        color: isActive
+                            ? colorScheme.primary.withValues(alpha: 0.35)
+                            : colorScheme.outline.withValues(
+                                alpha: isLight ? 0.65 : 0.25,
+                              ),
+                      ),
+                      boxShadow: isLight ? AppShadows.sm : AppShadows.none,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -179,22 +236,25 @@ class _FilterBar extends StatelessWidget {
                         Icon(
                           Icons.menu_book_rounded,
                           size: 16,
-                          color: filter.bookId != null
+                          color: isActive
                               ? colorScheme.primary
                               : colorScheme.onSurfaceVariant,
                         ),
-                        const Gap(6),
+                        const Gap(8),
                         Flexible(
                           child: Text(
-                            selectedBook?.name ?? 'All Books',
+                            selectedBook?.getLocalizedName(
+                                  bibleLanguage,
+                                  canon,
+                                ) ??
+                                'All Books',
                             style: TextStyle(
                               fontSize: 13,
-                              fontWeight: filter.bookId != null
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
-                              color: filter.bookId != null
+                              fontWeight:
+                                  isActive ? FontWeight.w700 : FontWeight.w600,
+                              color: isActive
                                   ? colorScheme.primary
-                                  : colorScheme.onSurfaceVariant,
+                                  : colorScheme.onSurface,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -213,22 +273,25 @@ class _FilterBar extends StatelessWidget {
             ),
           ),
           const Gap(8),
+
           // Date Range Chip
           GestureDetector(
             onTap: () => _showDatePicker(context),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: filter.startDate != null
-                    ? colorScheme.primaryContainer
-                    : colorScheme.surfaceContainerHighest
-                        .withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(10),
-                border: filter.startDate != null
-                    ? Border.all(
-                        color: colorScheme.primary.withValues(alpha: 0.3),
-                      )
-                    : null,
+                    ? colorScheme.primary.withValues(alpha: 0.1)
+                    : colorScheme.surface,
+                borderRadius: AppRadii.borderRadiusMD,
+                border: Border.all(
+                  color: filter.startDate != null
+                      ? colorScheme.primary.withValues(alpha: 0.35)
+                      : colorScheme.outline.withValues(
+                          alpha: isLight ? 0.65 : 0.25,
+                        ),
+                ),
+                boxShadow: isLight ? AppShadows.sm : AppShadows.none,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -246,11 +309,11 @@ class _FilterBar extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: filter.startDate != null
-                          ? FontWeight.w600
-                          : FontWeight.w400,
+                          ? FontWeight.w700
+                          : FontWeight.w600,
                       color: filter.startDate != null
                           ? colorScheme.primary
-                          : colorScheme.onSurfaceVariant,
+                          : colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -268,29 +331,15 @@ class _FilterBar extends StatelessWidget {
               },
               child: Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: colorScheme.secondaryContainer,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppRadii.borderRadiusMD,
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.clear_rounded,
-                      size: 16,
-                      color: colorScheme.onSecondaryContainer,
-                    ),
-                    const Gap(6),
-                    Text(
-                      'Clear',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSecondaryContainer,
-                      ),
-                    ),
-                  ],
+                child: Icon(
+                  Icons.close_rounded,
+                  size: 18,
+                  color: colorScheme.onSecondaryContainer,
                 ),
               ),
             ),
@@ -302,10 +351,10 @@ class _FilterBar extends StatelessWidget {
 
   Widget _buildPlaceholder(ColorScheme colorScheme) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(10),
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: AppRadii.borderRadiusMD,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -315,23 +364,17 @@ class _FilterBar extends StatelessWidget {
             size: 16,
             color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
           ),
-          const Gap(6),
+          const Gap(8),
           Flexible(
             child: Text(
               'All Books',
               style: TextStyle(
                 fontSize: 13,
-                fontWeight: FontWeight.w400,
+                fontWeight: FontWeight.w500,
                 color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
               ),
               overflow: TextOverflow.ellipsis,
             ),
-          ),
-          const Gap(4),
-          Icon(
-            Icons.keyboard_arrow_down_rounded,
-            size: 18,
-            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
           ),
         ],
       ),
@@ -363,89 +406,66 @@ class _FilterBar extends StatelessWidget {
     return '${startFmt.format(start)} – ${endFmt.format(end)}';
   }
 
-  void _showBookPicker(BuildContext context, List<BibleBook> books) {
-    showModalBottomSheet<void>(
+  void _showBookPicker(
+    BuildContext context,
+    List<BibleBook> books,
+    String bibleLanguage,
+    CanonType canon,
+  ) {
+    VersoBottomSheet.show<void>(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return DraggableScrollableSheet(
-          maxChildSize: 0.8,
-          minChildSize: 0.3,
-          expand: false,
-          builder: (_, controller) {
-            return Column(
+      title: 'Filter by Book',
+      contentPadding: EdgeInsets.zero,
+      child: Builder(
+        builder: (ctx) {
+          return ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+            ),
+            child: ListView(
               children: [
-                const Gap(8),
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade400,
-                    borderRadius: BorderRadius.circular(2),
+                // "All Books" option
+                ListTile(
+                  leading: Icon(
+                    Icons.library_books_rounded,
+                    color: filter.bookId == null ? colorScheme.primary : null,
                   ),
+                  title: const Text('All Books'),
+                  selected: filter.bookId == null,
+                  selectedColor: colorScheme.primary,
+                  onTap: () {
+                    ref
+                        .read(activityFilterStateProvider.notifier)
+                        .setBookFilter(null);
+                    Navigator.pop(ctx);
+                  },
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    'Filter by Book',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                ),
-                Expanded(
-                  child: ListView(
-                    controller: controller,
-                    children: [
-                      // "All Books" option
-                      ListTile(
-                        leading: Icon(
-                          Icons.library_books_rounded,
-                          color: filter.bookId == null
-                              ? colorScheme.primary
-                              : null,
-                        ),
-                        title: const Text('All Books'),
-                        selected: filter.bookId == null,
-                        selectedColor: colorScheme.primary,
-                        onTap: () {
-                          ref
-                              .read(activityFilterStateProvider.notifier)
-                              .setBookFilter(null);
-                          Navigator.pop(ctx);
-                        },
-                      ),
-                      const Divider(),
-                      ...books.map(
-                        (book) => ListTile(
-                          leading: Icon(
-                            Icons.book_rounded,
-                            color: filter.bookId == book.id
-                                ? colorScheme.primary
-                                : null,
-                          ),
-                          title: Text(book.name),
-                          selected: filter.bookId == book.id,
-                          selectedColor: colorScheme.primary,
-                          onTap: () {
-                            ref
-                                .read(activityFilterStateProvider.notifier)
-                                .setBookFilter(book.id);
-                            Navigator.pop(ctx);
-                          },
-                        ),
-                      ),
-                    ],
+                const Divider(),
+                ...books.map(
+                  (book) => ListTile(
+                    leading: Icon(
+                      Icons.book_rounded,
+                      color:
+                          filter.bookId == book.id ? colorScheme.primary : null,
+                    ),
+                    title: Text(
+                      book.getLocalizedName(bibleLanguage, canon),
+                    ),
+                    selected: filter.bookId == book.id,
+                    selectedColor: colorScheme.primary,
+                    onTap: () {
+                      ref
+                          .read(activityFilterStateProvider.notifier)
+                          .setBookFilter(book.id);
+                      Navigator.pop(ctx);
+                    },
                   ),
                 ),
               ],
-            );
-          },
-        );
-      },
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -485,9 +505,9 @@ class _StickyDateHeaderDelegate extends SliverPersistentHeaderDelegate {
   final ColorScheme colorScheme;
 
   @override
-  double get minExtent => 48;
+  double get minExtent => 46;
   @override
-  double get maxExtent => 48;
+  double get maxExtent => 46;
 
   @override
   Widget build(
@@ -499,19 +519,19 @@ class _StickyDateHeaderDelegate extends SliverPersistentHeaderDelegate {
 
     return Container(
       color: scaffoldBg,
-      padding: const EdgeInsets.only(left: 20, right: 20, top: 8, bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 7),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
             decoration: BoxDecoration(
               color: colorScheme.primary,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: AppRadii.borderRadiusFull,
               boxShadow: overlapsContent
                   ? [
                       BoxShadow(
-                        color: colorScheme.primary.withValues(alpha: 0.3),
-                        blurRadius: 8,
+                        color: colorScheme.primary.withValues(alpha: 0.28),
+                        blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
                     ]
@@ -521,15 +541,16 @@ class _StickyDateHeaderDelegate extends SliverPersistentHeaderDelegate {
               _formatDateLabel(date),
               style: TextStyle(
                 color: colorScheme.onPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                fontSize: 11.5,
+                letterSpacing: 0.2,
               ),
             ),
           ),
           const Gap(12),
           Expanded(
             child: Divider(
-              color: colorScheme.outline.withValues(alpha: 0.15),
+              color: colorScheme.outline.withValues(alpha: 0.16),
             ),
           ),
         ],
@@ -570,6 +591,10 @@ class _ActivityCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final isBulk = group.isBulkAction;
 
+    final nodeColor = group.isFinish
+        ? context.appColors.books
+        : (isBulk ? context.appColors.otColor : context.appColors.chapters);
+
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -580,39 +605,26 @@ class _ActivityCard extends StatelessWidget {
               Container(
                 width: 2,
                 height: 16,
-                color: colorScheme.onSurface.withValues(alpha: 0.12),
+                color: colorScheme.outline.withValues(alpha: 0.25),
               ),
               // Icon badge
               Container(
-                padding: const EdgeInsets.all(6),
+                padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
-                  color: group.isFinish
-                      ? context.appColors.books.withValues(alpha: 0.15)
-                      : (isBulk
-                          ? context.appColors.otColor.withValues(alpha: 0.15)
-                          : context.appColors.chapters.withValues(alpha: 0.15)),
+                  color: nodeColor.withValues(alpha: 0.14),
                   shape: BoxShape.circle,
-                  boxShadow: group.isFinish
-                      ? [
-                          BoxShadow(
-                            color:
-                                context.appColors.books.withValues(alpha: 0.4),
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                          ),
-                        ]
-                      : null,
+                  border: Border.all(
+                    color: nodeColor.withValues(alpha: 0.35),
+                  ),
                 ),
                 child: Icon(
                   group.isFinish
-                      ? Icons.emoji_events
-                      : (isBulk ? Icons.done_all : Icons.auto_stories),
-                  size: 16,
-                  color: group.isFinish
-                      ? context.appColors.books
+                      ? Icons.emoji_events_rounded
                       : (isBulk
-                          ? context.appColors.otColor
-                          : context.appColors.chapters),
+                          ? Icons.done_all_rounded
+                          : Icons.auto_stories_rounded),
+                  size: 15,
+                  color: nodeColor,
                 ),
               ),
               Expanded(
@@ -620,17 +632,17 @@ class _ActivityCard extends StatelessWidget {
                   width: 2,
                   color: isLast
                       ? Colors.transparent
-                      : colorScheme.onSurface.withValues(alpha: 0.12),
+                      : colorScheme.outline.withValues(alpha: 0.25),
                 ),
               ),
             ],
           ),
-          const Gap(16),
+          const Gap(14),
 
           // Card Content
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 24),
+              padding: const EdgeInsets.only(bottom: 18),
               child: group.isFinish
                   ? _CompletionCard(group: group)
                   : _StandardCard(group: group, isBulk: isBulk),
@@ -644,16 +656,22 @@ class _ActivityCard extends StatelessWidget {
 
 // STANDARD CARD
 
-class _StandardCard extends StatelessWidget {
+class _StandardCard extends ConsumerWidget {
   const _StandardCard({required this.group, required this.isBulk});
   final ActivityGroup group;
   final bool isBulk;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
+
+    final settings = switch (ref.watch(currentSettingsProvider)) {
+      AsyncData(:final value) => value,
+      _ => null,
+    };
+    final bibleLanguage = settings?.bibleLanguage ?? 'en';
+    final canon = settings?.canon ?? CanonType.catholic;
 
     return VersoCard(
       padding: const EdgeInsets.all(16),
@@ -662,17 +680,22 @@ class _StandardCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(
-                group.book.name,
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              Expanded(
+                child: Text(
+                  group.book.getLocalizedName(bibleLanguage, canon),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15.5,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
               ),
-              const Spacer(),
               Text(
                 DateFormat('h:mm a').format(group.timestamp),
                 style: TextStyle(
-                  fontSize: 12,
-                  color: theme.textTheme.bodySmall?.color,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -680,26 +703,27 @@ class _StandardCard extends StatelessWidget {
           const Gap(8),
           Wrap(
             spacing: 8,
+            runSpacing: 6,
             children: [
-              _Tag(
+              VersoChip(
                 text: group.timeOfDay,
-                color: isDark
-                    ? colorScheme.onSurface.withValues(alpha: 0.12)
-                    : colorScheme.surfaceContainerHighest,
-                textColor: colorScheme.onSurfaceVariant,
+                color: colorScheme.primary,
               ),
               if (isBulk)
-                _Tag(
+                VersoChip.icon(
                   text: 'Mass Update',
-                  color: context.appColors.otColor.withValues(alpha: 0.12),
-                  textColor: context.appColors.otColor,
+                  icon: Icons.done_all_rounded,
+                  color: context.appColors.otColor,
                 ),
             ],
           ),
           const Gap(8),
           Text(
             group.description,
-            style: TextStyle(color: colorScheme.onSurfaceVariant),
+            style: TextStyle(
+              fontSize: 13,
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -709,45 +733,50 @@ class _StandardCard extends StatelessWidget {
 
 // ENHANCED COMPLETION CARD
 
-class _CompletionCard extends StatelessWidget {
+class _CompletionCard extends ConsumerWidget {
   const _CompletionCard({required this.group});
   final ActivityGroup group;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
+    final goldColor = context.appColors.books;
+
+    final settings = switch (ref.watch(currentSettingsProvider)) {
+      AsyncData(:final value) => value,
+      _ => null,
+    };
+    final bibleLanguage = settings?.bibleLanguage ?? 'en';
+    final canon = settings?.canon ?? CanonType.catholic;
 
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadii.borderRadiusLG,
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isDark
               ? [
-                  context.appColors.books.withValues(alpha: 0.15),
-                  context.appColors.books.withValues(alpha: 0.08),
-                  context.appColors.books.withValues(alpha: 0.05),
+                  goldColor.withValues(alpha: 0.16),
+                  scheme.surface,
                 ]
               : [
-                  context.appColors.books.withValues(alpha: 0.08),
-                  context.appColors.books.withValues(alpha: 0.04),
-                  Colors.white,
+                  goldColor.withValues(alpha: 0.1),
+                  scheme.surface,
                 ],
         ),
         border: Border.all(
-          color: context.appColors.books.withValues(alpha: isDark ? 0.3 : 0.2),
-          width: 2,
+          color: goldColor.withValues(alpha: isDark ? 0.4 : 0.35),
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color:
-                context.appColors.books.withValues(alpha: isDark ? 0.1 : 0.15),
+            color: goldColor.withValues(alpha: 0.12),
             blurRadius: 16,
             offset: const Offset(0, 4),
-            spreadRadius: 1,
           ),
         ],
       ),
@@ -755,33 +784,14 @@ class _CompletionCard extends StatelessWidget {
         children: [
           // Decorative sparkles
           Positioned(
-            right: 12,
-            top: 8,
+            right: 14,
+            top: 10,
             child: Icon(
-              Icons.auto_awesome,
-              size: 16,
-              color: context.appColors.books.withValues(alpha: 0.3),
+              Icons.auto_awesome_rounded,
+              size: 18,
+              color: goldColor.withValues(alpha: 0.3),
             ),
           ),
-          Positioned(
-            right: 40,
-            top: 20,
-            child: Icon(
-              Icons.auto_awesome,
-              size: 10,
-              color: context.appColors.books.withValues(alpha: 0.2),
-            ),
-          ),
-          Positioned(
-            right: 24,
-            bottom: 16,
-            child: Icon(
-              Icons.auto_awesome,
-              size: 12,
-              color: context.appColors.books.withValues(alpha: 0.25),
-            ),
-          ),
-
           // Content
           Padding(
             padding: const EdgeInsets.all(16),
@@ -793,23 +803,15 @@ class _CompletionCard extends StatelessWidget {
                   children: [
                     // Glowing trophy
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(9),
                       decoration: BoxDecoration(
-                        color: context.appColors.books.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color:
-                                context.appColors.books.withValues(alpha: 0.3),
-                            blurRadius: 12,
-                            spreadRadius: 2,
-                          ),
-                        ],
+                        color: goldColor.withValues(alpha: 0.16),
+                        borderRadius: AppRadii.borderRadiusSM,
                       ),
                       child: Icon(
-                        Icons.emoji_events,
-                        size: 24,
-                        color: context.appColors.books,
+                        Icons.emoji_events_rounded,
+                        size: 22,
+                        color: goldColor,
                       ),
                     ),
                     const Gap(12),
@@ -818,24 +820,20 @@ class _CompletionCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            group.book.name,
+                            group.book.getLocalizedName(bibleLanguage, canon),
                             style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 17,
-                              color: isDark
-                                  ? Colors.amber.shade200
-                                  : Colors.amber.shade900,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16.5,
+                              color: scheme.onSurface,
                             ),
                           ),
                           const Gap(2),
                           Text(
-                            '🎉 Book Completed!',
+                            'Book Completed!',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: 12.5,
                               fontWeight: FontWeight.w700,
-                              color: isDark
-                                  ? Colors.amber.shade300
-                                  : Colors.amber.shade800,
+                              color: goldColor,
                             ),
                           ),
                         ],
@@ -844,63 +842,27 @@ class _CompletionCard extends StatelessWidget {
                     Text(
                       DateFormat('h:mm a').format(group.timestamp),
                       style: TextStyle(
-                        fontSize: 12,
-                        color: isDark
-                            ? Colors.amber.shade400
-                            : Colors.amber.shade700,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: scheme.onSurfaceVariant,
                       ),
                     ),
                   ],
                 ),
                 const Gap(12),
-
                 // Tags
                 Wrap(
                   spacing: 8,
+                  runSpacing: 6,
                   children: [
-                    _Tag(
+                    VersoChip(
                       text: group.timeOfDay,
-                      color: isDark
-                          ? Colors.amber.shade900.withValues(alpha: 0.4)
-                          : Colors.amber.shade100.withValues(alpha: 0.5),
-                      textColor: isDark
-                          ? Colors.amber.shade300
-                          : Colors.amber.shade800,
+                      color: goldColor,
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.amber.shade900.withValues(alpha: 0.4)
-                            : Colors.amber.shade100,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.star_rounded,
-                            size: 12,
-                            color: isDark
-                                ? Colors.amber.shade300
-                                : Colors.amber.shade800,
-                          ),
-                          const Gap(4),
-                          Text(
-                            '${group.book.chapters} Chapters',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: isDark
-                                  ? Colors.amber.shade300
-                                  : Colors.amber.shade900,
-                            ),
-                          ),
-                        ],
-                      ),
+                    VersoChip.icon(
+                      text: '${group.book.chapters} Chapters',
+                      icon: Icons.star_rounded,
+                      color: goldColor,
                     ),
                   ],
                 ),
@@ -908,82 +870,14 @@ class _CompletionCard extends StatelessWidget {
                 Text(
                   group.description,
                   style: TextStyle(
-                    color: isDark
-                        ? Colors.amber.shade400
-                        : Colors.amber.shade800.withValues(alpha: 0.7),
+                    fontSize: 13,
+                    color: scheme.onSurfaceVariant,
                   ),
                 ),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// EMPTY STATE
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.isFiltered, required this.onClearFilters});
-  final bool isFiltered;
-  final VoidCallback onClearFilters;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            isFiltered ? Icons.filter_list_off_rounded : Icons.history_edu,
-            size: 64,
-            color: colorScheme.onSurfaceVariant,
-          ),
-          const Gap(16),
-          Text(
-            isFiltered
-                ? 'No activity matches these filters'
-                : 'No activity yet. Start reading!',
-            style: TextStyle(
-              fontSize: 15,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          if (isFiltered) ...[
-            const Gap(16),
-            FilledButton.tonal(
-              onPressed: onClearFilters,
-              child: const Text('Clear Filters'),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-// TAG CHIP
-
-class _Tag extends StatelessWidget {
-  const _Tag({required this.text, required this.color, this.textColor});
-  final String text;
-  final Color color;
-  final Color? textColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(fontSize: 11, color: textColor),
       ),
     );
   }

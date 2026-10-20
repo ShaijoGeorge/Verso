@@ -30,7 +30,16 @@ class VersoGradientButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = color ?? context.palette.primary;
+    final palette = context.palette;
+    final primary = color ?? palette.primary;
+    final secondaryStop =
+        color != null ? primary.withValues(alpha: 0.85) : palette.primaryHover;
+
+    final contentColor = color != null
+        ? (primary.computeLuminance() > 0.45
+            ? const Color(0xFF0F172A)
+            : const Color(0xFFF8FAFC))
+        : Theme.of(context).colorScheme.onPrimary;
 
     return Material(
       color: Colors.transparent,
@@ -38,25 +47,35 @@ class VersoGradientButton extends StatelessWidget {
         onTap: isLoading ? null : onPressed,
         borderRadius: AppRadii.borderRadiusMD,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 220),
           height: 54,
           decoration: BoxDecoration(
             gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
               colors: isLoading
                   ? [
                       primary.withValues(alpha: 0.6),
-                      primary.withValues(alpha: 0.5),
+                      secondaryStop.withValues(alpha: 0.5),
                     ]
-                  : [primary, primary.withValues(alpha: 0.85)],
+                  : [primary, secondaryStop],
             ),
             borderRadius: AppRadii.borderRadiusMD,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.14),
+            ),
             boxShadow: isLoading
                 ? []
                 : [
                     BoxShadow(
-                      color: primary.withValues(alpha: 0.3),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
+                      color: primary.withValues(alpha: 0.32),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                    BoxShadow(
+                      color: primary.withValues(alpha: 0.15),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
                     ),
                   ],
           ),
@@ -67,17 +86,28 @@ class VersoGradientButton extends StatelessWidget {
                     width: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      color: Theme.of(context).colorScheme.onPrimary,
+                      color: contentColor,
                     ),
                   )
-                : Text(
-                    label,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      letterSpacing: 0.3,
-                    ),
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        label,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: contentColor,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 18,
+                        color: contentColor.withValues(alpha: 0.9),
+                      ),
+                    ],
                   ),
           ),
         ),

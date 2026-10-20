@@ -2,14 +2,40 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Verso (Debug)",
+      "request": "launch",
+      "type": "dart",
+      "args": [
+        "--dart-define-from-file=.env"
+      ]
+    },
+    {
+      "name": "Verso (Profile)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "profile",
+      "args": [
+        "--dart-define-from-file=.env"
+      ]
+    },
+    {
+      "name": "Verso (Release)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release",
+      "args": [
+        "--dart-define-from-file=.env"
+      ]
+    },
+    {
       "name": "C/C++ Runner: Debug Session",
       "type": "cppdbg",
       "request": "launch",
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/shaij/Desktop/biblia/windows/flutter",
-      "program": "c:/Users/shaij/Desktop/biblia/windows/flutter/build/Debug/outDebug",
+      "cwd": "${workspaceFolder}/windows/flutter",
+      "program": "${workspaceFolder}/windows/flutter/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

@@ -368,7 +368,8 @@ class _FounderHeroHeader extends StatelessWidget {
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                          color:
+                              isDark ? Colors.white : const Color(0xFF0F172A),
                           letterSpacing: -0.2,
                         ),
                       ),
@@ -378,7 +379,9 @@ class _FounderHeroHeader extends StatelessWidget {
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: Colors.white.withValues(alpha: 0.7),
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.7)
+                              : const Color(0xFF475569),
                         ),
                       ),
                     ],
@@ -949,12 +952,38 @@ class _ContactFooter extends StatelessWidget {
                 ),
               ),
               GestureDetector(
-                onTap: () {
+                onTap: () async {
                   HapticFeedback.lightImpact();
-                  VersoSnackbar.show(
-                    context,
-                    message: 'Contact page coming soon!',
+                  final uri = Uri.parse(
+                    'mailto:versoappsupport@gmail.com?subject=Verso%20Support%20%26%20Feedback',
                   );
+                  try {
+                    final launched = await launchUrl(
+                      uri,
+                      mode: LaunchMode.externalApplication,
+                    );
+                    if (!launched) {
+                      await Clipboard.setData(
+                        const ClipboardData(text: 'versoappsupport@gmail.com'),
+                      );
+                      if (context.mounted) {
+                        VersoSnackbar.show(
+                          context,
+                          message: 'Email copied: versoappsupport@gmail.com',
+                        );
+                      }
+                    }
+                  } catch (_) {
+                    await Clipboard.setData(
+                      const ClipboardData(text: 'versoappsupport@gmail.com'),
+                    );
+                    if (context.mounted) {
+                      VersoSnackbar.show(
+                        context,
+                        message: 'Email copied: versoappsupport@gmail.com',
+                      );
+                    }
+                  }
                 },
                 child: Text(
                   'contact us',

@@ -6,20 +6,28 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:verso/core/design/components/verso_bottom_sheet.dart';
 import 'package:verso/core/design/components/verso_card.dart';
+import 'package:verso/core/design/components/verso_gradient_button.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
+import 'package:verso/core/design/components/verso_text_field.dart';
 import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
-import 'package:verso/core/providers/connectivity_provider.dart';
 import 'package:verso/core/router.dart';
 import 'package:verso/core/utils/app_error_handler.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/core/widgets/verso_avatar.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
-import 'package:verso/features/auth/services/account_switch_service.dart';
+import 'package:verso/features/auth/services/saved_accounts_service.dart';
+import 'package:verso/features/auth/widgets/account_switch_bottom_sheet.dart';
+import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
+import 'package:verso/features/settings/services/notification_service.dart';
+import 'package:verso/features/stats/providers/activity_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -54,6 +62,7 @@ class ProfileScreen extends ConsumerWidget {
 
         return Scaffold(
           body: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
             slivers: [
               // Hero Header
               SliverToBoxAdapter(
@@ -74,14 +83,14 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
 
-              const SliverToBoxAdapter(child: Gap(28)),
+              const SliverToBoxAdapter(child: Gap(26)),
 
               // Account Settings Group
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: _SettingsGroup(
-                    label: 'Account',
+                    label: 'Security & Account',
                     isDark: isDark,
                     scheme: scheme,
                     items: [
@@ -89,22 +98,22 @@ class ProfileScreen extends ConsumerWidget {
                         icon: Icons.email_outlined,
                         iconColor: const Color(0xFF3B82F6),
                         label: 'Change Email',
-                        onTap: () => showModalBottomSheet<void>(
+                        subtitle: email,
+                        onTap: () => VersoBottomSheet.show<void>(
                           context: context,
-                          isScrollControlled: true,
-                          useSafeArea: true,
-                          builder: (_) => const _ChangeEmailSheet(),
+                          title: 'Change Email',
+                          child: const _ChangeEmailSheet(),
                         ),
                       ),
                       _SettingsItem(
                         icon: Icons.lock_outline_rounded,
                         iconColor: const Color(0xFF8B5CF6),
                         label: 'Change Password',
-                        onTap: () => showModalBottomSheet<void>(
+                        subtitle: 'Update your account password',
+                        onTap: () => VersoBottomSheet.show<void>(
                           context: context,
-                          isScrollControlled: true,
-                          useSafeArea: true,
-                          builder: (_) => const _ChangePasswordSheet(),
+                          title: 'Change Password',
+                          child: const _ChangePasswordSheet(),
                         ),
                       ),
                     ],
@@ -112,27 +121,29 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
 
-              const SliverToBoxAdapter(child: Gap(16)),
+              const SliverToBoxAdapter(child: Gap(18)),
 
               // App Settings Group
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: _SettingsGroup(
-                    label: 'App',
+                    label: 'Preferences & Community',
                     isDark: isDark,
                     scheme: scheme,
                     items: [
                       _SettingsItem(
-                        icon: Icons.settings_outlined,
-                        iconColor: const Color(0xFF6B7280),
-                        label: 'Settings',
+                        icon: Icons.tune_rounded,
+                        iconColor: scheme.primary,
+                        label: 'App Settings',
+                        subtitle: 'Themes, Bible canon, language & alerts',
                         onTap: () => GoRouter.of(context).push('/settings'),
                       ),
                       _SettingsItem(
                         icon: Icons.share_outlined,
                         iconColor: const Color(0xFF10B981),
                         label: 'Share Verso with a friend',
+                        subtitle: 'Invite friends to build a daily habit',
                         onTap: () {
                           HapticFeedback.lightImpact();
                           SharePlus.instance.share(
@@ -142,7 +153,7 @@ class ProfileScreen extends ConsumerWidget {
                                   "and track my daily progress. It's been a "
                                   'game changer for my Bible reading habit.\n\n'
                                   'Join me on the journey: '
-                                  'https://play.google.com/store/apps/details?id=com.shaijo.verso', // Placeholder link
+                                  'https://play.google.com/store/apps/details?id=com.shaijo.verso',
                             ),
                           );
                         },
@@ -172,7 +183,7 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
 
-              const SliverToBoxAdapter(child: Gap(40)),
+              const SliverToBoxAdapter(child: Gap(110)),
             ],
           ),
         );
@@ -211,132 +222,163 @@ class _ProfileHeroHeader extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            palette.accentSoft.withValues(alpha: isDark ? 0.9 : 1.0),
+            palette.accentSoft.withValues(alpha: isDark ? 0.85 : 1.0),
             scaffoldBg,
           ],
         ),
       ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
-          child: Column(
-            children: [
-              // Avatar with ring
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      primaryColor,
-                      palette.secondary,
-                    ],
-                  ),
-                ),
-                child: Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: palette.accentSoft,
-                  ),
-                  child: const VersoAvatar(size: 104, borderWidth: 0),
-                ),
-              ),
-
-              const Gap(20),
-
-              // Name with edit icon
-              GestureDetector(
-                onTap: () => showModalBottomSheet<void>(
-                  context: context,
-                  isScrollControlled: true,
-                  useSafeArea: true,
-                  builder: (_) => _EditNameSheet(currentName: name),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        name,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          color: scheme.onSurface,
-                          letterSpacing: -0.3,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const Gap(8),
-                    Icon(
-                      Icons.edit_rounded,
-                      size: 18,
-                      color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
-                    ),
+      child: Stack(
+        alignment: Alignment.topCenter,
+        children: [
+          // Ambient radial glow behind avatar
+          Positioned(
+            top: -40,
+            child: Container(
+              width: 220,
+              height: 220,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    primaryColor.withValues(alpha: isDark ? 0.18 : 0.14),
+                    primaryColor.withValues(alpha: 0),
                   ],
                 ),
               ),
-
-              const Gap(4),
-
-              // Email
-              Text(
-                email,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-
-              const Gap(14),
-
-              // "Reading since" badge
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 7,
-                ),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      primaryColor.withValues(alpha: isDark ? 0.15 : 0.10),
-                      palette.secondary.withValues(alpha: isDark ? 0.10 : 0.08),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(AppRadii.full),
-                  border: Border.all(
-                    color: primaryColor.withValues(alpha: isDark ? 0.25 : 0.18),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.calendar_month_rounded,
-                      size: 14,
-                      color: primaryColor,
-                    ),
-                    const Gap(6),
-                    Text(
-                      'Reading since $readingSince',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: scheme.onSurfaceVariant,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+              child: Column(
+                children: [
+                  // Avatar with ring
+                  Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          primaryColor,
+                          palette.secondary,
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: primaryColor.withValues(alpha: 0.25),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.all(3.5),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: scheme.surface,
+                      ),
+                      child: const VersoAvatar(size: 100, borderWidth: 0),
+                    ),
+                  ),
+
+                  const Gap(18),
+
+                  // Name with edit icon
+                  GestureDetector(
+                    onTap: () => VersoBottomSheet.show<void>(
+                      context: context,
+                      title: 'Edit Name',
+                      child: _EditNameSheet(currentName: name),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            name,
+                            style: GoogleFonts.dmSerifDisplay(
+                              fontSize: 28,
+                              color: scheme.onSurface,
+                              height: 1.15,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const Gap(8),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: primaryColor.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.edit_rounded,
+                            size: 14,
+                            color: primaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const Gap(4),
+
+                  // Email
+                  Text(
+                    email,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w500,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+
+                  const Gap(14),
+
+                  // "Reading since" badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: scheme.surface.withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(AppRadii.full),
+                      border: Border.all(
+                        color:
+                            primaryColor.withValues(alpha: isDark ? 0.28 : 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.verified_rounded,
+                          size: 14,
+                          color: palette.secondary,
+                        ),
+                        const Gap(6),
+                        Text(
+                          'Reading since $readingSince',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: scheme.onSurface,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -390,7 +432,7 @@ class _ProfileStatsStrip extends ConsumerWidget {
                 isDark ? AppColors.chaptersDark : AppColors.chaptersLight,
             value: isLoading ? '–' : '$chaptersRead',
             totalScope: isLoading ? null : '/ $totalChapters',
-            label: 'Chapters\nRead',
+            label: 'Chapters Read',
             isDark: isDark,
             scheme: scheme,
           ),
@@ -398,11 +440,11 @@ class _ProfileStatsStrip extends ConsumerWidget {
         const Gap(12),
         Expanded(
           child: _StatCard(
-            icon: Icons.library_books_rounded,
+            icon: Icons.emoji_events_rounded,
             iconColor: isDark ? AppColors.booksDark : AppColors.booksLight,
             value: isLoading ? '–' : '$booksCompleted',
             totalScope: isLoading ? null : '/ $totalBooks',
-            label: 'Books\nCompleted',
+            label: 'Books Completed',
             isDark: isDark,
             scheme: scheme,
           ),
@@ -434,15 +476,18 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return VersoCard(
-      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
               color: iconColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(AppRadii.md),
+              borderRadius: BorderRadius.circular(AppRadii.sm),
+              border: Border.all(
+                color: iconColor.withValues(alpha: 0.22),
+              ),
             ),
             child: Icon(icon, size: 20, color: iconColor),
           ),
@@ -460,8 +505,8 @@ class _StatCard extends StatelessWidget {
                           TextSpan(
                             text: value,
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 21,
+                              fontWeight: FontWeight.w800,
                               color: scheme.onSurface,
                               height: 1,
                             ),
@@ -469,10 +514,9 @@ class _StatCard extends StatelessWidget {
                               TextSpan(
                                 text: ' $totalScope',
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 13,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: scheme.onSurfaceVariant
-                                      .withValues(alpha: 0.8),
+                                  color: scheme.onSurfaceVariant,
                                   height: 1,
                                 ),
                               ),
@@ -482,22 +526,23 @@ class _StatCard extends StatelessWidget {
                       : Text(
                           value,
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 21,
+                            fontWeight: FontWeight.w800,
                             color: scheme.onSurface,
                             height: 1,
                           ),
                         ),
                 ),
-                const Gap(3),
+                const Gap(4),
                 Text(
                   label,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
                     color: scheme.onSurfaceVariant,
-                    height: 1.3,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -516,11 +561,13 @@ class _SettingsItem {
     required this.iconColor,
     required this.label,
     required this.onTap,
+    this.subtitle,
   });
 
   final IconData icon;
   final Color iconColor;
   final String label;
+  final String? subtitle;
   final VoidCallback onTap;
 }
 
@@ -547,10 +594,10 @@ class _SettingsGroup extends StatelessWidget {
           child: Text(
             label.toUpperCase(),
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
               color: scheme.onSurfaceVariant,
-              letterSpacing: 1.1,
+              letterSpacing: 1.2,
             ),
           ),
         ),
@@ -569,9 +616,10 @@ class _SettingsGroup extends StatelessWidget {
                     Divider(
                       height: 1,
                       thickness: 1,
-                      indent: 60,
+                      indent: 66,
+                      endIndent: 16,
                       color: scheme.outlineVariant
-                          .withValues(alpha: isDark ? 0.3 : 0.5),
+                          .withValues(alpha: isDark ? 0.3 : 0.6),
                     ),
                 ],
               ],
@@ -600,13 +648,16 @@ class _SettingsRow extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   color: item.iconColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(AppRadii.sm),
+                  border: Border.all(
+                    color: item.iconColor.withValues(alpha: 0.2),
+                  ),
                 ),
-                child: Icon(item.icon, size: 18, color: item.iconColor),
+                child: Icon(item.icon, size: 19, color: item.iconColor),
               ),
               const Gap(14),
               Expanded(
@@ -617,10 +668,22 @@ class _SettingsRow extends StatelessWidget {
                       item.label,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 15,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                         color: scheme.onSurface,
                       ),
                     ),
+                    if (item.subtitle != null) ...[
+                      const Gap(2),
+                      Text(
+                        item.subtitle!,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -639,7 +702,7 @@ class _SettingsRow extends StatelessWidget {
 
 // -- Switch Account --
 
-class _SwitchAccountTile extends ConsumerStatefulWidget {
+class _SwitchAccountTile extends StatelessWidget {
   const _SwitchAccountTile({
     required this.scheme,
     required this.isDark,
@@ -649,260 +712,52 @@ class _SwitchAccountTile extends ConsumerStatefulWidget {
   final bool isDark;
 
   @override
-  ConsumerState<_SwitchAccountTile> createState() => _SwitchAccountTileState();
-}
-
-class _SwitchAccountTileState extends ConsumerState<_SwitchAccountTile> {
-  bool _isSwitching = false;
-
-  @override
   Widget build(BuildContext context) {
     const switchColor = Color(0xFF3B82F6); // Matching blue from Account section
 
     return VersoCard(
       padding: EdgeInsets.zero,
       color: switchColor.withValues(alpha: 0.06),
-      border: Border.all(color: switchColor.withValues(alpha: 0.2)),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadii.lg),
-          onTap: _isSwitching ? null : () => _handleSwitchAccount(context),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: switchColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(AppRadii.sm),
-                  ),
-                  child: _isSwitching
-                      ? const Padding(
-                          padding: EdgeInsets.all(8),
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: switchColor,
-                          ),
-                        )
-                      : const Icon(
-                          Icons.swap_horiz_rounded,
-                          size: 18,
-                          color: switchColor,
-                        ),
-                ),
-                const Gap(14),
-                Text(
-                  'Switch Account',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: switchColor,
-                  ),
-                ),
-                const Spacer(),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  size: 20,
-                  color: switchColor.withValues(alpha: 0.5),
-                ),
-              ],
+      border: Border.all(color: switchColor.withValues(alpha: 0.22)),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        AccountSwitchBottomSheet.show(context);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: switchColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppRadii.sm),
+              ),
+              child: const Icon(
+                Icons.swap_horiz_rounded,
+                size: 19,
+                color: switchColor,
+              ),
             ),
-          ),
+            const Gap(14),
+            Text(
+              'Switch Account',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: switchColor,
+              ),
+            ),
+            const Spacer(),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: switchColor.withValues(alpha: 0.6),
+            ),
+          ],
         ),
       ),
-    );
-  }
-
-  Future<void> _handleSwitchAccount(BuildContext ctx) async {
-    HapticFeedback.lightImpact();
-
-    // 1. Check connectivity before even showing the dialog
-    final isOnline = ref.read(connectivityProvider);
-    if (!isOnline) {
-      if (ctx.mounted) {
-        VersoSnackbar.show(
-          ctx,
-          message: 'Connect to the internet to switch accounts',
-        );
-      }
-      return;
-    }
-
-    // 2. Show confirmation dialog
-    if (!ctx.mounted) return;
-    final confirmed = await _showSwitchDialog(ctx);
-    if (confirmed != true) return;
-
-    // 3. Execute the switch
-    setState(() => _isSwitching = true);
-
-    final router = ref.read(routerProvider);
-    final result = await ref.read(accountSwitchServiceProvider).switchAccount();
-
-    if (!mounted) return;
-    setState(() => _isSwitching = false);
-
-    switch (result) {
-      case SwitchSuccess():
-        Future.delayed(const Duration(milliseconds: 150), () {
-          final rootContext = router.routerDelegate.navigatorKey.currentContext;
-          if (rootContext != null && rootContext.mounted) {
-            VersoSnackbar.success(
-              rootContext,
-              message: 'Signed out — sign in with another account',
-            );
-          }
-        });
-
-      case SwitchOffline():
-        if (ctx.mounted) {
-          VersoSnackbar.show(
-            ctx,
-            message: 'Connect to the internet to switch accounts',
-          );
-        }
-
-      case SwitchFlushFailed(:final pendingCount):
-        if (ctx.mounted) {
-          VersoSnackbar.show(
-            ctx,
-            message: '$pendingCount records could not sync. Try again later.',
-          );
-        }
-
-      case SwitchError(:final message):
-        if (ctx.mounted) {
-          VersoSnackbar.error(
-            ctx,
-            message: 'Switch failed: $message',
-          );
-        }
-    }
-  }
-
-  Future<bool?> _showSwitchDialog(BuildContext ctx) {
-    const switchColor = Color(0xFF3B82F6);
-
-    return showDialog<bool>(
-      context: ctx,
-      barrierColor: Colors.black54,
-      builder: (dialogContext) {
-        final dialogScheme = Theme.of(dialogContext).colorScheme;
-
-        return Dialog(
-          backgroundColor: dialogScheme.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: AppRadii.borderRadiusXL,
-          ),
-          insetPadding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              Spacing.lg,
-              Spacing.xl,
-              Spacing.lg,
-              Spacing.lg,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Icon circle
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: switchColor.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.swap_horiz_rounded,
-                    color: switchColor,
-                    size: 26,
-                  ),
-                ),
-
-                const Gap(Spacing.md),
-
-                // Title
-                Text(
-                  'Switch Account?',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w700,
-                    color: dialogScheme.onSurface,
-                  ),
-                ),
-
-                const Gap(Spacing.xs),
-
-                // Description
-                Text(
-                  'Your reading progress will be synced before '
-                  'switching. You can sign in with a different account.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: dialogScheme.onSurfaceVariant,
-                    height: 1.5,
-                  ),
-                ),
-
-                const Gap(Spacing.lg),
-
-                // Switch button (primary, full-width)
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: () => Navigator.pop(dialogContext, true),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: switchColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: AppRadii.borderRadiusMD,
-                      ),
-                    ),
-                    child: Text(
-                      'Switch Account',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-
-                const Gap(Spacing.sm),
-
-                // Cancel button (ghost, full-width)
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(dialogContext, false),
-                    style: TextButton.styleFrom(
-                      foregroundColor: dialogScheme.onSurfaceVariant,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: AppRadii.borderRadiusMD,
-                      ),
-                    ),
-                    child: Text(
-                      'Cancel',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }
@@ -925,47 +780,41 @@ class _SignOutTile extends ConsumerWidget {
     return VersoCard(
       padding: EdgeInsets.zero,
       color: errorColor.withValues(alpha: 0.06),
-      border: Border.all(color: errorColor.withValues(alpha: 0.2)),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadii.lg),
-          onTap: () => _handleSignOut(ctx, widgetRef),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: errorColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(AppRadii.sm),
-                  ),
-                  child: Icon(
-                    Icons.logout_rounded,
-                    size: 18,
-                    color: errorColor,
-                  ),
-                ),
-                const Gap(14),
-                Text(
-                  'Sign Out',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: errorColor,
-                  ),
-                ),
-                const Spacer(),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  size: 20,
-                  color: errorColor.withValues(alpha: 0.5),
-                ),
-              ],
+      border: Border.all(color: errorColor.withValues(alpha: 0.22)),
+      onTap: () => _handleSignOut(ctx, widgetRef),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: errorColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppRadii.sm),
+              ),
+              child: Icon(
+                Icons.logout_rounded,
+                size: 19,
+                color: errorColor,
+              ),
             ),
-          ),
+            const Gap(14),
+            Text(
+              'Sign Out',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: errorColor,
+              ),
+            ),
+            const Spacer(),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: errorColor.withValues(alpha: 0.6),
+            ),
+          ],
         ),
       ),
     );
@@ -979,168 +828,233 @@ class _SignOutTile extends ConsumerWidget {
 
     final errorColor = ctx.palette.danger;
 
-    final confirmed = await showDialog<bool>(
+    await showDialog<void>(
       context: ctx,
       barrierColor: Colors.black54,
+      barrierDismissible: false,
       builder: (dialogContext) {
         final dialogScheme = Theme.of(dialogContext).colorScheme;
         final hasPending = pendingCount > 0;
+        var isLoading = false;
 
-        return Dialog(
-          backgroundColor: dialogScheme.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: AppRadii.borderRadiusXL,
-          ),
-          insetPadding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              Spacing.lg,
-              Spacing.xl,
-              Spacing.lg,
-              Spacing.lg,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: errorColor.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.logout_rounded,
-                    color: errorColor,
-                    size: 26,
-                  ),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return PopScope(
+              canPop: !isLoading,
+              child: Dialog(
+                backgroundColor: dialogScheme.surface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppRadii.borderRadiusXL,
                 ),
-                const Gap(Spacing.md),
-                Text(
-                  'Sign out of Verso?',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w700,
-                    color: dialogScheme.onSurface,
+                insetPadding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    Spacing.lg,
+                    Spacing.xl,
+                    Spacing.lg,
+                    Spacing.lg,
                   ),
-                ),
-                const Gap(Spacing.xs),
-                Text(
-                  hasPending
-                      ? 'Signing out will remove your local data from this device.'
-                      : 'Your reading progress is synced. You can sign back in at any time.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: dialogScheme.onSurfaceVariant,
-                    height: 1.5,
-                  ),
-                ),
-                if (hasPending) ...[
-                  const Gap(Spacing.md),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: errorColor.withValues(alpha: 0.08),
-                      borderRadius: AppRadii.borderRadiusMD,
-                      border: Border.all(
-                        color: errorColor.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.warning_amber_rounded,
-                          size: 18,
-                          color: errorColor,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: errorColor.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
                         ),
-                        const Gap(8),
-                        Expanded(
-                          child: Text(
-                            '$pendingCount unsynced ${pendingCount == 1 ? 'record' : 'records'} will be lost',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: errorColor,
+                        child: Icon(
+                          Icons.logout_rounded,
+                          color: errorColor,
+                          size: 26,
+                        ),
+                      ),
+                      const Gap(Spacing.md),
+                      Text(
+                        'Sign out of Verso?',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w700,
+                          color: dialogScheme.onSurface,
+                        ),
+                      ),
+                      const Gap(Spacing.xs),
+                      Text(
+                        hasPending
+                            ? 'Signing out will remove your local data from this device.'
+                            : 'Your reading progress is synced. You can sign back in at any time.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          color: dialogScheme.onSurfaceVariant,
+                          height: 1.5,
+                        ),
+                      ),
+                      if (hasPending) ...[
+                        const Gap(Spacing.md),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: errorColor.withValues(alpha: 0.08),
+                            borderRadius: AppRadii.borderRadiusMD,
+                            border: Border.all(
+                              color: errorColor.withValues(alpha: 0.2),
                             ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                size: 18,
+                                color: errorColor,
+                              ),
+                              const Gap(8),
+                              Expanded(
+                                child: Text(
+                                  '$pendingCount unsynced ${pendingCount == 1 ? 'record' : 'records'} will be lost',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: errorColor,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                ],
-                const Gap(Spacing.lg),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: () => Navigator.pop(dialogContext, true),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: errorColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: AppRadii.borderRadiusMD,
+                      const Gap(Spacing.lg),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: isLoading
+                              ? null
+                              : () async {
+                                  setState(() {
+                                    isLoading = true;
+                                  });
+
+                                  try {
+                                    final currentUserId = Supabase
+                                        .instance.client.auth.currentUser?.id;
+                                    if (currentUserId != null &&
+                                        currentUserId.isNotEmpty) {
+                                      await widgetRef
+                                          .read(savedAccountsServiceProvider)
+                                          .removeAccount(currentUserId);
+                                      await cacheService
+                                          .clearUserCache(currentUserId);
+                                    }
+
+                                    await cacheService.clearWriteQueue();
+                                    widgetRef
+                                        .invalidate(globalProgressProvider);
+                                    widgetRef.invalidate(userStatsProvider);
+                                    widgetRef.invalidate(detailedStatsProvider);
+                                    widgetRef
+                                        .invalidate(currentSettingsProvider);
+                                    widgetRef.invalidate(userSettingsProvider);
+                                    widgetRef.invalidate(activityLogProvider);
+                                    widgetRef.invalidate(todayChaptersProvider);
+                                    widgetRef
+                                        .invalidate(continueReadingProvider);
+                                    widgetRef.invalidate(userNameProvider);
+                                    await NotificationService()
+                                        .cancelStreakEscalationAlerts();
+                                    await widgetRef
+                                        .read(authRepositoryProvider)
+                                        .signOut();
+
+                                    final router =
+                                        widgetRef.read(routerProvider);
+
+                                    if (dialogContext.mounted) {
+                                      Navigator.pop(dialogContext);
+                                    }
+
+                                    Future.delayed(
+                                        const Duration(milliseconds: 150), () {
+                                      final rootContext = router.routerDelegate
+                                          .navigatorKey.currentContext;
+                                      if (rootContext != null &&
+                                          rootContext.mounted) {
+                                        VersoSnackbar.success(
+                                          rootContext,
+                                          message: 'Signed out successfully',
+                                        );
+                                      }
+                                    });
+                                  } finally {
+                                    if (context.mounted && isLoading) {
+                                      setState(() {
+                                        isLoading = false;
+                                      });
+                                    }
+                                  }
+                                },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: errorColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppRadii.borderRadiusMD,
+                            ),
+                          ),
+                          child: isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text(
+                                  'Sign Out',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      'Sign Out',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                      const Gap(Spacing.sm),
+                      SizedBox(
+                        width: double.infinity,
+                        child: TextButton(
+                          onPressed: isLoading
+                              ? null
+                              : () => Navigator.pop(dialogContext),
+                          style: TextButton.styleFrom(
+                            foregroundColor: dialogScheme.onSurfaceVariant,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppRadii.borderRadiusMD,
+                            ),
+                          ),
+                          child: Text(
+                            'Cancel',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
-                const Gap(Spacing.sm),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(dialogContext, false),
-                    style: TextButton.styleFrom(
-                      foregroundColor: dialogScheme.onSurfaceVariant,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: AppRadii.borderRadiusMD,
-                      ),
-                    ),
-                    child: Text(
-                      'Cancel',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
-
-    if (confirmed != true) return;
-
-    final router = widgetRef.read(routerProvider);
-
-    await cacheService.clearAll();
-    widgetRef.invalidate(globalProgressProvider);
-    widgetRef.invalidate(userStatsProvider);
-    await widgetRef.read(authRepositoryProvider).signOut();
-
-    Future.delayed(const Duration(milliseconds: 150), () {
-      final rootContext = router.routerDelegate.navigatorKey.currentContext;
-      if (rootContext != null && rootContext.mounted) {
-        VersoSnackbar.success(
-          rootContext,
-          message: 'Signed out successfully',
-        );
-      }
-    });
   }
 }
 
@@ -1155,17 +1069,22 @@ class _ChangeEmailSheet extends ConsumerStatefulWidget {
 class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   bool _isObscure = true;
 
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   Future<void> _update() async {
+    if (!_formKey.currentState!.validate()) return;
+
     final email = _emailController.text.trim();
     final pass = _passwordController.text.trim();
-
-    if (email.isEmpty || !email.contains('@') || pass.isEmpty) {
-      VersoSnackbar.error(context, message: 'Invalid input');
-      return;
-    }
 
     setState(() => _isLoading = true);
     try {
@@ -1193,82 +1112,56 @@ class _ChangeEmailSheetState extends ConsumerState<_ChangeEmailSheet> {
 
   @override
   Widget build(BuildContext context) {
-    // This padding handles the keyboard automatically
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomPadding),
+    return Form(
+      key: _formKey,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Drag Handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurfaceVariant
-                      .withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const Gap(24),
-
-            Text(
-              'Change Email',
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const Gap(24),
-
-            TextField(
+            VersoTextField(
               controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: 'New Email Address',
-                prefixIcon: Icon(Icons.email_outlined),
-                border: OutlineInputBorder(),
-              ),
+              label: 'New Email Address',
+              icon: Icons.email_outlined,
+              keyboardType: TextInputType.emailAddress,
+              validator: (value) {
+                final email = value?.trim() ?? '';
+                if (!RegExp(r'^.+@.+\..+$').hasMatch(email)) {
+                  return 'Please enter a valid email';
+                }
+                return null;
+              },
             ),
             const Gap(16),
-            TextField(
+            VersoTextField(
               controller: _passwordController,
+              label: 'Current Password',
+              icon: Icons.lock_outline,
               obscureText: _isObscure,
-              decoration: InputDecoration(
-                labelText: 'Current Password',
-                prefixIcon: const Icon(Icons.lock_outline),
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _isObscure ? Icons.visibility : Icons.visibility_off,
-                  ),
-                  onPressed: () => setState(() => _isObscure = !_isObscure),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _isObscure ? Icons.visibility : Icons.visibility_off,
                 ),
+                onPressed: () => setState(() => _isObscure = !_isObscure),
               ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter your password';
+                }
+                if (value.length < 6) {
+                  return 'Password must be at least 6 characters';
+                }
+                return null;
+              },
             ),
-            const Gap(32),
-            FilledButton(
-              onPressed: _isLoading ? null : _update,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Update Email'),
+            const Gap(24),
+            VersoGradientButton(
+              label: 'Update Email',
+              isLoading: _isLoading,
+              onPressed: _update,
             ),
-            const Gap(16),
+            const Gap(8),
           ],
         ),
       ),
@@ -1289,25 +1182,26 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
   final _oldPassController = TextEditingController();
   final _newPassController = TextEditingController();
   final _confirmPassController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
   bool _isLoading = false;
   bool _obsOld = true;
   bool _obsNew = true;
   bool _obsConfirm = true;
 
+  @override
+  void dispose() {
+    _oldPassController.dispose();
+    _newPassController.dispose();
+    _confirmPassController.dispose();
+    super.dispose();
+  }
+
   Future<void> _update() async {
+    if (!_formKey.currentState!.validate()) return;
+
     final oldPass = _oldPassController.text.trim();
     final newPass = _newPassController.text.trim();
-    final confirmPass = _confirmPassController.text.trim();
-
-    if (newPass.length < 6) {
-      VersoSnackbar.error(context, message: 'New password is too short');
-      return;
-    }
-    if (newPass != confirmPass) {
-      VersoSnackbar.error(context, message: 'Passwords do not match');
-      return;
-    }
 
     setState(() => _isLoading = true);
     try {
@@ -1335,114 +1229,92 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomPadding),
+    return Form(
+      key: _formKey,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Drag Handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurfaceVariant
-                      .withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const Gap(24),
-
-            Text(
-              'Change Password',
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const Gap(24),
-
-            TextField(
+            VersoTextField(
               controller: _oldPassController,
+              label: 'Current Password',
+              icon: Icons.lock_outline,
               obscureText: _obsOld,
-              decoration: InputDecoration(
-                labelText: 'Current Password',
-                prefixIcon: const Icon(Icons.lock_outline),
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: Icon(_obsOld ? Icons.visibility : Icons.visibility_off),
-                  onPressed: () => setState(() => _obsOld = !_obsOld),
-                ),
+              suffixIcon: IconButton(
+                icon: Icon(_obsOld ? Icons.visibility : Icons.visibility_off),
+                onPressed: () => setState(() => _obsOld = !_obsOld),
               ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Please enter your current password';
+                }
+                return null;
+              },
             ),
-
-            // --- NEW: FORGOT PASSWORD BUTTON ---
+            // --- FORGOT PASSWORD BUTTON ---
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () {
-                  // Close the bottom sheet first
                   Navigator.pop(context);
-                  // Navigate to the Forgot Password screen
                   GoRouter.of(context).push('/forgot-password');
                 },
                 child: const Text('Forgot Password?'),
               ),
             ),
-
-            TextField(
+            VersoTextField(
               controller: _newPassController,
+              label: 'New Password',
+              icon: Icons.key,
               obscureText: _obsNew,
-              decoration: InputDecoration(
-                labelText: 'New Password',
-                prefixIcon: const Icon(Icons.key),
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: Icon(_obsNew ? Icons.visibility : Icons.visibility_off),
-                  onPressed: () => setState(() => _obsNew = !_obsNew),
-                ),
+              suffixIcon: IconButton(
+                icon: Icon(_obsNew ? Icons.visibility : Icons.visibility_off),
+                onPressed: () => setState(() => _obsNew = !_obsNew),
               ),
+              validator: (value) {
+                final newPass = value?.trim() ?? '';
+                if (newPass.isEmpty) {
+                  return 'Please enter a new password';
+                }
+                if (newPass.length < 6) {
+                  return 'New password must be at least 6 characters';
+                }
+                return null;
+              },
             ),
             const Gap(16),
-            TextField(
+            VersoTextField(
               controller: _confirmPassController,
+              label: 'Confirm New Password',
+              icon: Icons.check_circle_outline,
               obscureText: _obsConfirm,
-              decoration: InputDecoration(
-                labelText: 'Confirm New Password',
-                prefixIcon: const Icon(Icons.check_circle_outline),
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obsConfirm ? Icons.visibility : Icons.visibility_off,
-                  ),
-                  onPressed: () => setState(() => _obsConfirm = !_obsConfirm),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obsConfirm ? Icons.visibility : Icons.visibility_off,
                 ),
+                onPressed: () => setState(() => _obsConfirm = !_obsConfirm),
               ),
+              validator: (value) {
+                final confirm = value?.trim() ?? '';
+                final newPass = _newPassController.text.trim();
+                if (confirm.isEmpty) {
+                  return 'Please confirm your new password';
+                }
+                if (confirm != newPass) {
+                  return 'Passwords do not match';
+                }
+                return null;
+              },
             ),
-            const Gap(32),
-            FilledButton(
-              onPressed: _isLoading ? null : _update,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Update Password'),
+            const Gap(24),
+            VersoGradientButton(
+              label: 'Update Password',
+              isLoading: _isLoading,
+              onPressed: _update,
             ),
-            const Gap(16),
+            const Gap(8),
           ],
         ),
       ),
@@ -1462,6 +1334,7 @@ class _EditNameSheet extends ConsumerStatefulWidget {
 
 class _EditNameSheetState extends ConsumerState<_EditNameSheet> {
   late final TextEditingController _nameController;
+  final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
   @override
@@ -1479,17 +1352,23 @@ class _EditNameSheetState extends ConsumerState<_EditNameSheet> {
   }
 
   Future<void> _update() async {
+    if (!_formKey.currentState!.validate()) return;
     final name = _nameController.text.trim();
-
-    if (name.isEmpty) {
-      VersoSnackbar.error(context, message: 'Name cannot be empty');
-      return;
-    }
 
     setState(() => _isLoading = true);
     try {
       final repo = ref.read(authRepositoryProvider);
       await repo.updateUserMetadata({'full_name': name});
+
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session != null) {
+        await ref
+            .read(savedAccountsServiceProvider)
+            .syncCurrentSession(session);
+        ref.invalidate(savedAccountsListProvider);
+      }
+      ref.invalidate(authUserProvider);
+      ref.invalidate(userNameProvider);
 
       if (mounted) {
         Navigator.pop(context);
@@ -1509,66 +1388,33 @@ class _EditNameSheetState extends ConsumerState<_EditNameSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomPadding),
+    return Form(
+      key: _formKey,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Drag Handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurfaceVariant
-                      .withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const Gap(24),
-
-            Text(
-              'Edit Name',
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const Gap(24),
-
-            TextField(
+            VersoTextField(
               controller: _nameController,
+              label: 'Full Name',
+              icon: Icons.person_outline_rounded,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                hintText: 'Full Name',
-                prefixIcon: Icon(Icons.person_outline_rounded),
-                border: OutlineInputBorder(),
-              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Name cannot be empty';
+                }
+                return null;
+              },
             ),
-            const Gap(32),
-            FilledButton(
-              onPressed: _isLoading ? null : _update,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Update Name'),
+            const Gap(24),
+            VersoGradientButton(
+              label: 'Update Name',
+              isLoading: _isLoading,
+              onPressed: _update,
             ),
-            const Gap(16),
+            const Gap(8),
           ],
         ),
       ),

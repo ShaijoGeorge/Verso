@@ -47,32 +47,47 @@ class VersoTextField extends StatelessWidget {
       labelText: label,
       labelStyle: GoogleFonts.plusJakartaSans(
         fontSize: 14,
+        fontWeight: FontWeight.w500,
         color: colorScheme.onSurfaceVariant,
       ),
-      prefixIcon: Icon(icon, size: 20, color: colorScheme.onSurfaceVariant),
+      floatingLabelStyle: GoogleFonts.plusJakartaSans(
+        fontSize: 13,
+        fontWeight: FontWeight.w700,
+        color: colorScheme.primary,
+      ),
+      prefixIcon: Padding(
+        padding: const EdgeInsets.only(left: 12, right: 8),
+        child: Icon(
+          icon,
+          size: 20,
+          color: colorScheme.primary.withValues(alpha: 0.75),
+        ),
+      ),
+      prefixIconConstraints: const BoxConstraints(minWidth: 44),
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: isDark
-          ? Colors.white.withValues(alpha: 0.05)
-          : colorScheme.primary.withValues(alpha: 0.04),
+          ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.45)
+          : colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
       contentPadding: const EdgeInsets.symmetric(
         horizontal: Spacing.md,
-        vertical: Spacing.md,
+        vertical: 16,
       ),
       border: OutlineInputBorder(
         borderRadius: AppRadii.borderRadiusMD,
-        borderSide:
-            BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+        borderSide: BorderSide(
+          color: colorScheme.outline.withValues(alpha: 0.35),
+        ),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: AppRadii.borderRadiusMD,
         borderSide: BorderSide(
-          color: colorScheme.outline.withValues(alpha: isDark ? 0.15 : 0.3),
+          color: colorScheme.outline.withValues(alpha: isDark ? 0.35 : 0.6),
         ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: AppRadii.borderRadiusMD,
-        borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
+        borderSide: BorderSide(color: colorScheme.primary, width: 1.8),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: AppRadii.borderRadiusMD,
@@ -80,12 +95,13 @@ class VersoTextField extends StatelessWidget {
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: AppRadii.borderRadiusMD,
-        borderSide: BorderSide(color: colorScheme.error, width: 1.5),
+        borderSide: BorderSide(color: colorScheme.error, width: 1.8),
       ),
     );
 
     final style = GoogleFonts.plusJakartaSans(
       fontSize: 15,
+      fontWeight: FontWeight.w500,
       color: colorScheme.onSurface,
     );
 

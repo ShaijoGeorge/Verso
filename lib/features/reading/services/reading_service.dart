@@ -5,9 +5,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/providers/connectivity_provider.dart';
 import 'package:verso/core/services/offline_cache_service.dart';
 import 'package:verso/data/local/entities/reading_progress.dart';
+import 'package:verso/features/home/providers/home_providers.dart';
 import 'package:verso/features/reading/data/bible_repository.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
+import 'package:verso/features/settings/data/settings_repository.dart';
 import 'package:verso/features/settings/providers/settings_providers.dart';
+import 'package:verso/features/settings/services/notification_service.dart';
+import 'package:verso/features/stats/providers/activity_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 
 part 'reading_service.g.dart';
@@ -23,6 +27,7 @@ class ReadingService {
 
   // Cooldown tracker to prevent rapid redundant sync calls
   DateTime? _lastSyncTime;
+  String? _lastSyncUserId;
 
   // Debounce timer so rapid taps coalesce into one provider refresh
   Timer? _refreshTimer;
@@ -104,7 +109,7 @@ class ReadingService {
     }
 
     // 2. Check if user already has read records for today in local cache
-    final cached = await _cache.getCachedProgress();
+    final cached = await _cache.getCachedProgress(uid);
     final todayDate = DateTime(now.year, now.month, now.day);
 
     final alreadyReadToday = cached.any((p) {
@@ -129,10 +134,45 @@ class ReadingService {
       isRead: true,
       readAt: now,
     );
-    final updatedStreak = calculateStreak([...cached, simulatedTodayRecord]);
+
+    final availableFreezes = await settingsRepo.getStreakFreezesAvailable(uid);
+    final frozenDates = await settingsRepo.getFrozenDates(uid);
+
+    final streakResult = calculateStreakWithFreezes(
+      [...cached, simulatedTodayRecord],
+      initialFreezes: availableFreezes,
+      existingFrozenDates: frozenDates,
+    );
+    final updatedStreak = streakResult.streak > 0 ? streakResult.streak : 1;
+
+    // Award +1 Streak Freeze on every 30-day streak milestone if below max capacity
+    var updatedFreezes = streakResult.availableFreezes;
+    final lastEarnedStreak = await settingsRepo.getLastFreezeEarnedStreak(uid);
+    if (updatedStreak >= 30 &&
+        updatedStreak % 30 == 0 &&
+        updatedStreak > lastEarnedStreak &&
+        updatedFreezes < SettingsRepository.maxStreakFreezes) {
+      updatedFreezes += 1;
+      await settingsRepo.setStreakFreezesAvailable(uid, updatedFreezes);
+      await settingsRepo.setLastFreezeEarnedStreak(uid, updatedStreak);
+    } else if (updatedStreak < lastEarnedStreak) {
+      // Reset milestone tracker if streak ever resets
+      await settingsRepo.setLastFreezeEarnedStreak(uid, 0);
+    }
 
     await settingsRepo.setLastCelebratedReadDate(uid, todayString);
-    return updatedStreak > 0 ? updatedStreak : 1;
+
+    // Pass updatedFreezes so tomorrow's midnight alert knows about the newly earned shield:
+    unawaited(
+      NotificationService().syncStreakEscalationAlerts(
+        streak: updatedStreak,
+        availableFreezes: updatedFreezes,
+        isStreakFrozen: false,
+        readToday: true,
+      ),
+    );
+
+    return updatedStreak;
   }
 
   void _scheduleRefresh() {
@@ -145,6 +185,25 @@ class ReadingService {
     _ref.invalidate(globalProgressProvider);
     _ref.invalidate(userStatsProvider);
     _ref.invalidate(detailedStatsProvider);
+    _ref.invalidate(activityLogProvider);
+    _ref.invalidate(todayChaptersProvider);
+    _ref.invalidate(continueReadingProvider);
+
+    // Keep streak countdowns in sync with latest read state
+    Future.microtask(_syncStreakCountdowns);
+  }
+
+  Future<void> _syncStreakCountdowns() async {
+    try {
+      final stats = await _ref.read(userStatsProvider.future);
+      final todayCount = await _ref.read(todayChaptersProvider.future);
+      await NotificationService().syncStreakEscalationAlerts(
+        streak: stats.streak,
+        availableFreezes: stats.availableFreezes,
+        isStreakFrozen: stats.isStreakFrozen,
+        readToday: todayCount > 0,
+      );
+    } catch (_) {}
   }
 
   void _triggerSync() {
@@ -207,15 +266,19 @@ class ReadingService {
   /// 3. Reconciles remote snapshot with any writes queued during fetch.
   /// 4. Atomically updates local Drift SQLite cache.
   /// 5. Invalidates providers so UI updates immediately and stream reconnects.
-  Future<void> syncOnResume() async {
+  Future<void> syncOnResume({bool force = false}) async {
     final userId = _currentUserId;
     if (!_isOnline || userId.isEmpty) return;
 
     // Cooldown guard: Avoid repeated calls if user rapidly switches apps or toggles notification shade,
-    // unless there are pending writes in the queue waiting to be synced.
+    // unless there are pending writes in the queue waiting to be synced, force is true, or user changed.
     final now = DateTime.now();
     final queue = await _cache.getWriteQueue();
-    if (queue.isEmpty &&
+    final isDifferentUser =
+        _lastSyncUserId != null && _lastSyncUserId != userId;
+    if (!force &&
+        !isDifferentUser &&
+        queue.isEmpty &&
         _lastSyncTime != null &&
         now.difference(_lastSyncTime!) < const Duration(seconds: 5)) {
       return;
@@ -236,8 +299,9 @@ class ReadingService {
         userId,
       );
 
-      await _cache.cacheProgress(merged);
+      await _cache.cacheProgress(merged, userId: userId);
       _lastSyncTime = DateTime.now();
+      _lastSyncUserId = userId;
       _invalidateProviders();
     } catch (_) {
       // Gracefully ignore network errors on resume so app stays on local cache

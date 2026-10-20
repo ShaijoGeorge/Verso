@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:verso/core/design/tokens/radii.dart';
 
 /// Section title with optional "See All" action.
 ///
@@ -28,17 +29,63 @@ class VersoSectionHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          title,
-          style: textTheme.titleMedium,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 3.5,
+              height: 16,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    scheme.primary,
+                    scheme.secondary,
+                  ],
+                ),
+                borderRadius: AppRadii.borderRadiusFull,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ],
         ),
         if (action != null && onAction != null)
-          GestureDetector(
-            onTap: onAction,
-            child: Text(
-              action!,
-              style: textTheme.labelMedium?.copyWith(
-                color: scheme.primary,
+          Material(
+            color: scheme.primary.withValues(alpha: 0.08),
+            borderRadius: AppRadii.borderRadiusFull,
+            child: InkWell(
+              onTap: onAction,
+              borderRadius: AppRadii.borderRadiusFull,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      action!,
+                      style: textTheme.labelSmall?.copyWith(
+                        color: scheme.primary,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 14,
+                      color: scheme.primary,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

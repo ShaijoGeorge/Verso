@@ -53,47 +53,57 @@ Stream<List<ReadingProgress>> globalProgress(Ref ref) async* {
   final cache = ref.watch(offlineCacheServiceProvider);
 
   // Watch the auth state so this provider rebuilds automatically on login/logout
-  final authUser = ref.watch(authUserProvider).value;
-  final userId = authUser?.id ?? '';
+  ref.watch(authUserProvider);
+  final userId = Supabase.instance.client.auth.currentUser?.id ??
+      ref.watch(authUserProvider).value?.id ??
+      '';
 
-  // Emit cached data first for instant UI
-  var cached = await cache.getCachedProgress();
+  if (userId.isEmpty) {
+    yield [];
+    return;
+  }
 
-  if (cached.isEmpty && userId.isNotEmpty) {
-    // Cache was cleared, or brand new install.
-    // Fetch a true snapshot from the server to prevent the UI from flickering to 0.
-    try {
-      cached = await repo.getAllProgressSnapshot();
-      await cache.cacheProgress(cached);
-    } catch (e) {
-      // If we have no cache AND we can't reach the server, we must throw.
-      // Yielding an empty list would make the UI display fake 0s.
+  // 1. Emit cached data first if available (instant 0ms UI)
+  var cached = await cache.getCachedProgress(userId);
+  if (cached.isNotEmpty) {
+    yield cached;
+  }
+
+  // 2. Fetch fresh snapshot from server to guarantee latest cross-device data
+  try {
+    final fresh = await repo.getAllProgressSnapshot();
+    final queue = await cache.getWriteQueue();
+    final merged = cache.mergeWithPendingWrites(fresh, queue, userId);
+    await cache.cacheProgress(merged, userId: userId);
+    cached = merged;
+    yield merged;
+  } catch (e) {
+    if (cached.isEmpty) {
+      // If we have no local cache AND can't reach the server, throw so UI shows retry
       throw Exception(
         'Cannot load your reading progress. Please check your connection.',
       );
     }
   }
 
-  // Yield the initial true state so the UI never flashes 0s
-  yield cached;
-
-  // Then hydrate from the live Supabase stream.
-  // We skip(1) because the stream typically emits an empty list [] or a duplicate
-  // snapshot immediately upon subscription before real-time changes come in.
+  // 3. Hydrate from the live Supabase stream for real-time changes
   try {
-    await for (final data in repo.getAllProgressStream().skip(1)) {
-      // Merge pending queue writes on top of server data so the UI
-      // doesn't "rubber-band" back to unread before sync completes.
+    await for (final data in repo.getAllProgressStream()) {
+      // Avoid transient empty emission glitch if we already have verified cached data
+      if (data.isEmpty && cached.isNotEmpty) {
+        continue;
+      }
+
       final queue = await cache.getWriteQueue();
       final merged = cache.mergeWithPendingWrites(data, queue, userId);
 
-      // Persist the merged result to cache for next offline session
-      await cache.cacheProgress(merged);
+      await cache.cacheProgress(merged, userId: userId);
+      cached = merged;
       yield merged;
     }
   } catch (_) {
     // Connection lost — re-emit cache so derived providers stay alive
-    final fallback = await cache.getCachedProgress();
+    final fallback = await cache.getCachedProgress(userId);
     yield fallback;
   }
 }

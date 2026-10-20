@@ -2,6 +2,8 @@ import 'package:collection/collection.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/data/bible_data.dart';
+import 'package:verso/features/auth/providers/auth_providers.dart';
+import 'package:verso/features/home/data/daily_verse.dart';
 import 'package:verso/features/home/data/verse_repository.dart';
 import 'package:verso/features/reading/providers/reading_providers.dart';
 
@@ -81,7 +83,9 @@ Future<int> todayChapters(Ref ref) async {
 /// Returns the user's first name from Supabase auth metadata.
 @riverpod
 String userName(Ref ref) {
-  final user = Supabase.instance.client.auth.currentUser;
+  ref.watch(authUserProvider);
+  final user = Supabase.instance.client.auth.currentUser ??
+      ref.watch(authUserProvider).value;
   final fullName = user?.userMetadata?['full_name'] as String? ?? '';
   if (fullName.isEmpty) return 'Reader';
   // Return first name only
@@ -97,10 +101,18 @@ String getGreeting() {
   return 'Good evening';
 }
 
-/// Motivational subtitle based on streak / progress.
-String getMotivationalMessage(int streak, double progress, int todayCount) {
+/// Motivational subtitle based on streak / progress / frozen status.
+String getMotivationalMessage(
+  int streak,
+  double progress,
+  int todayCount, {
+  bool isFrozen = false,
+}) {
   if (todayCount > 0) {
     return "You've read $todayCount chapter${todayCount == 1 ? '' : 's'} today. Keep going!";
+  }
+  if (isFrozen && streak > 0) {
+    return 'Streak Freeze protected your $streak-day streak! Read today to relight it. ❄️';
   }
   if (streak > 7) {
     return '$streak day streak! Incredible discipline.';
@@ -123,7 +135,7 @@ VerseRepository verseRepository(Ref ref) {
 
 // Fetches the daily Scripture verse to display on the home screen.
 @riverpod
-Future<Map<String, dynamic>> dailyVerse(Ref ref) async {
+Future<DailyVerse> dailyVerse(Ref ref) async {
   final repo = ref.watch(verseRepositoryProvider);
   return repo.getTodayVerse();
 }

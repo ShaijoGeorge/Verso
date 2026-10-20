@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:verso/core/design/components/verso_card.dart';
+import 'package:verso/core/design/components/verso_circular_progress.dart';
+import 'package:verso/core/design/components/verso_section_header.dart';
 import 'package:verso/core/design/extensions.dart';
-import 'package:verso/core/design/tokens/shadows.dart';
-import 'package:verso/data/local/entities/user_settings.dart';
+import 'package:verso/data/bible_book_names.dart';
+import 'package:verso/data/bible_data.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 import 'package:verso/features/stats/widgets/book_completion_grid.dart';
 import 'package:verso/features/stats/widgets/stat_summary_card.dart';
@@ -14,35 +19,38 @@ class OverviewTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 110),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // OT/NT Completion Rings
           _TestamentRings(stats: stats),
-          const Gap(28),
+          const Gap(24),
 
           // 4 Summary Cards
+          const VersoSectionHeader(title: 'Key Milestones'),
+          const Gap(12),
           _SummaryCards(stats: stats),
           const Gap(28),
 
           // Dynamic Book Completion Grid
+          const VersoSectionHeader(title: 'Canon Mosaic'),
+          const Gap(6),
           Text(
-            'Book Completion',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const Gap(4),
-          Text(
-            'Each cell is one book - darker means more complete',
+            'Each cell represents one book · Deeper color indicates higher completion',
             style: TextStyle(
               fontSize: 12,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const Gap(12),
-          BookCompletionGrid(bookCompletionMap: stats.bookCompletionMap),
+          VersoCard(
+            padding: const EdgeInsets.all(18),
+            child: BookCompletionGrid(
+              bookCompletionMap: stats.bookCompletionMap,
+            ),
+          ),
         ],
       ),
     );
@@ -50,33 +58,27 @@ class OverviewTab extends StatelessWidget {
 }
 
 // OT/NT Rings - side by side with animated fill
-class _TestamentRings extends StatelessWidget {
+class _TestamentRings extends ConsumerWidget {
   const _TestamentRings({required this.stats});
   final DetailedStats stats;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
-    final isLight = Theme.of(context).brightness == Brightness.light;
-    final isAmoled = context.palette.style == AppearanceStyle.amoled;
 
-    return Container(
+    final settings = switch (ref.watch(currentSettingsProvider)) {
+      AsyncData(:final value) => value,
+      _ => null,
+    };
+    final bibleLanguage = settings?.bibleLanguage ?? 'en';
+
+    return VersoCard(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isAmoled
-              ? scheme.outline
-              : scheme.outline.withValues(alpha: isLight ? 0.5 : 0.15),
-        ),
-        boxShadow: AppShadows.sm,
-      ),
       child: Row(
         children: [
           Expanded(
             child: _RingWidget(
-              label: 'Old Testament',
+              label: Testament.old.getLocalizedName(bibleLanguage),
               progress: stats.otProgress,
               chaptersRead: stats.otRead,
               totalChapters: stats.totalOTChapters,
@@ -88,12 +90,12 @@ class _TestamentRings extends StatelessWidget {
           // Vertical divider
           Container(
             width: 1,
-            height: 120,
-            color: scheme.outline.withValues(alpha: 0.15),
+            height: 136,
+            color: scheme.outline.withValues(alpha: 0.18),
           ),
           Expanded(
             child: _RingWidget(
-              label: 'New Testament',
+              label: Testament.newTestament.getLocalizedName(bibleLanguage),
               progress: stats.ntProgress,
               chaptersRead: stats.ntRead,
               totalChapters: stats.totalNTChapters,
@@ -128,60 +130,66 @@ class _RingWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(
-          height: 90,
-          width: 90,
-          child: TweenAnimationBuilder<double>(
-            tween: Tween<double>(begin: 0, end: progress),
-            duration: const Duration(milliseconds: 1200),
-            curve: Curves.easeOutQuart,
-            builder: (context, value, _) {
-              return Stack(
-                fit: StackFit.expand,
-                children: [
-                  CircularProgressIndicator(
-                    value: value,
-                    strokeWidth: 8,
-                    backgroundColor: color.withValues(alpha: 0.12),
-                    valueColor: AlwaysStoppedAnimation(color),
-                    strokeCap: StrokeCap.round,
-                  ),
-                  Center(
-                    child: Text(
-                      '${(value * 100).toInt()}%',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: color,
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
+        TweenAnimationBuilder<double>(
+          tween: Tween<double>(begin: 0, end: progress * 100),
+          duration: const Duration(milliseconds: 1200),
+          curve: Curves.easeOutQuart,
+          builder: (context, value, _) {
+            return VersoCircularProgress(
+              progress: value,
+              size: 96,
+              strokeWidth: 8.5,
+              color: color,
+              trackColor: color.withValues(alpha: 0.12),
+              child: Text(
+                '${value.toInt()}%',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 19,
+                  letterSpacing: -0.4,
+                  color: color,
+                ),
+              ),
+            );
+          },
         ),
-        const Gap(10),
+        const Gap(12),
         Text(
           label,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-        ),
-        const Gap(2),
-        Text(
-          '$booksCompleted / $totalBooks Books',
+          textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 11,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+            color: scheme.onSurface,
           ),
         ),
+        const Gap(4),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(99),
+          ),
+          child: Text(
+            '$booksCompleted / $totalBooks Books',
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ),
+        const Gap(4),
         Text(
           '$chaptersRead / $totalChapters Chapters',
           style: TextStyle(
             fontSize: 11,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            color: scheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -207,6 +215,7 @@ class _SummaryCards extends StatelessWidget {
                 label: 'Current Streak',
                 value: '${stats.streak}',
                 subtitle: 'days in a row',
+                isFrozen: stats.isStreakFrozen,
               ),
             ),
             const Gap(12),

@@ -7,6 +7,9 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:verso/core/design/extensions.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
+import 'package:verso/data/bible_book_names.dart';
+import 'package:verso/data/bible_data.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
 import 'package:verso/features/stats/providers/stats_providers.dart';
 
 class DetailedStatsScreen extends ConsumerStatefulWidget {
@@ -31,6 +34,11 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
   @override
   Widget build(BuildContext context) {
     final statsAsync = ref.watch(detailedStatsProvider);
+    final settings = switch (ref.watch(currentSettingsProvider)) {
+      AsyncData(:final value) => value,
+      _ => null,
+    };
+    final bibleLanguage = settings?.bibleLanguage ?? 'en';
 
     return Scaffold(
       appBar: AppBar(title: const Text('Detailed Stats')),
@@ -61,14 +69,15 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
                     children: [
                       _AnimatedTestamentCircle(
                         key: ValueKey('ot_circle_$_entryKey'),
-                        title: 'Old Testament',
+                        title: Testament.old.getLocalizedName(bibleLanguage),
                         targetProgress: stats.otProgress,
                         color: appColors.otColor,
                         scale: 1.3,
                       ),
                       _AnimatedTestamentCircle(
                         key: ValueKey('nt_circle_$_entryKey'),
-                        title: 'New Testament',
+                        title: Testament.newTestament
+                            .getLocalizedName(bibleLanguage),
                         targetProgress: stats.ntProgress,
                         color: appColors.ntColor,
                         scale: 1.3,
@@ -85,7 +94,7 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
                       Expanded(
                         child: _SummaryCard(
                           key: ValueKey('ot_card_$_entryKey'),
-                          label: 'Old Testament',
+                          label: Testament.old.getLocalizedName(bibleLanguage),
                           currentValue: stats.otRead,
                           maxValue: stats.totalOTChapters,
                           color: appColors.otContainer,
@@ -96,7 +105,8 @@ class _DetailedStatsScreenState extends ConsumerState<DetailedStatsScreen> {
                       Expanded(
                         child: _SummaryCard(
                           key: ValueKey('nt_card_$_entryKey'),
-                          label: 'New Testament',
+                          label: Testament.newTestament
+                              .getLocalizedName(bibleLanguage),
                           currentValue: stats.ntRead,
                           maxValue: stats.totalNTChapters,
                           color: appColors.ntContainer,
