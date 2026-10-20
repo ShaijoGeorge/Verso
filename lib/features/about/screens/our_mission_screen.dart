@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,9 +36,9 @@ class OurMissionScreen extends ConsumerWidget {
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // Founder Hero Header
+          // Mission Header (No developer image)
           SliverToBoxAdapter(
-            child: _FounderHeroHeader(
+            child: _MissionHeader(
               bg: bg,
               isDark: isDark,
               onClose: () => Navigator.of(context).pop(),
@@ -115,10 +114,9 @@ class OurMissionScreen extends ConsumerWidget {
                   ),
                   const Gap(10),
                   Text(
-                    'We never sell your personal data. Your reading progress, habits, '
-                    'and app usage are private. Ads and optional subscriptions (if applicable) '
-                    'are our only sources of revenue, helping us keep the app running '
-                    'without compromising your privacy.',
+                    'Never. We do not sell, rent, or trade your personal data. '
+                    'Your reading progress, streaks, habits, and profile are completely private '
+                    'and securely protected. Your spiritual journey is yours alone.',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 14.5,
                       fontWeight: FontWeight.w400,
@@ -131,17 +129,20 @@ class OurMissionScreen extends ConsumerWidget {
 
                   const Gap(28),
 
-                  // SECTION: How does Verso make money?
+                  // SECTION: Is Verso free to use?
                   _SectionTitle(
-                    title: 'How does Verso make money?',
+                    title: 'Is Verso free to use?',
                     isDark: isDark,
                     paletteText: palette.text,
                   ),
                   const Gap(10),
                   Text(
-                    'To keep the core tracking experience free and accessible to everyone, '
-                    'we need a sustainable way to maintain and improve the app.\n\n'
-                    'We introduced two ways to support the app:',
+                    'Yes! As of now, everything in Verso is completely free with zero ads and no paywalls. '
+                    'All features—including multi-canon tracking, bilingual support, offline SQLite sync, '
+                    'multi-account switching, AMOLED themes, and detailed analytics—are freely accessible '
+                    'to every user.\n\n'
+                    'As the app grows and cloud infrastructure costs expand, our model may evolve '
+                    'in the future:',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 14.5,
                       fontWeight: FontWeight.w400,
@@ -153,8 +154,8 @@ class OurMissionScreen extends ConsumerWidget {
                   ),
                   const Gap(14),
 
-                  // Monetization Points
-                  _RevenueModelCard(
+                  // Pricing Model Points
+                  _PricingModelCard(
                     isDark: isDark,
                     cardBg: cardBg,
                     borderColor: borderColor,
@@ -204,10 +205,10 @@ class OurMissionScreen extends ConsumerWidget {
 
                   _PermissionAccordion(
                     title: 'Network Access',
-                    subtitle: 'Streak sync & non-intrusive ads',
+                    subtitle: 'Cloud sync & multi-device backup',
                     content:
-                        'Used exclusively to sync your reading streaks to your account '
-                        'or to load limited, non-intrusive banner ads to support development.',
+                        'Used exclusively to sync your reading progress, streaks, and account '
+                        'settings with your secure cloud backup, ensuring your data is always safe.',
                     icon: Icons.wifi_rounded,
                     isDark: isDark,
                     cardBg: cardBg,
@@ -246,11 +247,11 @@ class OurMissionScreen extends ConsumerWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Founder Hero Header
+// Mission Header (Clean navigation bar and creator credit - No photo)
 // ---------------------------------------------------------------------------
 
-class _FounderHeroHeader extends StatelessWidget {
-  const _FounderHeroHeader({
+class _MissionHeader extends StatelessWidget {
+  const _MissionHeader({
     required this.bg,
     required this.isDark,
     required this.onClose,
@@ -262,102 +263,112 @@ class _FounderHeroHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final headerHeight = (screenHeight * 0.42).clamp(320.0, 420.0);
+    final palette = context.palette;
+    final topPadding = MediaQuery.of(context).padding.top;
 
-    return SizedBox(
-      height: headerHeight,
-      child: Stack(
-        fit: StackFit.expand,
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(20, topPadding + 14, 20, 16),
+      decoration: BoxDecoration(
+        color: bg,
+        border: Border(
+          bottom: BorderSide(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.06)
+                : palette.border.withValues(alpha: 0.5),
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Developer Photo (With fallback silhouette/avatar if asset is missing)
-          Image.asset(
-            'assets/developer/me1.jpg',
-            fit: BoxFit.cover,
-            alignment: const Alignment(0, -0.2),
-            errorBuilder: (_, __, ___) => Image.asset(
-              'assets/avatars/verso_male_avatar.jpeg',
-              fit: BoxFit.cover,
-              alignment: Alignment.topCenter,
-              errorBuilder: (_, __, ___) => Container(
+          // Top Bar: Mission Badge + Close Button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isDark
-                        ? const [Color(0xFF1E293B), Color(0xFF0F172A)]
-                        : const [Color(0xFFE2E8F0), Color(0xFFCBD5E1)],
-                  ),
+                  color: palette.primary.withValues(alpha: isDark ? 0.15 : 0.1),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Center(
-                  child: Icon(
-                    Icons.person_rounded,
-                    size: 96,
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.2)
-                        : Colors.black.withValues(alpha: 0.2),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Gradient overlay scrim (fades smoothly into the page background)
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                stops: const [0.0, 0.35, 0.7, 1.0],
-                colors: [
-                  Colors.black.withValues(alpha: 0.3),
-                  Colors.transparent,
-                  bg.withValues(alpha: 0.75),
-                  bg,
-                ],
-              ),
-            ),
-          ),
-
-          // Close button (Frosted Glass)
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 8,
-            right: 16,
-            child: ClipOval(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                child: Material(
-                  color: Colors.black.withValues(alpha: 0.45),
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      onClose();
-                    },
-                    child: const SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: Icon(
-                        Icons.close_rounded,
-                        color: Colors.white,
-                        size: 22,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.auto_stories_rounded,
+                      size: 14,
+                      color: palette.primary,
+                    ),
+                    const Gap(6),
+                    Text(
+                      'OUR MISSION',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.2,
+                        color: palette.primary,
                       ),
+                    ),
+                  ],
+                ),
+              ),
+              Material(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.black.withValues(alpha: 0.05),
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    onClose();
+                  },
+                  child: SizedBox(
+                    width: 38,
+                    height: 38,
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 20,
+                      color: isDark ? Colors.white70 : palette.text,
                     ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
-
-          // Bottom Content: Signature, Name, Title, and Social badges
-          Positioned(
-            left: 20,
-            right: 20,
-            bottom: 8,
+          const Gap(16),
+          // Creator Attribution Card
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF131518) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : palette.border,
+              ),
+            ),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: palette.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.code_rounded,
+                      color: palette.primary,
+                      size: 20,
+                    ),
+                  ),
+                ),
+                const Gap(14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,28 +377,27 @@ class _FounderHeroHeader extends StatelessWidget {
                       Text(
                         'Shaijo George',
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 18,
+                          fontSize: 15.5,
                           fontWeight: FontWeight.w800,
+                          letterSpacing: -0.2,
                           color:
                               isDark ? Colors.white : const Color(0xFF0F172A),
-                          letterSpacing: -0.2,
                         ),
                       ),
                       const Gap(2),
                       Text(
                         'Developer of Verso',
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: FontWeight.w500,
                           color: isDark
-                              ? Colors.white.withValues(alpha: 0.7)
-                              : const Color(0xFF475569),
+                              ? Colors.white.withValues(alpha: 0.65)
+                              : const Color(0xFF64748B),
                         ),
                       ),
                     ],
                   ),
                 ),
-
                 // Social Badges (LinkedIn, Portfolio)
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -400,6 +410,7 @@ class _FounderHeroHeader extends StatelessWidget {
                     _SocialIconButton(
                       icon: Icons.language_rounded,
                       tooltip: 'Portfolio',
+                      isDark: isDark,
                       onTap: () => _openUrl('https://shaijogeorge.vercel.app/'),
                     ),
                   ],
@@ -526,35 +537,36 @@ class _SocialIconButton extends StatelessWidget {
     required this.icon,
     required this.tooltip,
     required this.onTap,
+    this.isDark = true,
   });
 
   final IconData icon;
   final String tooltip;
   final VoidCallback onTap;
+  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
-    return ClipOval(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-        child: Material(
-          color: Colors.black.withValues(alpha: 0.45),
-          shape: const CircleBorder(
-            side: BorderSide(color: Colors.white24, width: 0.8),
-          ),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: () {
-              HapticFeedback.lightImpact();
-              onTap();
-            },
-            child: Tooltip(
-              message: tooltip,
-              child: SizedBox(
-                width: 36,
-                height: 36,
-                child: Icon(icon, size: 19, color: Colors.white),
-              ),
+    return Material(
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.08)
+          : Colors.black.withValues(alpha: 0.05),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: Tooltip(
+          message: tooltip,
+          child: SizedBox(
+            width: 36,
+            height: 36,
+            child: Icon(
+              icon,
+              size: 18,
+              color: isDark ? Colors.white : const Color(0xFF334155),
             ),
           ),
         ),
@@ -652,11 +664,11 @@ class _MottoCard extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Revenue Model Card
+// Pricing & Sustainability Model Card
 // ---------------------------------------------------------------------------
 
-class _RevenueModelCard extends StatelessWidget {
-  const _RevenueModelCard({
+class _PricingModelCard extends StatelessWidget {
+  const _PricingModelCard({
     required this.isDark,
     required this.cardBg,
     required this.borderColor,
@@ -676,13 +688,14 @@ class _RevenueModelCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _RevenueItem(
+          _PricingItem(
             number: '1',
-            title: 'Verso Premium',
+            title: '100% Free Today',
             description:
-                'An ad-free experience with advanced tracking features.',
-            icon: Icons.star_rounded,
-            iconColor: const Color(0xFFF59E0B),
+                'Every feature, canon, theme, and streak tool is fully accessible '
+                'with zero paywalls and zero advertisements.',
+            icon: Icons.lock_open_rounded,
+            iconColor: const Color(0xFF10B981),
             isDark: isDark,
           ),
           Divider(
@@ -690,14 +703,15 @@ class _RevenueModelCard extends StatelessWidget {
             indent: 56,
             color: borderColor,
           ),
-          _RevenueItem(
+          _PricingItem(
             number: '2',
-            title: 'Limited Ads',
+            title: 'Future Subscriptions & Sustainability',
             description:
-                'In the free version, we show non-intrusive ads from trusted partners. '
-                'These partners only use limited, non-sensitive information to show safe ads.',
-            icon: Icons.campaign_rounded,
-            iconColor: const Color(0xFF3B82F6),
+                'As server costs and features expand, we may introduce optional '
+                'premium subscriptions, supporter perks, or voluntary support to keep '
+                'development sustainable. The core tracking experience will always remain accessible.',
+            icon: Icons.stars_rounded,
+            iconColor: const Color(0xFFF59E0B),
             isDark: isDark,
           ),
         ],
@@ -706,8 +720,8 @@ class _RevenueModelCard extends StatelessWidget {
   }
 }
 
-class _RevenueItem extends StatelessWidget {
-  const _RevenueItem({
+class _PricingItem extends StatelessWidget {
+  const _PricingItem({
     required this.number,
     required this.title,
     required this.description,
