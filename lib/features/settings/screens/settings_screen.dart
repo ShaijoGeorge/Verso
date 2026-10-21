@@ -8,8 +8,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:verso/core/design/design.dart';
 import 'package:verso/core/providers/package_info_provider.dart';
+import 'package:verso/core/providers/update_provider.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/core/widgets/verso_share_sheet.dart';
+import 'package:verso/core/widgets/verso_update_sheet.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
 import 'package:verso/features/auth/widgets/delete_account_dialog.dart';
@@ -26,6 +28,49 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  bool _isCheckingUpdate = false;
+
+  Future<void> _checkUpdateManually() async {
+    if (_isCheckingUpdate) return;
+    setState(() => _isCheckingUpdate = true);
+
+    try {
+      final packageInfo = ref.read(packageInfoProvider);
+      final updateService = ref.read(updateServiceProvider);
+      final updateInfo = await updateService.checkForUpdate(
+        currentVersion: packageInfo.version,
+        currentBuildNumber: packageInfo.buildNumber,
+      );
+
+      if (!mounted) return;
+
+      if (updateInfo != null && updateInfo.isUpdateAvailable) {
+        await VersoUpdateSheet.show(context, updateInfo);
+      } else if (updateInfo != null) {
+        VersoSnackbar.show(
+          context,
+          message: 'Verso is up to date (v${packageInfo.version})',
+        );
+      } else {
+        VersoSnackbar.error(
+          context,
+          message: 'Could not connect to GitHub. Check your connection.',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        VersoSnackbar.error(
+          context,
+          message: 'Error checking for updates: $e',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isCheckingUpdate = false);
+      }
+    }
+  }
+
   String _formatTime(int hour, int minute) {
     final h = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
     final m = minute.toString().padLeft(2, '0');
@@ -1101,7 +1146,50 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   .withValues(alpha: 0.75),
                             ),
                           ),
-                          const Gap(4),
+                          const Gap(6),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap:
+                                _isCheckingUpdate ? null : _checkUpdateManually,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (_isCheckingUpdate)
+                                    SizedBox(
+                                      width: 12,
+                                      height: 12,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 1.5,
+                                        color: scheme.primary,
+                                      ),
+                                    )
+                                  else
+                                    Icon(
+                                      Icons.refresh_rounded,
+                                      size: 13,
+                                      color: scheme.primary,
+                                    ),
+                                  const Gap(6),
+                                  Text(
+                                    _isCheckingUpdate
+                                        ? 'Checking for updates...'
+                                        : 'Check for updates',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                      color: scheme.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const Gap(8),
                           InkWell(
                             borderRadius: BorderRadius.circular(8),
                             onTap: () =>

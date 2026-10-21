@@ -17,8 +17,11 @@ import 'package:verso/core/design/tokens/colors.dart';
 import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/shadows.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
+import 'package:verso/core/providers/package_info_provider.dart';
+import 'package:verso/core/providers/update_provider.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/core/widgets/verso_share_sheet.dart';
+import 'package:verso/core/widgets/verso_update_sheet.dart';
 import 'package:verso/data/bible_book_names.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
@@ -40,6 +43,42 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _checkedFreezeSavedThisSession = false;
   bool _checkedWelcomeFreezeThisSession = false;
+  bool _checkedUpdateThisSession = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAppUpdate();
+    });
+  }
+
+  Future<void> _checkAppUpdate() async {
+    if (_checkedUpdateThisSession) return;
+    _checkedUpdateThisSession = true;
+
+    // Small delay so home animations load smoothly first
+    await Future<void>.delayed(const Duration(milliseconds: 1500));
+    if (!mounted) return;
+
+    try {
+      final packageInfo = ref.read(packageInfoProvider);
+      final updateService = ref.read(updateServiceProvider);
+      final updateInfo = await updateService.checkForUpdate(
+        currentVersion: packageInfo.version,
+        currentBuildNumber: packageInfo.buildNumber,
+      );
+
+      if (updateInfo != null && mounted) {
+        final shouldPrompt = await updateService.shouldPromptUser(updateInfo);
+        if (shouldPrompt && mounted) {
+          await VersoUpdateSheet.show(context, updateInfo);
+        }
+      }
+    } catch (e) {
+      debugPrint('Background update check error: $e');
+    }
+  }
 
   void _checkOverlays(UserStats stats) {
     _checkFreezeSaved(stats);

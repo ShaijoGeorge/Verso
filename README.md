@@ -10,7 +10,7 @@
   [![Drift SQLite](https://img.shields.io/badge/Local%20DB-Drift%20(SQLite)-003B57?logo=sqlite)](https://drift.simonbinder.eu)
   [![Firebase](https://img.shields.io/badge/Observability-Firebase-FFCA28?logo=firebase)](https://firebase.google.com)
   [![Website](https://img.shields.io/badge/Website-versobibletracker.netlify.app-00C7B7?logo=netlify)](https://versobibletracker.netlify.app/)
-  [![Version](https://img.shields.io/badge/Version-v2.0.0-6C63FF)](#)
+  [![Version](https://img.shields.io/badge/Version-v2.0.1-6C63FF)](#)
 </div>
 
 ---
