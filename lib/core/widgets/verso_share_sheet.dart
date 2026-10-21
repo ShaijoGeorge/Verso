@@ -891,7 +891,9 @@ class _MiniStatMetric extends StatelessWidget {
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
-                color: isDark ? (isAmoled ? Colors.white : scheme.onSurface) : color,
+                color: isDark
+                    ? (isAmoled ? Colors.white : scheme.onSurface)
+                    : color,
               ),
             ),
             const Gap(4),
@@ -902,7 +904,9 @@ class _MiniStatMetric extends StatelessWidget {
                 fontWeight: FontWeight.w600,
                 height: 1.2,
                 color: isDark
-                    ? (isAmoled ? const Color(0xFFA3A3A3) : scheme.onSurfaceVariant)
+                    ? (isAmoled
+                        ? const Color(0xFFA3A3A3)
+                        : scheme.onSurfaceVariant)
                     : const Color(0xFF475569),
               ),
               maxLines: 2,
