@@ -1036,6 +1036,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         },
                       ),
                       _SettingsActionTile(
+                        title: 'Send Feedback',
+                        icon: Icons.chat_bubble_outline_rounded,
+                        iconColor: const Color(0xFF38BDF8),
+                        onTap: () {
+                          GoRouter.of(context).push('/feedback');
+                        },
+                      ),
+                      _SettingsActionTile(
                         title: 'Share Verso with a friend',
                         icon: Icons.share_outlined,
                         iconColor: const Color(0xFF10B981),

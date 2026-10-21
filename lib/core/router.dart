@@ -20,6 +20,7 @@ import 'package:verso/features/auth/screens/forgot_password_screen.dart';
 import 'package:verso/features/auth/screens/login_screen.dart';
 import 'package:verso/features/auth/screens/profile_screen.dart';
 import 'package:verso/features/auth/screens/update_password_screen.dart';
+import 'package:verso/features/feedback/screens/feedback_hub_screen.dart';
 import 'package:verso/features/home/screens/birthday_wish_screen.dart';
 import 'package:verso/features/home/screens/home_screen.dart';
 import 'package:verso/features/intro/screens/onboarding_screen.dart';
@@ -399,6 +400,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => AppPageTransitions.slideFromBottom(
           key: state.pageKey,
           child: const OurMissionScreen(),
+        ),
+      ),
+
+      // Send Feedback Route
+      GoRoute(
+        path: '/feedback',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.slideFromRight(
+          key: state.pageKey,
+          child: const FeedbackHubScreen(),
         ),
       ),
 
