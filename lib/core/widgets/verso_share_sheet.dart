@@ -18,6 +18,8 @@ import 'package:verso/features/stats/providers/stats_providers.dart';
 
 enum ShareCardMode { invite, dailyVerse, progress }
 
+enum ShareCardTheme { light, dark, amoled }
+
 class VersoShareSheet extends ConsumerStatefulWidget {
   const VersoShareSheet({
     this.initialMode = ShareCardMode.invite,
@@ -56,6 +58,7 @@ class _VersoShareSheetState extends ConsumerState<VersoShareSheet> {
   final GlobalKey _boundaryKey = GlobalKey();
   late ShareCardMode _selectedMode;
   bool _isSharing = false;
+  ShareCardTheme? _cardTheme;
 
   static const String _appUrl = 'https://versobibletracker.netlify.app/';
 
@@ -65,6 +68,16 @@ class _VersoShareSheetState extends ConsumerState<VersoShareSheet> {
     _selectedMode = widget.completedBookName != null
         ? ShareCardMode.progress
         : widget.initialMode;
+  }
+
+  void _cycleCardTheme(ShareCardTheme currentTheme) {
+    HapticFeedback.selectionClick();
+    final nextTheme = switch (currentTheme) {
+      ShareCardTheme.light => ShareCardTheme.dark,
+      ShareCardTheme.dark => ShareCardTheme.amoled,
+      ShareCardTheme.amoled => ShareCardTheme.light,
+    };
+    setState(() => _cardTheme = nextTheme);
   }
 
   String _buildShareText({
@@ -160,6 +173,14 @@ class _VersoShareSheetState extends ConsumerState<VersoShareSheet> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final palette = context.palette;
+    final defaultTheme = palette.style == AppearanceStyle.amoled
+        ? ShareCardTheme.amoled
+        : (Theme.of(context).brightness == Brightness.dark
+            ? ShareCardTheme.dark
+            : ShareCardTheme.light);
+    final cardTheme = _cardTheme ?? defaultTheme;
+
     final stats = ref.watch(userStatsProvider).value;
     final verse = ref.watch(dailyVerseProvider).value;
     final settings = ref.watch(currentSettingsProvider).value;
@@ -176,55 +197,84 @@ class _VersoShareSheetState extends ConsumerState<VersoShareSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Mode Selector Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _ModeChip(
-                  label: 'Invite',
-                  icon: Icons.favorite_rounded,
-                  isSelected: _selectedMode == ShareCardMode.invite,
-                  onTap: () =>
-                      setState(() => _selectedMode = ShareCardMode.invite),
-                ),
-                const Gap(8),
-                if (verseText != null) ...[
-                  _ModeChip(
-                    label: 'Daily Verse',
-                    icon: Icons.auto_awesome_rounded,
-                    isSelected: _selectedMode == ShareCardMode.dailyVerse,
-                    onTap: () => setState(
-                      () => _selectedMode = ShareCardMode.dailyVerse,
-                    ),
+          // Mode Selector & Style Toggle Row
+          Row(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _ModeChip(
+                        label: 'Invite',
+                        icon: Icons.favorite_rounded,
+                        isSelected: _selectedMode == ShareCardMode.invite,
+                        onTap: () =>
+                            setState(() => _selectedMode = ShareCardMode.invite),
+                      ),
+                      const Gap(8),
+                      if (verseText != null) ...[
+                        _ModeChip(
+                          label: 'Daily Verse',
+                          icon: Icons.auto_awesome_rounded,
+                          isSelected: _selectedMode == ShareCardMode.dailyVerse,
+                          onTap: () => setState(
+                            () => _selectedMode = ShareCardMode.dailyVerse,
+                          ),
+                        ),
+                        const Gap(8),
+                      ],
+                      _ModeChip(
+                        label: widget.completedBookName != null
+                            ? 'Book Milestone'
+                            : 'My Journey',
+                        icon: Icons.local_fire_department_rounded,
+                        isSelected: _selectedMode == ShareCardMode.progress,
+                        onTap: () =>
+                            setState(() => _selectedMode = ShareCardMode.progress),
+                      ),
+                    ],
                   ),
-                  const Gap(8),
-                ],
-                _ModeChip(
-                  label: widget.completedBookName != null
-                      ? 'Book Milestone'
-                      : 'My Journey',
-                  icon: Icons.local_fire_department_rounded,
-                  isSelected: _selectedMode == ShareCardMode.progress,
-                  onTap: () =>
-                      setState(() => _selectedMode = ShareCardMode.progress),
                 ),
-              ],
-            ),
+              ),
+              const Gap(8),
+              // Card Theme Toggle
+              _CardThemeToggle(
+                theme: cardTheme,
+                onToggle: () => _cycleCardTheme(cardTheme),
+              ),
+            ],
           ),
           const Gap(16),
 
-          // Capturable Visual Card
-          RepaintBoundary(
-            key: _boundaryKey,
-            child: _ShareCardPreview(
-              mode: _selectedMode,
-              stats: stats,
-              verseText: verseText,
-              verseRef: verseRef,
-              isMalayalam: isMalayalam,
-              completedBookName: widget.completedBookName,
-              completedBookChapters: widget.completedBookChapters,
+          // Capturable Visual Card with ambient elevation preview
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: AppRadii.borderRadiusXL,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(
+                    alpha: cardTheme == ShareCardTheme.amoled
+                        ? 0.45
+                        : (cardTheme == ShareCardTheme.dark ? 0.35 : 0.08),
+                  ),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: RepaintBoundary(
+              key: _boundaryKey,
+              child: _ShareCardPreview(
+                mode: _selectedMode,
+                stats: stats,
+                verseText: verseText,
+                verseRef: verseRef,
+                isMalayalam: isMalayalam,
+                theme: cardTheme,
+                completedBookName: widget.completedBookName,
+                completedBookChapters: widget.completedBookChapters,
+              ),
             ),
           ),
           const Gap(20),
@@ -295,6 +345,7 @@ class _ShareCardPreview extends StatelessWidget {
     required this.verseText,
     required this.verseRef,
     required this.isMalayalam,
+    required this.theme,
     this.completedBookName,
     this.completedBookChapters,
   });
@@ -304,42 +355,154 @@ class _ShareCardPreview extends StatelessWidget {
   final String? verseText;
   final String? verseRef;
   final bool isMalayalam;
+  final ShareCardTheme theme;
   final String? completedBookName;
   final int? completedBookChapters;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final isLight = Theme.of(context).brightness == Brightness.light;
-    final isAmoled = context.palette.style == AppearanceStyle.amoled;
+    final palette = context.palette;
+    final isAmoled = theme == ShareCardTheme.amoled;
+    final isDark = theme == ShareCardTheme.dark || isAmoled;
     final isVerse = mode == ShareCardMode.dailyVerse;
 
-    final accentColor = isVerse ? scheme.secondary : scheme.primary;
+    // Harmonious, high-contrast palette definition for AMOLED, Dark & Light modes
+    final List<Color> backgroundColors;
+    final Color borderColor;
+    final Color glowColor;
+    final Color watermarkColor;
+    final Color headerTitleColor;
+    final Color badgeBgColor;
+    final Color badgeBorderColor;
+    final Color badgeTextColor;
+    final Color mainTextColor;
+    final Color refLineColor;
+    final Color refTextColor;
+    final Color dividerColor;
+    final Color footerLinkColor;
+    final Color footerLabelColor;
+    final Color streakColor;
+    final Color booksColor;
+    final Color progressColor;
+
+    if (isAmoled) {
+      backgroundColors = const [Color(0xFF000000), Color(0xFF000000)];
+
+      final accent = isVerse ? const Color(0xFFE2B45A) : scheme.primary;
+      borderColor = accent.withValues(alpha: 0.40);
+      glowColor = accent.withValues(alpha: 0.20);
+      watermarkColor = accent.withValues(alpha: 0.12);
+      headerTitleColor = Colors.white;
+
+      badgeBgColor = accent.withValues(alpha: 0.18);
+      badgeBorderColor = accent.withValues(alpha: 0.40);
+      badgeTextColor = accent;
+
+      mainTextColor = Colors.white;
+      refLineColor = const Color(0xFFE2B45A).withValues(alpha: 0.90);
+      refTextColor = const Color(0xFFE2B45A);
+
+      dividerColor = const Color(0xFF262626);
+      footerLinkColor = accent;
+      footerLabelColor = const Color(0xFF94A3B8);
+
+      streakColor = context.appColors.streak;
+      booksColor = context.appColors.books;
+      progressColor = context.appColors.success;
+    } else if (isDark) {
+      backgroundColors = const [Color(0xFF131722), Color(0xFF0A0D14)];
+
+      final accent = isVerse ? const Color(0xFFE2B45A) : scheme.primary;
+      borderColor = accent.withValues(alpha: 0.35);
+      glowColor = accent.withValues(alpha: 0.18);
+      watermarkColor = accent.withValues(alpha: 0.10);
+      headerTitleColor = const Color(0xFFF8FAFC);
+
+      badgeBgColor = accent.withValues(alpha: 0.16);
+      badgeBorderColor = accent.withValues(alpha: 0.35);
+      badgeTextColor = accent;
+
+      mainTextColor = const Color(0xFFF8FAFC);
+      refLineColor = const Color(0xFFE2B45A).withValues(alpha: 0.85);
+      refTextColor = const Color(0xFFE2B45A);
+
+      dividerColor = Colors.white.withValues(alpha: 0.14);
+      footerLinkColor = accent;
+      footerLabelColor = const Color(0xFF94A3B8);
+
+      streakColor = context.appColors.streak;
+      booksColor = context.appColors.books;
+      progressColor = context.appColors.success;
+    } else {
+      // Light Mode: rich, high-contrast sacred parchment & crisp alabaster styling
+      if (isVerse) {
+        // Sacred Parchment / Vellum styling for Daily Verse
+        backgroundColors = const [Color(0xFFFFFDF9), Color(0xFFF6F0E4)];
+        borderColor = const Color(0xFF9E6E1C).withValues(alpha: 0.40);
+        glowColor = const Color(0xFFD4A017).withValues(alpha: 0.16);
+        watermarkColor = const Color(0xFF9E6E1C).withValues(alpha: 0.13);
+        headerTitleColor = const Color(0xFF0F172A);
+
+        badgeBgColor = const Color(0xFFF3ECE0);
+        badgeBorderColor = const Color(0xFF9E6E1C).withValues(alpha: 0.35);
+        badgeTextColor = const Color(0xFF7A4F08);
+
+        mainTextColor = const Color(0xFF0F172A);
+        refLineColor = const Color(0xFF9E6E1C).withValues(alpha: 0.65);
+        refTextColor = const Color(0xFF7A4F08);
+
+        dividerColor = const Color(0xFF9E6E1C).withValues(alpha: 0.22);
+        footerLinkColor = const Color(0xFF7A4F08);
+        footerLabelColor = const Color(0xFF64748B);
+
+        streakColor = const Color(0xFFC2410C);
+        booksColor = const Color(0xFFB45309);
+        progressColor = const Color(0xFF0F766E);
+      } else {
+        // Modern Alabaster / Crisp Slate styling for Progress & Invite
+        backgroundColors = const [Color(0xFFFFFFFF), Color(0xFFF4F7FB)];
+        borderColor = palette.primary.withValues(alpha: 0.30);
+        glowColor = palette.primary.withValues(alpha: 0.10);
+        watermarkColor = palette.primary.withValues(alpha: 0.08);
+        headerTitleColor = const Color(0xFF0F172A);
+
+        badgeBgColor = palette.primary.withValues(alpha: 0.09);
+        badgeBorderColor = palette.primary.withValues(alpha: 0.24);
+        badgeTextColor = palette.primary;
+
+        mainTextColor = const Color(0xFF0F172A);
+        refLineColor = palette.primary.withValues(alpha: 0.60);
+        refTextColor = palette.primary;
+
+        dividerColor = const Color(0xFFE2E8F0);
+        footerLinkColor = palette.primary;
+        footerLabelColor = const Color(0xFF64748B);
+
+        streakColor = const Color(0xFFC2410C);
+        booksColor = const Color(0xFFB45309);
+        progressColor = const Color(0xFF0F766E);
+      }
+    }
 
     return Container(
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: isAmoled ? const Color(0xFF0B0D14) : scheme.surface,
         borderRadius: AppRadii.borderRadiusXL,
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: isAmoled
-              ? [const Color(0xFF0B0D14), Colors.black]
-              : [
-                  scheme.surface,
-                  scheme.primaryContainer.withValues(alpha: 0.48),
-                ],
+          colors: backgroundColors,
         ),
         border: Border.all(
-          color: accentColor.withValues(alpha: isLight ? 0.35 : 0.3),
+          color: borderColor,
           width: 1.5,
         ),
       ),
       child: Stack(
         children: [
-          // Top-right radial glow matching _DailyVerseCard
+          // Top-right radial glow
           Positioned(
             top: -40,
             right: -40,
@@ -350,8 +513,8 @@ class _ShareCardPreview extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    accentColor.withValues(alpha: 0.18),
-                    accentColor.withValues(alpha: 0),
+                    glowColor,
+                    glowColor.withValues(alpha: 0),
                   ],
                 ),
               ),
@@ -367,7 +530,7 @@ class _ShareCardPreview extends StatelessWidget {
                 style: GoogleFonts.dmSerifDisplay(
                   fontSize: 130,
                   height: 1,
-                  color: accentColor.withValues(alpha: 0.08),
+                  color: watermarkColor,
                 ),
               ),
             ),
@@ -396,7 +559,7 @@ class _ShareCardPreview extends StatelessWidget {
                           'Verso',
                           style: GoogleFonts.dmSerifDisplay(
                             fontSize: 20,
-                            color: scheme.onSurface,
+                            color: headerTitleColor,
                           ),
                         ),
                       ],
@@ -407,8 +570,9 @@ class _ShareCardPreview extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: accentColor.withValues(alpha: 0.14),
+                        color: badgeBgColor,
                         borderRadius: AppRadii.borderRadiusFull,
+                        border: Border.all(color: badgeBorderColor),
                       ),
                       child: Text(
                         isVerse
@@ -420,13 +584,13 @@ class _ShareCardPreview extends StatelessWidget {
                             ? GoogleFonts.anekMalayalam(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w800,
-                                color: accentColor,
+                                color: badgeTextColor,
                               )
                             : GoogleFonts.plusJakartaSans(
                                 fontSize: 9.5,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 1.2,
-                                color: accentColor,
+                                color: badgeTextColor,
                               ),
                       ),
                     ),
@@ -442,13 +606,13 @@ class _ShareCardPreview extends StatelessWidget {
                         ? GoogleFonts.anekMalayalam(
                             fontSize: 17.5,
                             height: 1.55,
-                            fontWeight: FontWeight.w500,
-                            color: scheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                            color: mainTextColor,
                           )
                         : GoogleFonts.dmSerifDisplay(
                             fontSize: 19.5,
-                            height: 1.4,
-                            color: scheme.onSurface,
+                            height: 1.45,
+                            color: mainTextColor,
                           ),
                   ),
                   const Gap(14),
@@ -456,8 +620,11 @@ class _ShareCardPreview extends StatelessWidget {
                     children: [
                       Container(
                         width: 24,
-                        height: 1.5,
-                        color: scheme.secondary.withValues(alpha: 0.8),
+                        height: 2,
+                        decoration: BoxDecoration(
+                          color: refLineColor,
+                          borderRadius: AppRadii.borderRadiusFull,
+                        ),
                       ),
                       const Gap(8),
                       Text(
@@ -468,13 +635,13 @@ class _ShareCardPreview extends StatelessWidget {
                             ? GoogleFonts.anekMalayalam(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
-                                color: scheme.secondary,
+                                color: refTextColor,
                               )
                             : GoogleFonts.plusJakartaSans(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 1.5,
-                                color: scheme.secondary,
+                                color: refTextColor,
                               ),
                       ),
                     ],
@@ -485,7 +652,7 @@ class _ShareCardPreview extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.emoji_events_rounded,
-                        color: context.appColors.books,
+                        color: booksColor,
                         size: 28,
                       ),
                       const Gap(10),
@@ -494,7 +661,7 @@ class _ShareCardPreview extends StatelessWidget {
                           completedBookName!,
                           style: GoogleFonts.dmSerifDisplay(
                             fontSize: 24,
-                            color: scheme.onSurface,
+                            color: headerTitleColor,
                           ),
                         ),
                       ),
@@ -506,7 +673,7 @@ class _ShareCardPreview extends StatelessWidget {
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w700,
-                      color: context.appColors.books,
+                      color: booksColor,
                     ),
                   ),
                 ] else if (mode == ShareCardMode.progress) ...[
@@ -514,7 +681,7 @@ class _ShareCardPreview extends StatelessWidget {
                     'My Bible Journey',
                     style: GoogleFonts.dmSerifDisplay(
                       fontSize: 21,
-                      color: scheme.onSurface,
+                      color: headerTitleColor,
                     ),
                   ),
                   const Gap(14),
@@ -525,20 +692,23 @@ class _ShareCardPreview extends StatelessWidget {
                         _MiniStatMetric(
                           label: 'Streak',
                           value: '${stats?.streak ?? 0}d 🔥',
-                          color: context.appColors.streak,
+                          color: streakColor,
+                          theme: theme,
                         ),
                         const Gap(10),
                         _MiniStatMetric(
                           label: 'Books completed',
                           value: '${stats?.booksCompleted ?? 0}',
-                          color: context.appColors.books,
+                          color: booksColor,
+                          theme: theme,
                         ),
                         const Gap(10),
                         _MiniStatMetric(
                           label: 'Bible completed',
                           value:
                               '${(stats?.totalProgress ?? 0).toStringAsFixed(1)}%',
-                          color: context.appColors.success,
+                          color: progressColor,
+                          theme: theme,
                         ),
                       ],
                     ),
@@ -549,7 +719,7 @@ class _ShareCardPreview extends StatelessWidget {
                     style: GoogleFonts.dmSerifDisplay(
                       fontSize: 22,
                       height: 1.25,
-                      color: scheme.onSurface,
+                      color: mainTextColor,
                     ),
                   ),
                   const Gap(8),
@@ -558,14 +728,16 @@ class _ShareCardPreview extends StatelessWidget {
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 13,
                       height: 1.45,
-                      color: scheme.onSurfaceVariant,
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF334155),
                     ),
                   ),
                 ],
 
                 const Gap(20),
                 Divider(
-                  color: scheme.outline.withValues(alpha: 0.18),
+                  color: dividerColor,
                   height: 1,
                 ),
                 const Gap(12),
@@ -577,7 +749,7 @@ class _ShareCardPreview extends StatelessWidget {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: accentColor,
+                        color: footerLinkColor,
                       ),
                     ),
                     Text(
@@ -585,7 +757,7 @@ class _ShareCardPreview extends StatelessWidget {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: scheme.onSurfaceVariant,
+                        color: footerLabelColor,
                       ),
                     ),
                   ],
@@ -604,22 +776,43 @@ class _MiniStatMetric extends StatelessWidget {
     required this.label,
     required this.value,
     required this.color,
+    required this.theme,
   });
 
   final String label;
   final String value;
   final Color color;
+  final ShareCardTheme theme;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final isAmoled = theme == ShareCardTheme.amoled;
+    final isDark = theme == ShareCardTheme.dark || isAmoled;
+
+    final bgColor = isAmoled
+        ? const Color(0xFF0D0D0D)
+        : (isDark ? color.withValues(alpha: 0.12) : Colors.white);
+
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
+          color: bgColor,
           borderRadius: AppRadii.borderRadiusMD,
-          border: Border.all(color: color.withValues(alpha: 0.25)),
+          border: Border.all(
+            color: color.withValues(alpha: isDark ? 0.35 : 0.38),
+            width: isDark ? 1.0 : 1.2,
+          ),
+          boxShadow: isDark
+              ? null
+              : [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.08),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -630,7 +823,7 @@ class _MiniStatMetric extends StatelessWidget {
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
-                color: scheme.onSurface,
+                color: isDark ? (isAmoled ? Colors.white : scheme.onSurface) : color,
               ),
             ),
             const Gap(4),
@@ -640,11 +833,55 @@ class _MiniStatMetric extends StatelessWidget {
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
                 height: 1.2,
-                color: scheme.onSurfaceVariant,
+                color: isDark
+                    ? (isAmoled ? const Color(0xFFA3A3A3) : scheme.onSurfaceVariant)
+                    : const Color(0xFF475569),
               ),
               maxLines: 2,
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CardThemeToggle extends StatelessWidget {
+  const _CardThemeToggle({
+    required this.theme,
+    required this.onToggle,
+  });
+
+  final ShareCardTheme theme;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final (emoji, tooltip) = switch (theme) {
+      ShareCardTheme.light => ('☀️', 'Light card (tap for Dark)'),
+      ShareCardTheme.dark => ('🌙', 'Dark card (tap for AMOLED)'),
+      ShareCardTheme.amoled => ('🖤', 'AMOLED card (tap for Light)'),
+    };
+
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onToggle,
+          child: SizedBox(
+            width: 36,
+            height: 36,
+            child: Center(
+              child: Text(
+                emoji,
+                style: const TextStyle(fontSize: 16),
+              ),
+            ),
+          ),
         ),
       ),
     );
