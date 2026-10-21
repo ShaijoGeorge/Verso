@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:verso/core/design/components/verso_snackbar.dart';
 import 'package:verso/core/design/extensions.dart';
+import 'package:verso/core/widgets/verso_share_sheet.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
 
 /// "Our Mission" screen featuring developer story, values, and transparency.
@@ -229,6 +230,11 @@ class OurMissionScreen extends ConsumerWidget {
                           : palette.textMuted.withValues(alpha: 0.8),
                     ),
                   ),
+
+                  const Gap(32),
+
+                  // Spread the Word Card
+                  _SpreadTheWordCard(isDark: isDark, borderColor: borderColor),
 
                   const Gap(32),
 
@@ -932,6 +938,120 @@ class _PermissionAccordionState extends State<_PermissionAccordion>
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Spread the Word Card
+// ---------------------------------------------------------------------------
+
+class _SpreadTheWordCard extends StatelessWidget {
+  const _SpreadTheWordCard({
+    required this.isDark,
+    required this.borderColor,
+  });
+
+  final bool isDark;
+  final Color borderColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final cardBg = isDark ? const Color(0xFF131518) : Colors.white;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: palette.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.favorite_rounded,
+                  color: palette.primary,
+                  size: 19,
+                ),
+              ),
+              const Gap(12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Spread the Word',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : palette.text,
+                      ),
+                    ),
+                    Text(
+                      'Help a friend build a daily Scripture habit',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12.5,
+                        color: isDark ? Colors.white60 : palette.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Gap(14),
+          Text(
+            'Since Verso is 100% free with zero ads, the best way to support '
+            'the project is by sharing it with a friend, family member, or '
+            'study group.',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13.5,
+              height: 1.55,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.78)
+                  : palette.textMuted,
+            ),
+          ),
+          const Gap(16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                VersoShareSheet.show(context);
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: palette.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: const Icon(Icons.share_rounded, size: 18),
+              label: Text(
+                'Invite a Friend to Verso',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

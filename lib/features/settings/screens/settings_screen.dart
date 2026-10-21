@@ -1,14 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:verso/core/design/design.dart';
 import 'package:verso/core/providers/package_info_provider.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
+import 'package:verso/core/widgets/verso_share_sheet.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
 import 'package:verso/features/auth/widgets/delete_account_dialog.dart';
@@ -1039,16 +1040,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         icon: Icons.share_outlined,
                         iconColor: const Color(0xFF10B981),
                         onTap: () {
-                          SharePlus.instance.share(
-                            ShareParams(
-                              text:
-                                  "Hey! I've been using Verso to read the Bible "
-                                  "and track my daily progress. It's been a "
-                                  'game changer for my Bible reading habit.\n\n'
-                                  'Join me on the journey: '
-                                  'https://versobibletracker.netlify.app/',
-                            ),
-                          );
+                          HapticFeedback.lightImpact();
+                          VersoShareSheet.show(context);
                         },
                       ),
                     ],

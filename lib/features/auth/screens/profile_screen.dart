@@ -5,7 +5,6 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/design/components/verso_bottom_sheet.dart';
 import 'package:verso/core/design/components/verso_card.dart';
@@ -20,6 +19,7 @@ import 'package:verso/core/router.dart';
 import 'package:verso/core/utils/app_error_handler.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
 import 'package:verso/core/widgets/verso_avatar.dart';
+import 'package:verso/core/widgets/verso_share_sheet.dart';
 import 'package:verso/features/auth/providers/auth_providers.dart';
 import 'package:verso/features/auth/services/saved_accounts_service.dart';
 import 'package:verso/features/auth/widgets/account_switch_bottom_sheet.dart';
@@ -146,16 +146,7 @@ class ProfileScreen extends ConsumerWidget {
                         subtitle: 'Invite friends to build a daily habit',
                         onTap: () {
                           HapticFeedback.lightImpact();
-                          SharePlus.instance.share(
-                            ShareParams(
-                              text:
-                                  "Hey! I've been using Verso to read the Bible "
-                                  "and track my daily progress. It's been a "
-                                  'game changer for my Bible reading habit.\n\n'
-                                  'Join me on the journey: '
-                                  'https://versobibletracker.netlify.app/',
-                            ),
-                          );
+                          VersoShareSheet.show(context);
                         },
                       ),
                     ],
