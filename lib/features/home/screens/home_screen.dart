@@ -18,6 +18,7 @@ import 'package:verso/core/design/tokens/radii.dart';
 import 'package:verso/core/design/tokens/shadows.dart';
 import 'package:verso/core/design/tokens/spacing.dart';
 import 'package:verso/core/widgets/error_state_widget.dart';
+import 'package:verso/core/widgets/verso_share_sheet.dart';
 import 'package:verso/data/bible_book_names.dart';
 import 'package:verso/data/bible_data.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
@@ -498,6 +499,26 @@ class _HeroProgressCard extends StatelessWidget {
                         palette.secondary.withValues(alpha: 0),
                       ],
                     ),
+                  ),
+                ),
+              ),
+
+              Positioned(
+                top: 12,
+                right: 12,
+                child: IconButton(
+                  visualDensity: VisualDensity.compact,
+                  tooltip: 'Share Progress',
+                  onPressed: () => VersoShareSheet.show(
+                    context,
+                    initialMode: ShareCardMode.progress,
+                  ),
+                  icon: Icon(
+                    Icons.ios_share_rounded,
+                    size: 18,
+                    color: isLight
+                        ? Colors.white.withValues(alpha: 0.85)
+                        : scheme.primary,
                   ),
                 ),
               ),
@@ -1460,46 +1481,89 @@ class _DailyVerseCard extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Eyebrow label
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: scheme.secondary.withValues(alpha: 0.14),
-                  borderRadius: AppRadii.borderRadiusFull,
-                  border: Border.all(
-                    color: scheme.secondary.withValues(alpha: 0.3),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Eyebrow label
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: scheme.secondary.withValues(alpha: 0.14),
+                      borderRadius: AppRadii.borderRadiusFull,
+                      border: Border.all(
+                        color: scheme.secondary.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 12,
+                          color: scheme.secondary,
+                        ),
+                        const Gap(6),
+                        Text(
+                          isMalayalam ? 'ഇന്നത്തെ വചനം' : 'VERSE OF THE DAY',
+                          style: isMalayalam
+                              ? GoogleFonts.anekMalayalam(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1,
+                                  color: scheme.secondary,
+                                )
+                              : textTheme.labelSmall?.copyWith(
+                                  color: scheme.secondary,
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1.6,
+                                ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.auto_awesome_rounded,
-                      size: 12,
-                      color: scheme.secondary,
-                    ),
-                    const Gap(6),
-                    Text(
-                      isMalayalam ? 'ഇന്നത്തെ വചനം' : 'VERSE OF THE DAY',
-                      style: isMalayalam
-                          ? GoogleFonts.anekMalayalam(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1,
+
+                  // Direct Share Verse Button
+                  Material(
+                    color: scheme.secondary.withValues(alpha: 0.12),
+                    borderRadius: AppRadii.borderRadiusFull,
+                    child: InkWell(
+                      borderRadius: AppRadii.borderRadiusFull,
+                      onTap: () => VersoShareSheet.show(
+                        context,
+                        initialMode: ShareCardMode.dailyVerse,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.ios_share_rounded,
+                              size: 13,
                               color: scheme.secondary,
-                            )
-                          : textTheme.labelSmall?.copyWith(
-                              color: scheme.secondary,
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1.6,
                             ),
+                            const Gap(4),
+                            Text(
+                              'Share',
+                              style: textTheme.labelSmall?.copyWith(
+                                color: scheme.secondary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
               const Gap(Spacing.md),
               // Verse text
