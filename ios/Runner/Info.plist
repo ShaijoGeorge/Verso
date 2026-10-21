@@ -59,5 +59,8 @@
         </array>
       </dict>
     </array>
+    
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Verso needs photo library access to let you attach screenshots when sending feedback or reporting issues.</string>
 </dict>
 </plist>
