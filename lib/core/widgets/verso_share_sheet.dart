@@ -59,6 +59,7 @@ class _VersoShareSheetState extends ConsumerState<VersoShareSheet> {
   late ShareCardMode _selectedMode;
   bool _isSharing = false;
   ShareCardTheme? _cardTheme;
+  String? _overrideProfileId;
 
   static const String _appUrl = 'https://versobibletracker.netlify.app/';
 
@@ -78,6 +79,35 @@ class _VersoShareSheetState extends ConsumerState<VersoShareSheet> {
       ShareCardTheme.amoled => ShareCardTheme.light,
     };
     setState(() => _cardTheme = nextTheme);
+  }
+
+  void _showThemeProfilePicker(
+    BuildContext context,
+    ThemeProfile currentProfile,
+    ShareCardTheme currentTheme,
+  ) {
+    HapticFeedback.mediumImpact();
+    VersoBottomSheet.show<void>(
+      context: context,
+      title: 'Card Theme Profile',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final profile in ThemeProfiles.all)
+            _ThemeProfilePickerTile(
+              profile: profile,
+              isSelected: profile.id == currentProfile.id,
+              theme: currentTheme,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _overrideProfileId = profile.id);
+                Navigator.pop(context);
+              },
+            ),
+          const Gap(16),
+        ],
+      ),
+    );
   }
 
   String _buildShareText({
@@ -185,6 +215,10 @@ class _VersoShareSheetState extends ConsumerState<VersoShareSheet> {
     final verse = ref.watch(dailyVerseProvider).value;
     final settings = ref.watch(currentSettingsProvider).value;
 
+    final activeProfileId = _overrideProfileId ??
+        (settings?.themeProfileId ?? ThemeProfiles.defaultId);
+    final activeProfile = ThemeProfiles.byId(activeProfileId);
+
     final lang = settings?.bibleLanguage ?? 'en';
     final canon = settings?.canon ?? CanonType.catholic;
     final isMalayalam = lang == 'ml';
@@ -197,55 +231,64 @@ class _VersoShareSheetState extends ConsumerState<VersoShareSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Mode Selector & Style Toggle Row
-          Row(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _ModeChip(
-                        label: 'Invite',
-                        icon: Icons.favorite_rounded,
-                        isSelected: _selectedMode == ShareCardMode.invite,
-                        onTap: () =>
-                            setState(() => _selectedMode = ShareCardMode.invite),
-                      ),
-                      const Gap(8),
-                      if (verseText != null) ...[
-                        _ModeChip(
-                          label: 'Daily Verse',
-                          icon: Icons.auto_awesome_rounded,
-                          isSelected: _selectedMode == ShareCardMode.dailyVerse,
-                          onTap: () => setState(
-                            () => _selectedMode = ShareCardMode.dailyVerse,
-                          ),
-                        ),
-                        const Gap(8),
-                      ],
-                      _ModeChip(
-                        label: widget.completedBookName != null
-                            ? 'Book Milestone'
-                            : 'My Journey',
-                        icon: Icons.local_fire_department_rounded,
-                        isSelected: _selectedMode == ShareCardMode.progress,
-                        onTap: () =>
-                            setState(() => _selectedMode = ShareCardMode.progress),
-                      ),
-                    ],
+          // Mode Selector Chips
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _ModeChip(
+                  label: 'Invite',
+                  icon: Icons.favorite_rounded,
+                  isSelected: _selectedMode == ShareCardMode.invite,
+                  onTap: () =>
+                      setState(() => _selectedMode = ShareCardMode.invite),
+                ),
+                const Gap(8),
+                if (verseText != null) ...[
+                  _ModeChip(
+                    label: 'Daily Verse',
+                    icon: Icons.auto_awesome_rounded,
+                    isSelected: _selectedMode == ShareCardMode.dailyVerse,
+                    onTap: () => setState(
+                      () => _selectedMode = ShareCardMode.dailyVerse,
+                    ),
                   ),
+                  const Gap(8),
+                ],
+                _ModeChip(
+                  label: widget.completedBookName != null
+                      ? 'Book Milestone'
+                      : 'My Journey',
+                  icon: Icons.local_fire_department_rounded,
+                  isSelected: _selectedMode == ShareCardMode.progress,
+                  onTap: () =>
+                      setState(() => _selectedMode = ShareCardMode.progress),
+                ),
+              ],
+            ),
+          ),
+          const Gap(12),
+
+          // Appearance Controls Row: Theme Profile Pill (Left) & Brightness Toggle (Right)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _ThemeProfilePill(
+                profile: activeProfile,
+                theme: cardTheme,
+                onTap: () => _showThemeProfilePicker(
+                  context,
+                  activeProfile,
+                  cardTheme,
                 ),
               ),
-              const Gap(8),
-              // Card Theme Toggle
               _CardThemeToggle(
                 theme: cardTheme,
                 onToggle: () => _cycleCardTheme(cardTheme),
               ),
             ],
           ),
-          const Gap(16),
+          const Gap(14),
 
           // Capturable Visual Card with ambient elevation preview
           Container(
@@ -272,6 +315,7 @@ class _VersoShareSheetState extends ConsumerState<VersoShareSheet> {
                 verseRef: verseRef,
                 isMalayalam: isMalayalam,
                 theme: cardTheme,
+                profile: activeProfile,
                 completedBookName: widget.completedBookName,
                 completedBookChapters: widget.completedBookChapters,
               ),
@@ -338,6 +382,16 @@ class _VersoShareSheetState extends ConsumerState<VersoShareSheet> {
   }
 }
 
+Color _ensureLightContrast(Color color) {
+  if (color.computeLuminance() > 0.32) {
+    final hsl = HSLColor.fromColor(color);
+    return hsl
+        .withLightness((hsl.lightness * 0.52).clamp(0.18, 0.42))
+        .toColor();
+  }
+  return color;
+}
+
 class _ShareCardPreview extends StatelessWidget {
   const _ShareCardPreview({
     required this.mode,
@@ -346,6 +400,7 @@ class _ShareCardPreview extends StatelessWidget {
     required this.verseRef,
     required this.isMalayalam,
     required this.theme,
+    required this.profile,
     this.completedBookName,
     this.completedBookChapters,
   });
@@ -356,18 +411,23 @@ class _ShareCardPreview extends StatelessWidget {
   final String? verseRef;
   final bool isMalayalam;
   final ShareCardTheme theme;
+  final ThemeProfile profile;
   final String? completedBookName;
   final int? completedBookChapters;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final palette = context.palette;
     final isAmoled = theme == ShareCardTheme.amoled;
     final isDark = theme == ShareCardTheme.dark || isAmoled;
     final isVerse = mode == ShareCardMode.dailyVerse;
 
-    // Harmonious, high-contrast palette definition for AMOLED, Dark & Light modes
+    final activePalette = switch (theme) {
+      ShareCardTheme.light => profile.light,
+      ShareCardTheme.dark => profile.dark,
+      ShareCardTheme.amoled => profile.amoled,
+    };
+
+    // Dynamic, high-contrast palette definition derived from active ThemeProfile
     final List<Color> backgroundColors;
     final Color borderColor;
     final Color glowColor;
@@ -389,9 +449,9 @@ class _ShareCardPreview extends StatelessWidget {
     if (isAmoled) {
       backgroundColors = const [Color(0xFF000000), Color(0xFF000000)];
 
-      final accent = isVerse ? const Color(0xFFE2B45A) : scheme.primary;
+      final accent = isVerse ? activePalette.secondary : activePalette.primary;
       borderColor = accent.withValues(alpha: 0.40);
-      glowColor = accent.withValues(alpha: 0.20);
+      glowColor = accent.withValues(alpha: 0.22);
       watermarkColor = accent.withValues(alpha: 0.12);
       headerTitleColor = Colors.white;
 
@@ -400,20 +460,20 @@ class _ShareCardPreview extends StatelessWidget {
       badgeTextColor = accent;
 
       mainTextColor = Colors.white;
-      refLineColor = const Color(0xFFE2B45A).withValues(alpha: 0.90);
-      refTextColor = const Color(0xFFE2B45A);
+      refLineColor = accent.withValues(alpha: 0.90);
+      refTextColor = accent;
 
       dividerColor = const Color(0xFF262626);
       footerLinkColor = accent;
       footerLabelColor = const Color(0xFF94A3B8);
 
       streakColor = context.appColors.streak;
-      booksColor = context.appColors.books;
+      booksColor = activePalette.secondary;
       progressColor = context.appColors.success;
     } else if (isDark) {
-      backgroundColors = const [Color(0xFF131722), Color(0xFF0A0D14)];
+      backgroundColors = [activePalette.surface, activePalette.bg];
 
-      final accent = isVerse ? const Color(0xFFE2B45A) : scheme.primary;
+      final accent = isVerse ? activePalette.secondary : activePalette.primary;
       borderColor = accent.withValues(alpha: 0.35);
       glowColor = accent.withValues(alpha: 0.18);
       watermarkColor = accent.withValues(alpha: 0.10);
@@ -424,63 +484,71 @@ class _ShareCardPreview extends StatelessWidget {
       badgeTextColor = accent;
 
       mainTextColor = const Color(0xFFF8FAFC);
-      refLineColor = const Color(0xFFE2B45A).withValues(alpha: 0.85);
-      refTextColor = const Color(0xFFE2B45A);
+      refLineColor = accent.withValues(alpha: 0.85);
+      refTextColor = accent;
 
       dividerColor = Colors.white.withValues(alpha: 0.14);
       footerLinkColor = accent;
       footerLabelColor = const Color(0xFF94A3B8);
 
       streakColor = context.appColors.streak;
-      booksColor = context.appColors.books;
+      booksColor = activePalette.secondary;
       progressColor = context.appColors.success;
     } else {
-      // Light Mode: rich, high-contrast sacred parchment & crisp alabaster styling
+      // Light Mode: ensure high contrast readability across all profiles
+      final accent = _ensureLightContrast(
+        isVerse ? activePalette.secondary : activePalette.primary,
+      );
+
       if (isVerse) {
-        // Sacred Parchment / Vellum styling for Daily Verse
-        backgroundColors = const [Color(0xFFFFFDF9), Color(0xFFF6F0E4)];
-        borderColor = const Color(0xFF9E6E1C).withValues(alpha: 0.40);
-        glowColor = const Color(0xFFD4A017).withValues(alpha: 0.16);
-        watermarkColor = const Color(0xFF9E6E1C).withValues(alpha: 0.13);
+        final verseAltBg = activePalette.surfaceAlt.computeLuminance() > 0.85
+            ? activePalette.surfaceAlt
+            : const Color(0xFFF6F0E4);
+        backgroundColors = [const Color(0xFFFFFDF9), verseAltBg];
+        borderColor = accent.withValues(alpha: 0.40);
+        glowColor = activePalette.secondary.withValues(alpha: 0.16);
+        watermarkColor = accent.withValues(alpha: 0.13);
         headerTitleColor = const Color(0xFF0F172A);
 
-        badgeBgColor = const Color(0xFFF3ECE0);
-        badgeBorderColor = const Color(0xFF9E6E1C).withValues(alpha: 0.35);
-        badgeTextColor = const Color(0xFF7A4F08);
+        badgeBgColor = accent.withValues(alpha: 0.10);
+        badgeBorderColor = accent.withValues(alpha: 0.35);
+        badgeTextColor = accent;
 
         mainTextColor = const Color(0xFF0F172A);
-        refLineColor = const Color(0xFF9E6E1C).withValues(alpha: 0.65);
-        refTextColor = const Color(0xFF7A4F08);
+        refLineColor = accent.withValues(alpha: 0.65);
+        refTextColor = accent;
 
-        dividerColor = const Color(0xFF9E6E1C).withValues(alpha: 0.22);
-        footerLinkColor = const Color(0xFF7A4F08);
+        dividerColor = accent.withValues(alpha: 0.22);
+        footerLinkColor = accent;
         footerLabelColor = const Color(0xFF64748B);
 
         streakColor = const Color(0xFFC2410C);
-        booksColor = const Color(0xFFB45309);
+        booksColor = accent;
         progressColor = const Color(0xFF0F766E);
       } else {
-        // Modern Alabaster / Crisp Slate styling for Progress & Invite
-        backgroundColors = const [Color(0xFFFFFFFF), Color(0xFFF4F7FB)];
-        borderColor = palette.primary.withValues(alpha: 0.30);
-        glowColor = palette.primary.withValues(alpha: 0.10);
-        watermarkColor = palette.primary.withValues(alpha: 0.08);
+        final generalAltBg = activePalette.surfaceAlt.computeLuminance() > 0.85
+            ? activePalette.surfaceAlt
+            : const Color(0xFFF4F7FB);
+        backgroundColors = [const Color(0xFFFFFFFF), generalAltBg];
+        borderColor = accent.withValues(alpha: 0.30);
+        glowColor = activePalette.primary.withValues(alpha: 0.10);
+        watermarkColor = accent.withValues(alpha: 0.08);
         headerTitleColor = const Color(0xFF0F172A);
 
-        badgeBgColor = palette.primary.withValues(alpha: 0.09);
-        badgeBorderColor = palette.primary.withValues(alpha: 0.24);
-        badgeTextColor = palette.primary;
+        badgeBgColor = accent.withValues(alpha: 0.09);
+        badgeBorderColor = accent.withValues(alpha: 0.24);
+        badgeTextColor = accent;
 
         mainTextColor = const Color(0xFF0F172A);
-        refLineColor = palette.primary.withValues(alpha: 0.60);
-        refTextColor = palette.primary;
+        refLineColor = accent.withValues(alpha: 0.60);
+        refTextColor = accent;
 
         dividerColor = const Color(0xFFE2E8F0);
-        footerLinkColor = palette.primary;
+        footerLinkColor = accent;
         footerLabelColor = const Color(0xFF64748B);
 
         streakColor = const Color(0xFFC2410C);
-        booksColor = const Color(0xFFB45309);
+        booksColor = accent;
         progressColor = const Color(0xFF0F766E);
       }
     }
@@ -846,6 +914,221 @@ class _MiniStatMetric extends StatelessWidget {
   }
 }
 
+class _ThemeProfilePill extends StatelessWidget {
+  const _ThemeProfilePill({
+    required this.profile,
+    required this.theme,
+    required this.onTap,
+  });
+
+  final ThemeProfile profile;
+  final ShareCardTheme theme;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final palette = switch (theme) {
+      ShareCardTheme.light => profile.light,
+      ShareCardTheme.dark => profile.dark,
+      ShareCardTheme.amoled => profile.amoled,
+    };
+
+    return Material(
+      color: scheme.surfaceContainerHighest.withValues(alpha: 0.55),
+      shape: StadiumBorder(
+        side: BorderSide(
+          color: scheme.outline.withValues(alpha: 0.15),
+        ),
+      ),
+      child: InkWell(
+        customBorder: const StadiumBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          height: 36,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Two-tone mini swatch
+                SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        child: Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: palette.primary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 9,
+                          height: 9,
+                          decoration: BoxDecoration(
+                            color: palette.secondary,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: scheme.surface,
+                              width: 1.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Gap(7),
+                Text(
+                  profile.name,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSurface,
+                  ),
+                ),
+                const Gap(2),
+                Icon(
+                  Icons.arrow_drop_down_rounded,
+                  size: 18,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemeProfilePickerTile extends StatelessWidget {
+  const _ThemeProfilePickerTile({
+    required this.profile,
+    required this.isSelected,
+    required this.theme,
+    required this.onTap,
+  });
+
+  final ThemeProfile profile;
+  final bool isSelected;
+  final ShareCardTheme theme;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final palette = switch (theme) {
+      ShareCardTheme.light => profile.light,
+      ShareCardTheme.dark => profile.dark,
+      ShareCardTheme.amoled => profile.amoled,
+    };
+
+    return Material(
+      color: isSelected
+          ? scheme.primary.withValues(alpha: 0.08)
+          : Colors.transparent,
+      borderRadius: AppRadii.borderRadiusMD,
+      child: InkWell(
+        borderRadius: AppRadii.borderRadiusMD,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              // Two-tone swatches
+              SizedBox(
+                width: 32,
+                height: 32,
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      child: Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          color: palette.primary,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: scheme.surface,
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        width: 18,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: palette.secondary,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: scheme.surface,
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Gap(14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      profile.name,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14.5,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                    const Gap(2),
+                    Text(
+                      profile.tagline,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              if (isSelected) ...[
+                const Gap(8),
+                Icon(
+                  Icons.check_circle_rounded,
+                  color: scheme.primary,
+                  size: 20,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _CardThemeToggle extends StatelessWidget {
   const _CardThemeToggle({
     required this.theme,
@@ -867,8 +1150,12 @@ class _CardThemeToggle extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        shape: const CircleBorder(),
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.55),
+        shape: CircleBorder(
+          side: BorderSide(
+            color: scheme.outline.withValues(alpha: 0.15),
+          ),
+        ),
         child: InkWell(
           customBorder: const CircleBorder(),
           onTap: onToggle,
