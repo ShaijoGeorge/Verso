@@ -163,10 +163,17 @@ class AccountSwitchService {
         .read(currentSettingsProvider.notifier)
         .setCanonType(canonToRestore);
 
-    // 3. Invalidate all user-scoped providers to re-render for new user
+    // 3. Restore Streak Freezes & frozen dates from cloud user_metadata
+    if (user != null) {
+      await _ref
+          .read(settingsRepositoryProvider)
+          .restoreStreakFreezesFromCloud(user.id);
+    }
+
+    // 4. Invalidate all user-scoped providers to re-render for new user
     _invalidateUserProviders();
 
-    // 4. Trigger cloud sync to pull latest reading progress for this account
+    // 5. Trigger cloud sync to pull latest reading progress for this account
     unawaited(_ref.read(readingServiceProvider).syncOnResume(force: true));
   }
 

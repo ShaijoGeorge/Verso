@@ -12,6 +12,7 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   bool _isInitialized = false;
+  int _streakSyncGeneration = 0;
 
   void Function(String? payload)? _onNotificationTap;
 
@@ -258,16 +259,19 @@ class NotificationService {
     required bool isStreakFrozen,
     required bool readToday,
   }) async {
+    final generation = ++_streakSyncGeneration;
     if (!_isInitialized) await init();
 
     // Always clear previous escalation alarms first
     await cancelStreakEscalationAlerts();
 
+    if (generation != _streakSyncGeneration) return;
+
     // Only pester users who actually have an active streak to lose
     if (streak <= 0) return;
 
     final hasPermission = await requestPermissions();
-    if (!hasPermission) return;
+    if (!hasPermission || generation != _streakSyncGeneration) return;
 
     final now = tz.TZDateTime.now(tz.local);
 
@@ -402,6 +406,7 @@ class NotificationService {
     );
 
     for (final stage in stages) {
+      if (generation != _streakSyncGeneration) return;
       // Only schedule alerts that are still in the future
       if (stage.scheduledTime.isAfter(now)) {
         await _notificationsPlugin.zonedSchedule(
