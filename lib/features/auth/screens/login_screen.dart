@@ -6,7 +6,6 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/core/design/components/verso_auth_gradient.dart';
 import 'package:verso/core/design/components/verso_gradient_button.dart';
 import 'package:verso/core/design/components/verso_header_icon.dart';
@@ -21,12 +20,6 @@ import 'package:verso/features/auth/providers/auth_providers.dart';
 import 'package:verso/features/auth/services/account_switch_service.dart';
 import 'package:verso/features/auth/services/saved_accounts_service.dart';
 import 'package:verso/features/auth/widgets/saved_account_tile.dart';
-import 'package:verso/features/home/providers/home_providers.dart';
-import 'package:verso/features/reading/providers/reading_providers.dart';
-import 'package:verso/features/reading/services/reading_service.dart';
-import 'package:verso/features/settings/providers/settings_providers.dart';
-import 'package:verso/features/stats/providers/activity_providers.dart';
-import 'package:verso/features/stats/providers/stats_providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({
@@ -140,13 +133,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
     try {
       final auth = ref.read(authRepositoryProvider);
+      final accountSwitch = ref.read(accountSwitchServiceProvider);
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
+      final name = _nameController.text.trim();
+      final rememberMe = _rememberMe;
 
       if (_isSignUp) {
-        await auth.signUp(
-          _emailController.text.trim(),
-          _passwordController.text.trim(),
-          _nameController.text.trim(),
-        );
+        await auth.signUp(email, password, name);
         if (mounted) {
           VersoSnackbar.success(
             context,
@@ -155,73 +149,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           setState(() => _isSignUp = false);
         }
       } else {
-        await auth.signIn(
-          _emailController.text.trim(),
-          _passwordController.text.trim(),
-        );
+        await auth.signIn(email, password);
 
         // Save or clear the email depending on the checkbox
         final prefs = await SharedPreferences.getInstance();
-        if (_rememberMe) {
+        if (rememberMe) {
           // We ONLY save the email - never the password
-          await prefs.setString(
-            _rememberedEmailKey,
-            _emailController.text.trim(),
-          );
+          await prefs.setString(_rememberedEmailKey, email);
         } else {
           // User opted out - clear any previously saved email
           await prefs.remove(_rememberedEmailKey);
         }
 
-        // ── Data Restoration on Login ─────────────────────────────────────────
-        final user = Supabase.instance.client.auth.currentUser;
-        var remoteCanon = user?.userMetadata?['canon_type'] as String?;
-
-        // Fallback: check remote 'profiles' table if configured in Supabase
-        if (remoteCanon == null && user != null) {
-          try {
-            final userData = await Supabase.instance.client
-                .from('profiles')
-                .select('canon_type')
-                .eq('id', user.id)
-                .maybeSingle();
-            remoteCanon = userData?['canon_type'] as String?;
-          } catch (_) {
-            // Optional profiles table fallback
-          }
-        }
-
-        final canonToRestore = remoteCanon ?? 'catholic';
-
-        // 1. Save the fetched canon to local Drift DB before routing to the home screen
-        await ref.read(localDatabaseProvider).updateLocalCanon(canonToRestore);
-
-        // 2. Save to SharedPreferences and refresh Riverpod settings
-        await ref
-            .read(currentSettingsProvider.notifier)
-            .setCanonType(canonToRestore);
-        ref.invalidate(userSettingsProvider);
-
-        // 3. Invalidate user-scoped providers to rebuild with the new account's data
-        ref.invalidate(globalProgressProvider);
-        ref.invalidate(userStatsProvider);
-        ref.invalidate(detailedStatsProvider);
-        ref.invalidate(activityLogProvider);
-        ref.invalidate(todayChaptersProvider);
-        ref.invalidate(continueReadingProvider);
-        ref.invalidate(userNameProvider);
-
-        // 4. Trigger cloud sync to pull latest reading progress for this account
-        unawaited(ref.read(readingServiceProvider).syncOnResume());
-
-        // 5. Sync session to saved accounts list
-        final currentSession = Supabase.instance.client.auth.currentSession;
-        if (currentSession != null) {
-          await ref
-              .read(savedAccountsServiceProvider)
-              .syncCurrentSession(currentSession);
-          await ref.read(savedAccountsListProvider.notifier).refresh();
-        }
+        // Restore canon, invalidate user-scoped providers, sync progress, and
+        // persist the session using the keepAlive AccountSwitchService ref so
+        // unmounting LoginScreen on auth redirect does not fail mid-flight.
+        await accountSwitch.restoreSessionAfterSignIn();
 
         // The add-account route intentionally permits the previous user to
         // remain signed in until this credential exchange succeeds. Once it

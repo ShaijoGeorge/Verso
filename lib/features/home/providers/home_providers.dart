@@ -27,6 +27,7 @@ class ContinueReadingInfo {
 /// so the user can quickly jump back in.
 @riverpod
 Future<ContinueReadingInfo?> continueReading(Ref ref) async {
+  final books = ref.watch(activeCanonBooksProvider);
   final history = await ref.watch(globalProgressProvider.future);
   final readHistory =
       history.where((p) => p.isRead && p.readAt != null).toList();
@@ -44,7 +45,6 @@ Future<ContinueReadingInfo?> continueReading(Ref ref) async {
   }
 
   // Find the most recently read book that is NOT fully completed
-  final books = ref.watch(activeCanonBooksProvider);
   for (final p in readHistory) {
     final book = books.firstWhereOrNull((b) => b.id == p.bookId);
     if (book == null) continue;

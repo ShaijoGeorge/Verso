@@ -61,6 +61,7 @@ class OfflineCacheService {
       final map = <String, dynamic>{
         'type': row.type,
         'book_id': row.bookId,
+        'created_at': row.createdAt,
       };
       if (row.type == 'toggle') {
         map['chapter_number'] = row.chapterNumber;
@@ -74,6 +75,7 @@ class OfflineCacheService {
 
   /// Enqueue a write operation, deduplicating toggle actions for the same chapter.
   Future<void> enqueueWrite(Map<String, dynamic> operation) async {
+    final createdAt = (operation['created_at'] as DateTime?) ?? DateTime.now();
     await _db.transaction(() async {
       // Deduplicate: if toggling the same chapter, remove the old entry
       if (operation['type'] == 'toggle') {
@@ -94,6 +96,7 @@ class OfflineCacheService {
               chapterNumber: Value(operation['chapter_number'] as int?),
               isRead: Value(operation['is_read'] as bool?),
               totalChapters: Value(operation['total_chapters'] as int?),
+              createdAt: Value(createdAt),
             ),
           );
     });
@@ -146,8 +149,9 @@ class OfflineCacheService {
     String userId,
     int bookId,
     int chapterNumber,
-    bool isRead,
-  ) async {
+    bool isRead, {
+    DateTime? readAt,
+  }) async {
     if (isRead) {
       // Upsert: insert or update the chapter as read
       await _db.into(_db.cachedProgress).insertOnConflictUpdate(
@@ -156,7 +160,7 @@ class OfflineCacheService {
               bookId: bookId,
               chapterNumber: chapterNumber,
               isRead: const Value(true),
-              readAt: Value(DateTime.now()),
+              readAt: Value(readAt ?? DateTime.now()),
             ),
           );
     } else {
@@ -176,9 +180,10 @@ class OfflineCacheService {
   Future<void> applyCachedMarkBook(
     String userId,
     int bookId,
-    int totalChapters,
-  ) async {
-    final now = DateTime.now();
+    int totalChapters, {
+    DateTime? readAt,
+  }) async {
+    final now = readAt ?? DateTime.now();
     await _db.batch((batch) {
       for (var i = 1; i <= totalChapters; i++) {
         batch.insert(
@@ -213,6 +218,7 @@ class OfflineCacheService {
 
     // Overlay pending writes
     for (final op in queue) {
+      final opTime = (op['created_at'] as DateTime?) ?? DateTime.now();
       switch (op['type']) {
         case 'toggle':
           final bookId = op['book_id'] as int;
@@ -224,7 +230,7 @@ class OfflineCacheService {
               bookId: bookId,
               chapterNumber: chapter,
               isRead: true,
-              readAt: DateTime.now(),
+              readAt: opTime,
             );
           } else {
             merged.remove((bookId, chapter));
@@ -232,14 +238,13 @@ class OfflineCacheService {
         case 'mark_book':
           final bookId = op['book_id'] as int;
           final totalChapters = op['total_chapters'] as int;
-          final now = DateTime.now();
           for (var i = 1; i <= totalChapters; i++) {
             merged[(bookId, i)] = ReadingProgress(
               userId: userId,
               bookId: bookId,
               chapterNumber: i,
               isRead: true,
-              readAt: now,
+              readAt: opTime,
             );
           }
       }

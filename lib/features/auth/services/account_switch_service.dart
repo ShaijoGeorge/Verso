@@ -104,39 +104,7 @@ class AccountSwitchService {
       }
 
       // 5. Restore target user canon and local DB settings
-      final user = Supabase.instance.client.auth.currentUser;
-      var remoteCanon = user?.userMetadata?['canon_type'] as String?;
-
-      if (remoteCanon == null && user != null) {
-        try {
-          final userData = await Supabase.instance.client
-              .from('profiles')
-              .select('canon_type')
-              .eq('id', user.id)
-              .maybeSingle();
-          remoteCanon = userData?['canon_type'] as String?;
-        } catch (_) {
-          // Optional profiles table fallback
-        }
-      }
-
-      final canonToRestore = remoteCanon ?? 'catholic';
-
-      // 1. Save fetched canon to local Drift DB
-      await _ref.read(localDatabaseProvider).updateLocalCanon(canonToRestore);
-
-      // 2. Save to SharedPreferences and refresh Riverpod settings
-      await _ref
-          .read(currentSettingsProvider.notifier)
-          .setCanonType(canonToRestore);
-
-      // 6. Invalidate all user-scoped providers to re-render for new user
-      _invalidateUserProviders();
-
-      // 7. (Moved to step 9)
-
-      // 8. Trigger cloud sync to pull latest reading progress for this account
-      unawaited(_ref.read(readingServiceProvider).syncOnResume(force: true));
+      await _restoreUserCanonAndSync();
 
       await _ref
           .read(savedAccountsServiceProvider)
@@ -148,6 +116,58 @@ class AccountSwitchService {
     } catch (e) {
       return SwitchError(e.toString());
     }
+  }
+
+  /// Restores user canon, invalidates user-scoped providers, triggers cloud
+  /// progress sync, and persists the current session in saved accounts after
+  /// a fresh password sign-in.
+  ///
+  /// Runs using this service's keepAlive [Ref] so that unmounting `LoginScreen`
+  /// on auth redirect does not dispose the `Ref` mid-flight.
+  Future<void> restoreSessionAfterSignIn() async {
+    await _restoreUserCanonAndSync();
+
+    final currentSession = Supabase.instance.client.auth.currentSession;
+    if (currentSession != null) {
+      await _ref
+          .read(savedAccountsServiceProvider)
+          .syncCurrentSession(currentSession);
+      await _ref.read(savedAccountsListProvider.notifier).refresh();
+    }
+  }
+
+  Future<void> _restoreUserCanonAndSync() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    var remoteCanon = user?.userMetadata?['canon_type'] as String?;
+
+    if (remoteCanon == null && user != null) {
+      try {
+        final userData = await Supabase.instance.client
+            .from('profiles')
+            .select('canon_type')
+            .eq('id', user.id)
+            .maybeSingle();
+        remoteCanon = userData?['canon_type'] as String?;
+      } catch (_) {
+        // Optional profiles table fallback
+      }
+    }
+
+    final canonToRestore = remoteCanon ?? 'catholic';
+
+    // 1. Save fetched canon to local Drift DB
+    await _ref.read(localDatabaseProvider).updateLocalCanon(canonToRestore);
+
+    // 2. Save to SharedPreferences and refresh Riverpod settings
+    await _ref
+        .read(currentSettingsProvider.notifier)
+        .setCanonType(canonToRestore);
+
+    // 3. Invalidate all user-scoped providers to re-render for new user
+    _invalidateUserProviders();
+
+    // 4. Trigger cloud sync to pull latest reading progress for this account
+    unawaited(_ref.read(readingServiceProvider).syncOnResume(force: true));
   }
 
   /// Prepares the app to add another account by syncing the current user,
