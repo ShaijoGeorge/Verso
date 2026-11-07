@@ -1,101 +1,165 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:gap/gap.dart';
 
-class SplashScreen extends StatefulWidget {
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:verso/core/providers/package_info_provider.dart';
+import 'package:verso/features/settings/data/settings_repository.dart';
+
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
-  String _version = '';
-
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _loadVersion();
     _startTimer();
   }
 
-  Future<void> _loadVersion() async {
-    final info = await PackageInfo.fromPlatform();
-    if (mounted) {
-      setState(() {
-        _version = "v${info.version}";
-      });
-    }
-  }
+  Future<void> _startTimer() async {
+    // Define our tasks - run all three in parallel for speed
+    final minimumDelay =
+        Future<void>.delayed(const Duration(milliseconds: 1500));
+    final repo = SettingsRepository();
+    final hasSeenOnboarding = await repo.hasSeenOnboarding();
+    await minimumDelay;
 
-  void _startTimer() {
-    // Show splash for 3 seconds, then decide where to go
-    Timer(const Duration(seconds: 3), () {
-      if (!mounted) return;
-      
-      final session = Supabase.instance.client.auth.currentSession;
-      if (session != null) {
-        context.go('/home');
-      } else {
-        context.go('/login');
-      }
-    });
+    if (!mounted) return;
+
+    final session = Supabase.instance.client.auth.currentSession;
+
+    if (session != null) {
+      // ── Already logged in → go straight to the app ───────────────────────
+      context
+          .go('/home'); // Router gate will intercept if profile is incomplete
+    } else if (!hasSeenOnboarding) {
+      // ── Brand new user → start from the beginning ─────────────────────────
+      context.go('/onboarding');
+    } else {
+      // ── Fully onboarded, no session → login screen ────────────────────────
+      context.go('/login');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF38B6FF),
-      body: Stack(
-        children: [
-          // 1. Centered Logo
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Using your app logo
-                Image.asset(
-                  'assets/app_logo.png',
-                  width: 150,
-                  height: 150,
-                ),
-              ],
-            ),
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF0E1D38),
+              Color(0xFF173254),
+              Color(0xFF0A1426),
+            ],
+            stops: [0.0, 0.5, 1.0],
           ),
+        ),
+        child: Stack(
+          children: [
+            // Ambient radial halo behind logo
+            Center(
+              child: Container(
+                width: 260,
+                height: 260,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFFC59434).withValues(alpha: 0.16),
+                      const Color(0xFF7CB8F7).withValues(alpha: 0.08),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
 
-          // 2. Bottom Info (Credits + Version)
-          Positioned(
-            bottom: 30,
-            left: 0,
-            right: 0,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  "by SHAIJO GEORGE",
-                  style: TextStyle(
-                    color: Colors.white54,
-                    fontSize: 10,
-                    fontFamily: 'Metropolis', 
-                    letterSpacing: 1.2,
+            // 1. Centered Logo
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.06),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.12),
+                      ),
+                    ),
+                    // Using your app logo
+                    child: Image.asset(
+                      'assets/verso1.png',
+                      width: 120,
+                      height: 120,
+                    ),
                   ),
-                ),
-                const Gap(4), 
-                Text(
-                  _version,
-                  style: const TextStyle(
-                    color: Colors.white24,
-                    fontSize: 10,
-                    fontFamily: 'Metropolis',
+                  const Gap(20),
+                  Text(
+                    'Verso',
+                    style: GoogleFonts.dmSerifDisplay(
+                      color: Colors.white,
+                      fontSize: 34,
+                      letterSpacing: 0.5,
+                    ),
                   ),
-                ),
-              ],
+                  const Gap(6),
+                  Text(
+                    'JOURNEY THROUGH THE WORD',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: const Color(0xFFE2B45A),
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 2.2,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+
+            // 2. Bottom Info (Credits + Version)
+            Positioned(
+              bottom: MediaQuery.paddingOf(context).bottom + 24,
+              left: 0,
+              right: 0,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Crafted by Shaijo George',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white.withValues(alpha: 0.55),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                  const Gap(4),
+                  Text(
+                    'v${ref.watch(packageInfoProvider).version}',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white.withValues(alpha: 0.35),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

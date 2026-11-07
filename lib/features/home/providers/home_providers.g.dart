@@ -1,0 +1,211 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'home_providers.dart';
+
+// **************************************************************************
+// RiverpodGenerator
+// **************************************************************************
+
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+/// Returns the most recently read book that isn't fully completed,
+/// so the user can quickly jump back in.
+
+@ProviderFor(continueReading)
+final continueReadingProvider = ContinueReadingProvider._();
+
+/// Returns the most recently read book that isn't fully completed,
+/// so the user can quickly jump back in.
+
+final class ContinueReadingProvider extends $FunctionalProvider<
+        AsyncValue<ContinueReadingInfo?>,
+        ContinueReadingInfo?,
+        FutureOr<ContinueReadingInfo?>>
+    with
+        $FutureModifier<ContinueReadingInfo?>,
+        $FutureProvider<ContinueReadingInfo?> {
+  /// Returns the most recently read book that isn't fully completed,
+  /// so the user can quickly jump back in.
+  ContinueReadingProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'continueReadingProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$continueReadingHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<ContinueReadingInfo?> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<ContinueReadingInfo?> create(Ref ref) {
+    return continueReading(ref);
+  }
+}
+
+String _$continueReadingHash() => r'625a24844218b2555a4bd22fadd15309af41f77e';
+
+/// Number of chapters read today.
+
+@ProviderFor(todayChapters)
+final todayChaptersProvider = TodayChaptersProvider._();
+
+/// Number of chapters read today.
+
+final class TodayChaptersProvider
+    extends $FunctionalProvider<AsyncValue<int>, int, FutureOr<int>>
+    with $FutureModifier<int>, $FutureProvider<int> {
+  /// Number of chapters read today.
+  TodayChaptersProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'todayChaptersProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$todayChaptersHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<int> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<int> create(Ref ref) {
+    return todayChapters(ref);
+  }
+}
+
+String _$todayChaptersHash() => r'5dfa6c5014ebd51cf4cd97f31059799a709ecace';
+
+/// Returns the user's first name from Supabase auth metadata.
+
+@ProviderFor(userName)
+final userNameProvider = UserNameProvider._();
+
+/// Returns the user's first name from Supabase auth metadata.
+
+final class UserNameProvider extends $FunctionalProvider<String, String, String>
+    with $Provider<String> {
+  /// Returns the user's first name from Supabase auth metadata.
+  UserNameProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'userNameProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$userNameHash();
+
+  @$internal
+  @override
+  $ProviderElement<String> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  String create(Ref ref) {
+    return userName(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(String value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<String>(value),
+    );
+  }
+}
+
+String _$userNameHash() => r'c1b41df890507314d22dc5cfa5ae12ed4800b9aa';
+
+@ProviderFor(verseRepository)
+final verseRepositoryProvider = VerseRepositoryProvider._();
+
+final class VerseRepositoryProvider extends $FunctionalProvider<VerseRepository,
+    VerseRepository, VerseRepository> with $Provider<VerseRepository> {
+  VerseRepositoryProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'verseRepositoryProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$verseRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<VerseRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  VerseRepository create(Ref ref) {
+    return verseRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(VerseRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<VerseRepository>(value),
+    );
+  }
+}
+
+String _$verseRepositoryHash() => r'd3970a185123a91743181b28453438309cded8a9';
+
+@ProviderFor(dailyVerse)
+final dailyVerseProvider = DailyVerseProvider._();
+
+final class DailyVerseProvider extends $FunctionalProvider<
+        AsyncValue<DailyVerse>, DailyVerse, FutureOr<DailyVerse>>
+    with $FutureModifier<DailyVerse>, $FutureProvider<DailyVerse> {
+  DailyVerseProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'dailyVerseProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$dailyVerseHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<DailyVerse> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<DailyVerse> create(Ref ref) {
+    return dailyVerse(ref);
+  }
+}
+
+String _$dailyVerseHash() => r'7bbe9c7ac9baa63a17ef783d610d4e541e556ddd';

@@ -4,16 +4,15 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 
 class NotFoundScreen extends StatelessWidget {
-  final Exception? error;
-
   const NotFoundScreen({super.key, this.error});
+  final Exception? error;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(32.0),
+          padding: const EdgeInsets.all(32),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -21,7 +20,10 @@ class NotFoundScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .errorContainer
+                      .withValues(alpha: 0.3),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -34,7 +36,7 @@ class NotFoundScreen extends StatelessWidget {
 
               // 2. Text Content
               Text(
-                "Page Not Found",
+                'Page Not Found',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
@@ -50,7 +52,7 @@ class NotFoundScreen extends StatelessWidget {
                       height: 1.5,
                     ),
               ),
-              
+
               // Optional: Show technical error in Debug mode only
               if (error != null) ...[
                 const Gap(16),
@@ -77,7 +79,7 @@ class NotFoundScreen extends StatelessWidget {
                 child: FilledButton.icon(
                   onPressed: () => context.go('/home'),
                   icon: const Icon(Icons.home_rounded),
-                  label: const Text("Back to Home"),
+                  label: const Text('Back to Home'),
                 ),
               ),
             ],

@@ -1,10 +1,9 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../data/local/entities/reading_progress.dart';
+import 'package:verso/data/local/entities/reading_progress.dart';
 
 class BibleRepository {
-  final SupabaseClient _supabase;
-
   BibleRepository(this._supabase);
+  final SupabaseClient _supabase;
 
   String get _currentUserId => _supabase.auth.currentUser?.id ?? '';
 
@@ -13,16 +12,15 @@ class BibleRepository {
     final userId = _currentUserId;
     if (userId.isEmpty) return Stream.value([]);
 
-    return _supabase
-        .from('user_progress')
-        .stream(primaryKey: ['user_id', 'book_id', 'chapter_number'])
-        .map((data) {
-          // Filter for current user only
-          return data
-              .where((row) => row['user_id'] == userId)
-              .map((json) => ReadingProgress.fromJson(json))
-              .toList();
-        });
+    return _supabase.from('user_progress').stream(
+      primaryKey: ['user_id', 'book_id', 'chapter_number'],
+    ).map((data) {
+      // Filter for current user only
+      return data
+          .where((row) => row['user_id'] == userId)
+          .map(ReadingProgress.fromJson)
+          .toList();
+    });
   }
 
   // Get Realtime Stream for a specific Book
@@ -31,41 +29,52 @@ class BibleRepository {
     final userId = _currentUserId;
     if (userId.isEmpty) return Stream.value([]);
 
-    return _supabase
-        .from('user_progress')
-        .stream(primaryKey: ['user_id', 'book_id', 'chapter_number'])
-        .map((data) {
-          // Filter results locally to match the requested book and user
-          return data
-              .where((row) => row['user_id'] == userId && row['book_id'] == bookId)
-              .map((json) => ReadingProgress.fromJson(json))
-              .toList();
-        });
+    return _supabase.from('user_progress').stream(
+      primaryKey: ['user_id', 'book_id', 'chapter_number'],
+    ).map((data) {
+      // Filter results locally to match the requested book and user
+      return data
+          .where((row) => row['user_id'] == userId && row['book_id'] == bookId)
+          .map(ReadingProgress.fromJson)
+          .toList();
+    });
   }
 
   // 2. Toggle Chapter (Writes directly to Cloud)
-  Future<void> toggleChapter(int bookId, int chapterNumber, bool isRead) async {
+  Future<void> toggleChapter(
+    int bookId,
+    int chapterNumber,
+    bool isRead, {
+    DateTime? readAt,
+  }) async {
     final userId = _currentUserId;
     if (userId.isEmpty) return;
 
-    final now = DateTime.now();
+    final timestamp = (readAt ?? DateTime.now()).toUtc();
 
-    await _supabase.from('user_progress').upsert({
-      'user_id': userId,
-      'book_id': bookId,
-      'chapter_number': chapterNumber,
-      'is_read': isRead,
-      'read_at': isRead ? now.toIso8601String() : null,
-    }, onConflict: 'user_id,book_id,chapter_number');
+    await _supabase.from('user_progress').upsert(
+      {
+        'user_id': userId,
+        'book_id': bookId,
+        'chapter_number': chapterNumber,
+        'is_read': isRead,
+        'read_at': isRead ? timestamp.toIso8601String() : null,
+      },
+      onConflict: 'user_id,book_id,chapter_number',
+    );
   }
 
   // Mark Entire Book as Read (Smart Version)
   // Only inserts chapters that are NOT already marked as read.
-  Future<void> markBookAsRead(int bookId, int totalChapters) async {
+  Future<void> markBookAsRead(
+    int bookId,
+    int totalChapters, {
+    DateTime? readAt,
+  }) async {
     final userId = _currentUserId;
     if (userId.isEmpty) return;
 
-    final now = DateTime.now().toIso8601String();
+    final now = (readAt ?? DateTime.now()).toUtc().toIso8601String();
 
     // Fetch which chapters are ALREADY read
     final existingData = await _supabase
@@ -74,17 +83,16 @@ class BibleRepository {
         .eq('user_id', userId)
         .eq('book_id', bookId)
         .eq('is_read', true);
-    
+
     // Create a Set of chapters that are ALREADY DONE
-    final finishedChapters = (existingData as List)
-        .map((e) => e['chapter_number'] as int)
-        .toSet();
+    final finishedChapters =
+        existingData.map((e) => e['chapter_number'] as int).toSet();
 
     // Identify which chapters need updating (Missing or False)
-    final List<int> chaptersToUpdate = [];
-    final List<Map<String, dynamic>> newInserts = [];
-    
-    for (int i = 1; i <= totalChapters; i++) {
+    final chaptersToUpdate = <int>[];
+    final newInserts = <Map<String, dynamic>>[];
+
+    for (var i = 1; i <= totalChapters; i++) {
       if (!finishedChapters.contains(i)) {
         chaptersToUpdate.add(i);
         newInserts.add({
@@ -120,7 +128,7 @@ class BibleRepository {
         .count()
         .eq('user_id', userId)
         .eq('is_read', true);
-    
+
     return response;
   }
 
@@ -141,8 +149,12 @@ class BibleRepository {
     if (data.isEmpty) return 0;
 
     final uniqueDays = (data as List)
-        .map((row) => DateTime.parse(row['read_at']))
-        .map((dt) => DateTime(dt.year, dt.month, dt.day)) 
+        .map(
+          (row) => DateTime.parse(
+            (row as Map<String, dynamic>)['read_at'] as String,
+          ).toLocal(),
+        )
+        .map((dt) => DateTime(dt.year, dt.month, dt.day))
         .toSet()
         .toList();
 
@@ -156,8 +168,8 @@ class BibleRepository {
       return 0;
     }
 
-    int streak = 0;
-    DateTime targetDate = uniqueDays.first;
+    var streak = 0;
+    var targetDate = uniqueDays.first;
 
     for (final day in uniqueDays) {
       if (day == targetDate) {
@@ -181,6 +193,8 @@ class BibleRepository {
         .eq('is_read', true); // Only fetch what is actually read
 
     final data = response as List<dynamic>;
-    return data.map((json) => ReadingProgress.fromJson(json)).toList();
+    return data
+        .map((json) => ReadingProgress.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 }

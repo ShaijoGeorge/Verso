@@ -1,9 +1,24 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-import '../providers/settings_providers.dart';
-import '../services/notification_service.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:verso/core/design/design.dart';
+import 'package:verso/core/providers/package_info_provider.dart';
+import 'package:verso/core/providers/update_provider.dart';
+import 'package:verso/core/widgets/error_state_widget.dart';
+import 'package:verso/core/widgets/verso_share_sheet.dart';
+import 'package:verso/core/widgets/verso_update_sheet.dart';
+import 'package:verso/data/bible_data.dart';
+import 'package:verso/data/local/entities/user_settings.dart';
+import 'package:verso/features/auth/widgets/delete_account_dialog.dart';
+import 'package:verso/features/reading/providers/reading_providers.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
+import 'package:verso/features/settings/screens/debug_cache_screen.dart';
+import 'package:verso/features/settings/screens/notifications_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -13,203 +28,1717 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  String _version = '';
+  bool _isCheckingUpdate = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadVersion();
-  }
+  Future<void> _checkUpdateManually() async {
+    if (_isCheckingUpdate) return;
+    setState(() => _isCheckingUpdate = true);
 
-  Future<void> _loadVersion() async {
-    final info = await PackageInfo.fromPlatform();
-    if (mounted) {
-      setState(() {
-        _version = '${info.version} (${info.buildNumber})';
-      });
+    try {
+      final packageInfo = ref.read(packageInfoProvider);
+      final updateService = ref.read(updateServiceProvider);
+      final updateInfo = await updateService.checkForUpdate(
+        currentVersion: packageInfo.version,
+        currentBuildNumber: packageInfo.buildNumber,
+      );
+
+      if (!mounted) return;
+
+      if (updateInfo != null && updateInfo.isUpdateAvailable) {
+        await VersoUpdateSheet.show(context, updateInfo);
+      } else if (updateInfo != null) {
+        VersoSnackbar.show(
+          context,
+          message: 'Verso is up to date (v${packageInfo.version})',
+        );
+      } else {
+        VersoSnackbar.error(
+          context,
+          message: 'Could not connect to GitHub. Check your connection.',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        VersoSnackbar.error(
+          context,
+          message: 'Error checking for updates: $e',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isCheckingUpdate = false);
+      }
     }
   }
 
   String _formatTime(int hour, int minute) {
-    final int h = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
-    final String m = minute.toString().padLeft(2, '0');
-    final String period = hour >= 12 ? 'PM' : 'AM';
+    final h = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    final m = minute.toString().padLeft(2, '0');
+    final period = hour >= 12 ? 'PM' : 'AM';
     return '$h:$m $period';
   }
 
-  Future<void> _pickTime(int currentHour, int currentMinute) async {
-    final TimeOfDay? picked = await showTimePicker(
+  Future<TimeOfDay?> _pickTimeDialog(int currentHour, int currentMinute) {
+    return showGeneralDialog<TimeOfDay>(
       context: context,
-      initialTime: TimeOfDay(hour: currentHour, minute: currentMinute),
-      builder: (BuildContext context, Widget? child) {
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 280),
+      pageBuilder: (context, _, __) {
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
-          child: child!,
+          child: TimePickerDialog(
+            initialTime: TimeOfDay(hour: currentHour, minute: currentMinute),
+          ),
+        );
+      },
+      transitionBuilder: (_, animation, __, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.92, end: 1).animate(curved),
+            child: child,
+          ),
         );
       },
     );
+  }
 
+  Future<void> _pickScheduleTime(
+    UserSettings settings, {
+    required bool isDay,
+  }) async {
+    final picked = await _pickTimeDialog(
+      isDay ? settings.dayStartHour : settings.nightStartHour,
+      isDay ? settings.dayStartMinute : settings.nightStartMinute,
+    );
     if (picked != null) {
-      try {
-        await ref.read(currentSettingsProvider.notifier).updateReminder(
-              true,
-              picked.hour,
-              picked.minute,
-            );
-
-        await NotificationService().scheduleDailyReminder(
-          picked.hour,
-          picked.minute,
-        );
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Reminder set for ${_formatTime(picked.hour, picked.minute)}')),
+      await ref.read(currentSettingsProvider.notifier).setSchedule(
+            enabled: settings.scheduleEnabled,
+            dayStyle: settings.dayStyle,
+            nightStyle: settings.nightStyle,
+            dayStartHour: isDay ? picked.hour : settings.dayStartHour,
+            dayStartMinute: isDay ? picked.minute : settings.dayStartMinute,
+            nightStartHour: isDay ? settings.nightStartHour : picked.hour,
+            nightStartMinute: isDay ? settings.nightStartMinute : picked.minute,
           );
-        }
-      } catch (e) {
+    }
+  }
+
+  Future<AppearanceStyle?> _pickStyle(
+    AppearanceStyle current,
+    String title,
+  ) async {
+    return VersoBottomSheet.show<AppearanceStyle>(
+      context: context,
+      title: title,
+      contentPadding: EdgeInsets.zero,
+      child: Builder(
+        builder: (ctx) {
+          final scheme = Theme.of(ctx).colorScheme;
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final style in AppearanceStyle.values)
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                    leading:
+                        Icon(_styleIcon(style), color: scheme.onSurfaceVariant),
+                    title: Text(
+                      _styleLabel(style),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                    trailing: current == style
+                        ? Icon(
+                            Icons.check_circle_rounded,
+                            color: scheme.primary,
+                          )
+                        : null,
+                    onTap: () => Navigator.pop(ctx, style),
+                  ),
+                const Gap(20),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  String _styleLabel(AppearanceStyle style) => switch (style) {
+        AppearanceStyle.light => 'Light',
+        AppearanceStyle.dark => 'Dark',
+        AppearanceStyle.amoled => 'AMOLED (pure black)',
+      };
+
+  String _themeModeLabel(UserSettings settings) {
+    final base = switch (settings.themeMode) {
+      AppThemeMode.system => 'System',
+      AppThemeMode.light => 'Light',
+      AppThemeMode.dark => 'Dark',
+    };
+    if (settings.themeMode != AppThemeMode.light && settings.useAmoledForDark) {
+      return '$base · AMOLED';
+    }
+    return base;
+  }
+
+  IconData _styleIcon(AppearanceStyle style) => switch (style) {
+        AppearanceStyle.light => Icons.light_mode_outlined,
+        AppearanceStyle.dark => Icons.dark_mode_outlined,
+        AppearanceStyle.amoled => Icons.brightness_1_outlined,
+      };
+
+  String _canonLabel(CanonType canon) => switch (canon) {
+        CanonType.catholic => 'Catholic (73 Books)',
+        CanonType.protestant => 'Protestant (66 Books)',
+        CanonType.orthodox => 'Eastern Orthodox (78 Books)',
+      };
+
+  String _canonShortLabel(CanonType canon) => switch (canon) {
+        CanonType.catholic => 'Catholic',
+        CanonType.protestant => 'Protestant',
+        CanonType.orthodox => 'Orthodox',
+      };
+
+  String _canonSubtitle(CanonType canon) => switch (canon) {
+        CanonType.catholic =>
+          'Includes Deuterocanonicals (Tobit, Judith, Wisdom, etc.)',
+        CanonType.protestant =>
+          'Standard 66-book canon (39 Old Testament, 27 New)',
+        CanonType.orthodox => 'Includes 1 & 2 Esdras, 3 Maccabees, Psalm 151',
+      };
+
+  int _canonBookCount(CanonType canon) => switch (canon) {
+        CanonType.catholic => 73,
+        CanonType.protestant => 66,
+        CanonType.orthodox => 78,
+      };
+
+  int _canonChapterCount(CanonType canon) => switch (canon) {
+        CanonType.catholic => 1334,
+        CanonType.protestant => 1189,
+        CanonType.orthodox => 1515,
+      };
+
+  String _bibleLanguageLabel(String langCode) => switch (langCode) {
+        'ml' => 'മലയാളം (Malayalam)',
+        _ => 'English',
+      };
+
+  Future<void> _pickBibleLanguage(UserSettings settings) async {
+    final currentLang = settings.bibleLanguage;
+
+    final picked = await VersoBottomSheet.show<String>(
+      context: context,
+      title: 'Select Bible Language',
+      contentPadding: EdgeInsets.zero,
+      child: Builder(
+        builder: (ctx) {
+          final scheme = Theme.of(ctx).colorScheme;
+
+          final languages = [
+            (
+              'en',
+              'English',
+              'Standard English book names (Genesis, Matthew...)',
+            ),
+            (
+              'ml',
+              'മലയാളം (Malayalam)',
+              'Kerala Malayalam book names (ഉല്പത്തി, മത്തായി...)',
+            ),
+          ];
+
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+                  child: Text(
+                    'Choose the language for Bible book names, categories, and chapter navigation.',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                const Divider(height: 1),
+                for (final lang in languages)
+                  ListTile(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: currentLang == lang.$1
+                            ? scheme.primary.withValues(alpha: 0.15)
+                            : scheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        lang.$1.toUpperCase(),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: currentLang == lang.$1
+                              ? scheme.primary
+                              : scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      lang.$2,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: currentLang == lang.$1
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                    subtitle: Text(
+                      lang.$3,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+                      ),
+                    ),
+                    trailing: currentLang == lang.$1
+                        ? Icon(
+                            Icons.check_circle_rounded,
+                            color: scheme.primary,
+                          )
+                        : null,
+                    onTap: () => Navigator.pop(ctx, lang.$1),
+                  ),
+                const Gap(24),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+
+    if (picked != null && picked != currentLang && mounted) {
+      await ref.read(currentSettingsProvider.notifier).setBibleLanguage(picked);
+      if (mounted) {
+        VersoSnackbar.success(
+          context,
+          message: 'Bible language set to ${_bibleLanguageLabel(picked)}',
+        );
+      }
+    }
+  }
+
+  Future<void> _pickCanon(UserSettings settings) async {
+    final currentCanon = CanonType.values.firstWhere(
+      (e) => e.name == settings.canonType,
+      orElse: () => CanonType.catholic,
+    );
+
+    final picked = await VersoBottomSheet.show<CanonType>(
+      context: context,
+      title: 'Select Bible Tradition',
+      contentPadding: EdgeInsets.zero,
+      child: Builder(
+        builder: (ctx) {
+          final scheme = Theme.of(ctx).colorScheme;
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
+          final warningBg = isDark
+              ? const Color(0xFF452B00).withValues(alpha: 0.6)
+              : const Color(0xFFFFF7ED);
+          final warningBorder = isDark
+              ? const Color(0xFFB45309).withValues(alpha: 0.5)
+              : const Color(0xFFFDBA74);
+          final warningText =
+              isDark ? const Color(0xFFFDE68A) : const Color(0xFF9A3412);
+          final warningIcon =
+              isDark ? const Color(0xFFFBBF24) : const Color(0xFFEA580C);
+
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Prominent warning banner right when clicking canon
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: warningBg,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: warningBorder),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: warningIcon,
+                          size: 22,
+                        ),
+                        const Gap(10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Tradition Warning',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: warningText,
+                                ),
+                              ),
+                              const Gap(3),
+                              Text(
+                                'Switching canons alters visible books and resets completion denominators. Your reading history is safely preserved and will never be deleted.',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  height: 1.4,
+                                  color: warningText,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const Gap(4),
+                for (final canon in CanonType.values)
+                  ListTile(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: currentCanon == canon
+                            ? scheme.primary.withValues(alpha: 0.12)
+                            : scheme.surfaceContainerHighest
+                                .withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.auto_stories_rounded,
+                        color: currentCanon == canon
+                            ? scheme.primary
+                            : scheme.onSurfaceVariant,
+                        size: 20,
+                      ),
+                    ),
+                    title: Text(
+                      _canonLabel(canon),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: currentCanon == canon
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                    subtitle: Text(
+                      _canonSubtitle(canon),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+                      ),
+                    ),
+                    trailing: currentCanon == canon
+                        ? Icon(
+                            Icons.check_circle_rounded,
+                            color: scheme.primary,
+                          )
+                        : null,
+                    onTap: () => Navigator.pop(ctx, canon),
+                  ),
+                const Gap(24),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+
+    if (picked != null && picked != currentCanon && mounted) {
+      final confirm = await _showCanonConfirmationDialog(
+        currentCanon: currentCanon,
+        newCanon: picked,
+      );
+      if ((confirm ?? false) && mounted) {
+        await _saveUserCanon(picked);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error scheduling reminder: $e')),
+          VersoSnackbar.success(
+            context,
+            message: 'Bible tradition updated to ${_canonLabel(picked)}',
           );
         }
       }
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final settingsAsync = ref.watch(currentSettingsProvider);
+  Future<void> _saveUserCanon(CanonType selectedCanon) async {
+    final canonString = selectedCanon.name;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: settingsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
-        data: (settings) {
-          return ListView(
+    // 1. Save to Local SQLite (Drift)
+    await ref.read(localDatabaseProvider).updateLocalCanon(canonString);
+
+    // 2. Sync to Supabase
+    await ref.read(settingsRepositoryProvider).syncCanonToCloud(canonString);
+
+    // 3. Update UI State & Local Preferences
+    await ref
+        .read(currentSettingsProvider.notifier)
+        .updateCanonType(selectedCanon);
+    ref.invalidate(userSettingsProvider);
+  }
+
+  Future<bool?> _showCanonConfirmationDialog({
+    required CanonType currentCanon,
+    required CanonType newCanon,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final warningColor =
+        isDark ? const Color(0xFFFBBF24) : const Color(0xFFEA580C);
+
+    return showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: scheme.surface,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: warningColor.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.warning_amber_rounded,
+                color: warningColor,
+                size: 24,
+              ),
+            ),
+            const Gap(12),
+            Expanded(
+              child: Text(
+                'Change Tradition?',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Switch from ${_canonLabel(currentCanon)} to ${_canonLabel(newCanon)}?',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: scheme.onSurface,
+              ),
+            ),
+            const Gap(14),
+            _buildCanonDialogBullet(
+              icon: Icons.menu_book_rounded,
+              text:
+                  'Book count changes from ${_canonBookCount(currentCanon)} to ${_canonBookCount(newCanon)} books (${_canonChapterCount(newCanon)} chapters).',
+              scheme: scheme,
+            ),
+            const Gap(10),
+            _buildCanonDialogBullet(
+              icon: Icons.percent_rounded,
+              text:
+                  'Overall completion percentages and charts will recalibrate to the new canon.',
+              scheme: scheme,
+            ),
+            const Gap(10),
+            _buildCanonDialogBullet(
+              icon: Icons.verified_user_outlined,
+              text:
+                  'Existing reading progress is safely preserved in your database and never deleted.',
+              scheme: scheme,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w600,
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: scheme.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            child: Text(
+              'Switch Canon',
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCanonDialogBullet({
+    required IconData icon,
+    required String text,
+    required ColorScheme scheme,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: scheme.primary),
+        const Gap(10),
+        Expanded(
+          child: Text(
+            text,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              height: 1.35,
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showSettingsSheet({
+    required BuildContext context,
+    required String title,
+    required Widget child,
+  }) {
+    VersoBottomSheet.show<void>(
+      context: context,
+      title: title,
+      contentPadding: EdgeInsets.zero,
+      child: Consumer(
+        builder: (context, ref, _) {
+          // Force a rebuild of the bottom sheet when settings (e.g. theme mode) change.
+          ref.watch(currentSettingsProvider);
+          return child;
+        },
+      ),
+    );
+  }
+
+  void _showColorThemePicker(BuildContext context, UserSettings settings) {
+    _showSettingsSheet(
+      context: context,
+      title: 'Color Theme',
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.72,
+        ),
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const Gap(16),
-              
-              // --- APPEARANCE SECTION ---
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Text(
-                  'Appearance',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              SwitchListTile(
-                title: const Text('Dark Mode'),
-                secondary: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 500),
-                  transitionBuilder: (Widget child, Animation<double> animation) {
-                    return RotationTransition(
-                      turns: child.key == const ValueKey('dark_icon')
-                          ? Tween<double>(begin: 0.75, end: 1).animate(animation)
-                          : Tween<double>(begin: 0.75, end: 1).animate(animation),
-                      child: ScaleTransition(scale: animation, child: child),
-                    );
-                  },
-                  child: settings.isDarkMode
-                      ? const Icon(Icons.dark_mode, key: ValueKey('dark_icon'))
-                      : const Icon(Icons.light_mode, key: ValueKey('light_icon')),
-                ),
-                value: settings.isDarkMode,
-                onChanged: (bool value) {
-                  ref.read(currentSettingsProvider.notifier).toggleTheme(value);
-                },
-              ),
-              
-              const Divider(),
-              const Gap(8),
-
-              // --- NOTIFICATIONS SECTION ---
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Text(
-                  'Reminders',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              
-              SwitchListTile(
-                title: const Text('Daily Reminder'),
-                subtitle: Text(settings.isReminderEnabled
-                    ? 'Scheduled for ${_formatTime(settings.reminderHour, settings.reminderMinute)}'
-                    : 'Get a daily nudge to read'),
-                secondary: const Icon(Icons.notifications_active_outlined),
-                value: settings.isReminderEnabled,
-                onChanged: (bool value) async {
-                  try {
-                    await ref
+              for (final profile in ThemeProfiles.all)
+                _ThemeProfileTile(
+                  profile: profile,
+                  isSelected: settings.themeProfileId == profile.id,
+                  onTap: () {
+                    ref
                         .read(currentSettingsProvider.notifier)
-                        .updateReminder(
-                          value,
-                          settings.reminderHour,
-                          settings.reminderMinute,
-                        );
+                        .setThemeProfileId(profile.id);
+                    Navigator.pop(context);
+                  },
+                ),
+              const Gap(12),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-                    if (value) {
-                      await NotificationService().scheduleDailyReminder(
-                        settings.reminderHour,
-                        settings.reminderMinute,
-                      );
-                      
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Daily reminder enabled')),
-                        );
-                      }
-                    } else {
-                      await NotificationService().cancelReminders();
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error: $e')),
-                      );
-                    }
-                  }
-                },
-              ),
-              
-              if (settings.isReminderEnabled)
-                ListTile(
-                  title: const Text('Reminder Time'),
-                  leading: const Icon(Icons.access_time),
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      _formatTime(settings.reminderHour, settings.reminderMinute),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+  void _showAppearancePicker(BuildContext context, UserSettings settings) {
+    _showSettingsSheet(
+      context: context,
+      title: 'Appearance',
+      child: Consumer(
+        builder: (context, ref, _) {
+          final currentSettings =
+              ref.watch(currentSettingsProvider).value ?? settings;
+          return AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<AppThemeMode>(
+                      showSelectedIcon: false,
+                      segments: const [
+                        ButtonSegment(
+                          value: AppThemeMode.system,
+                          icon: Icon(Icons.brightness_auto_outlined, size: 18),
+                          label: Text(
+                            'System',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        ButtonSegment(
+                          value: AppThemeMode.light,
+                          icon: Icon(Icons.light_mode_outlined, size: 18),
+                          label: Text(
+                            'Light',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        ButtonSegment(
+                          value: AppThemeMode.dark,
+                          icon: Icon(Icons.dark_mode_outlined, size: 18),
+                          label: Text(
+                            'Dark',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                      selected: {currentSettings.themeMode},
+                      onSelectionChanged: (s) => ref
+                          .read(currentSettingsProvider.notifier)
+                          .setThemeMode(s.first),
+                      style: ButtonStyle(
+                        visualDensity: VisualDensity.compact,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        textStyle: WidgetStatePropertyAll(
+                          GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                  onTap: () => _pickTime(settings.reminderHour, settings.reminderMinute),
                 ),
+                if (currentSettings.themeMode != AppThemeMode.light)
+                  _SettingsSwitchTile(
+                    title: 'Pure Black (AMOLED)',
+                    icon: Icons.brightness_1_outlined,
+                    iconColor: const Color(0xFF8B5CF6),
+                    value: currentSettings.useAmoledForDark,
+                    onChanged: (v) => ref
+                        .read(currentSettingsProvider.notifier)
+                        .setUseAmoledForDark(v),
+                  ),
+                const Gap(12),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
 
-              const Divider(),
-              const Gap(8),
+  void _showTextSizePicker(BuildContext context, UserSettings settings) {
+    _showSettingsSheet(
+      context: context,
+      title: 'Text Size',
+      child: Consumer(
+        builder: (context, ref, _) {
+          final currentSettings =
+              ref.watch(currentSettingsProvider).value ?? settings;
+          return _FontSizeSettingsTile(
+            currentScale: currentSettings.fontScaleFactor,
+            onChanged: (scale) => ref
+                .read(currentSettingsProvider.notifier)
+                .setFontScaleFactor(scale),
+          );
+        },
+      ),
+    );
+  }
 
-              // --- ABOUT SECTION ---
-              ListTile(
-                leading: const Icon(Icons.info_outline),
-                title: const Text('About Verso'),
-                subtitle: Text('Version $_version'),
+  void _showScheduleThemePicker(BuildContext context) {
+    _showSettingsSheet(
+      context: context,
+      title: 'Schedule Theme',
+      child: Consumer(
+        builder: (context, ref, _) {
+          final settings = ref.watch(currentSettingsProvider).value;
+          if (settings == null) return const SizedBox.shrink();
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _SettingsSwitchTile(
+                title: 'Enable Scheduling',
+                icon: Icons.schedule_outlined,
+                iconColor: const Color(0xFFF59E0B),
+                value: settings.scheduleEnabled,
+                onChanged: (v) =>
+                    ref.read(currentSettingsProvider.notifier).setSchedule(
+                          enabled: v,
+                          dayStyle: settings.dayStyle,
+                          nightStyle: settings.nightStyle,
+                          dayStartHour: settings.dayStartHour,
+                          dayStartMinute: settings.dayStartMinute,
+                          nightStartHour: settings.nightStartHour,
+                          nightStartMinute: settings.nightStartMinute,
+                        ),
               ),
+              if (settings.scheduleEnabled) ...[
+                _SettingsActionTile(
+                  title: 'Day Mode',
+                  icon: Icons.wb_sunny_outlined,
+                  iconColor: const Color(0xFFF59E0B),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _styleLabel(settings.dayStyle),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const Gap(8),
+                      _TimeChip(
+                        label: _formatTime(
+                          settings.dayStartHour,
+                          settings.dayStartMinute,
+                        ),
+                        onTap: () => _pickScheduleTime(settings, isDay: true),
+                      ),
+                    ],
+                  ),
+                  onTap: () async {
+                    final picked =
+                        await _pickStyle(settings.dayStyle, 'Day mode');
+                    if (picked != null) {
+                      await ref
+                          .read(currentSettingsProvider.notifier)
+                          .setSchedule(
+                            enabled: settings.scheduleEnabled,
+                            dayStyle: picked,
+                            nightStyle: settings.nightStyle,
+                            dayStartHour: settings.dayStartHour,
+                            dayStartMinute: settings.dayStartMinute,
+                            nightStartHour: settings.nightStartHour,
+                            nightStartMinute: settings.nightStartMinute,
+                          );
+                    }
+                  },
+                ),
+                _SettingsActionTile(
+                  title: 'Night Mode',
+                  icon: Icons.nightlight_outlined,
+                  iconColor: const Color(0xFF6366F1),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _styleLabel(settings.nightStyle),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const Gap(8),
+                      _TimeChip(
+                        label: _formatTime(
+                          settings.nightStartHour,
+                          settings.nightStartMinute,
+                        ),
+                        onTap: () => _pickScheduleTime(settings, isDay: false),
+                      ),
+                    ],
+                  ),
+                  onTap: () async {
+                    final picked =
+                        await _pickStyle(settings.nightStyle, 'Night mode');
+                    if (picked != null) {
+                      await ref
+                          .read(currentSettingsProvider.notifier)
+                          .setSchedule(
+                            enabled: settings.scheduleEnabled,
+                            dayStyle: settings.dayStyle,
+                            nightStyle: picked,
+                            dayStartHour: settings.dayStartHour,
+                            dayStartMinute: settings.dayStartMinute,
+                            nightStartHour: settings.nightStartHour,
+                            nightStartMinute: settings.nightStartMinute,
+                          );
+                    }
+                  },
+                ),
+              ],
+              const Gap(12),
             ],
           );
         },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settingsAsync = ref.watch(currentSettingsProvider);
+    final scheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Settings',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.4,
+          ),
+        ),
+        scrolledUnderElevation: 0,
+      ),
+      body: settingsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => ErrorStateWidget(
+          error: err,
+          onRetry: () => ref.invalidate(currentSettingsProvider),
+        ),
+        data: (settings) {
+          final activeProfile = ThemeProfiles.byId(settings.themeProfileId);
+          final activeFontPreset =
+              AppFontSize.fromScale(settings.fontScaleFactor);
+
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SectionLabel(label: 'APPEARANCE & THEME', scheme: scheme),
+                  _SettingsSectionCard(
+                    children: [
+                      _SettingsActionTile(
+                        title: 'Color Theme',
+                        icon: Icons.palette_outlined,
+                        iconColor: scheme.primary,
+                        trailing: _ValuePill(text: activeProfile.name),
+                        onTap: () => _showColorThemePicker(context, settings),
+                      ),
+                      _SettingsActionTile(
+                        title: 'Theme Mode',
+                        icon: Icons.brightness_6_outlined,
+                        iconColor: scheme.primary,
+                        trailing: _ValuePill(text: _themeModeLabel(settings)),
+                        onTap: () => _showAppearancePicker(context, settings),
+                      ),
+                      _SettingsActionTile(
+                        title: 'Schedule Theme',
+                        icon: Icons.schedule_outlined,
+                        iconColor: const Color(0xFFF59E0B),
+                        trailing: _ValuePill(
+                          text: settings.scheduleEnabled ? 'On' : 'Off',
+                        ),
+                        onTap: () => _showScheduleThemePicker(context),
+                      ),
+                    ],
+                  ),
+                  const Gap(24),
+
+                  _SectionLabel(
+                    label: 'SCRIPTURE & TYPOGRAPHY',
+                    scheme: scheme,
+                  ),
+                  _SettingsSectionCard(
+                    children: [
+                      _SettingsActionTile(
+                        title: 'Bible Canon',
+                        icon: Icons.auto_stories_rounded,
+                        iconColor: const Color(0xFF8B5CF6),
+                        trailing: _ValuePill(
+                          text: _canonShortLabel(settings.canon),
+                        ),
+                        onTap: () => _pickCanon(settings),
+                      ),
+                      _SettingsActionTile(
+                        title: 'Bible Language',
+                        icon: Icons.translate_rounded,
+                        iconColor: const Color(0xFF0EA5E9),
+                        trailing: _ValuePill(
+                          text: settings.bibleLanguage == 'ml'
+                              ? 'മലയാളം'
+                              : 'English',
+                        ),
+                        onTap: () => _pickBibleLanguage(settings),
+                      ),
+                      _SettingsActionTile(
+                        title: 'Text Size',
+                        icon: Icons.format_size_rounded,
+                        iconColor: scheme.primary,
+                        trailing: _ValuePill(text: activeFontPreset.label),
+                        onTap: () => _showTextSizePicker(context, settings),
+                      ),
+                    ],
+                  ),
+                  const Gap(24),
+
+                  _SectionLabel(label: 'REMINDERS & COMMUNITY', scheme: scheme),
+                  _SettingsSectionCard(
+                    children: [
+                      _SettingsActionTile(
+                        title: 'Manage Notifications',
+                        icon: Icons.notifications_active_outlined,
+                        iconColor: const Color(0xFF10B981),
+                        onTap: () {
+                          VersoBottomSheet.show<void>(
+                            context: context,
+                            title: 'Notifications',
+                            contentPadding: EdgeInsets.zero,
+                            child: const NotificationsBottomSheet(),
+                          );
+                        },
+                      ),
+                      _SettingsActionTile(
+                        title: 'Our Mission',
+                        icon: Icons.favorite_outline_rounded,
+                        iconColor: const Color(0xFFEC4899),
+                        onTap: () {
+                          GoRouter.of(context).push('/our-mission');
+                        },
+                      ),
+                      _SettingsActionTile(
+                        title: 'Official Website',
+                        icon: Icons.language_rounded,
+                        iconColor: const Color(0xFF00C7B7),
+                        onTap: () async {
+                          final uri = Uri.parse(
+                            'https://versobibletracker.netlify.app/',
+                          );
+                          try {
+                            final launched = await launchUrl(
+                              uri,
+                              mode: LaunchMode.externalApplication,
+                            );
+                            if (!launched) {
+                              await launchUrl(uri);
+                            }
+                          } catch (e) {
+                            debugPrint('Could not launch website: $e');
+                          }
+                        },
+                      ),
+                      _SettingsActionTile(
+                        title: 'Legal',
+                        icon: Icons.gavel_outlined,
+                        iconColor: const Color(0xFF8B5CF6),
+                        onTap: () {
+                          GoRouter.of(context).push('/legal');
+                        },
+                      ),
+                      _SettingsActionTile(
+                        title: 'Send Feedback',
+                        icon: Icons.chat_bubble_outline_rounded,
+                        iconColor: const Color(0xFF38BDF8),
+                        onTap: () {
+                          GoRouter.of(context).push('/feedback');
+                        },
+                      ),
+                      _SettingsActionTile(
+                        title: 'Share Verso with a friend',
+                        icon: Icons.share_outlined,
+                        iconColor: const Color(0xFF10B981),
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          VersoShareSheet.show(context);
+                        },
+                      ),
+                    ],
+                  ),
+                  const Gap(24),
+
+                  _SectionLabel(label: 'ACCOUNT & DATA', scheme: scheme),
+                  _SettingsSectionCard(
+                    children: [
+                      _SettingsActionTile(
+                        title: 'Delete Account',
+                        icon: Icons.delete_forever_rounded,
+                        iconColor: scheme.error,
+                        trailing: Text(
+                          'Permanent',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: scheme.error,
+                          ),
+                        ),
+                        onTap: () {
+                          DeleteAccountDialog.show(context);
+                        },
+                      ),
+                    ],
+                  ),
+                  const Gap(36),
+
+                  // --- ABOUT SECTION ---
+                  Center(
+                    child: GestureDetector(
+                      onLongPress: () {
+                        if (kDebugMode) {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const DebugCacheScreen(),
+                            ),
+                          );
+                        }
+                      },
+                      child: Column(
+                        children: [
+                          Text(
+                            'Verso v${ref.watch(packageInfoProvider).version}',
+                            style: GoogleFonts.dmSerifDisplay(
+                              fontSize: 16,
+                              color: scheme.onSurfaceVariant
+                                  .withValues(alpha: 0.75),
+                            ),
+                          ),
+                          const Gap(6),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap:
+                                _isCheckingUpdate ? null : _checkUpdateManually,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (_isCheckingUpdate)
+                                    SizedBox(
+                                      width: 12,
+                                      height: 12,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 1.5,
+                                        color: scheme.primary,
+                                      ),
+                                    )
+                                  else
+                                    Icon(
+                                      Icons.refresh_rounded,
+                                      size: 13,
+                                      color: scheme.primary,
+                                    ),
+                                  const Gap(6),
+                                  Text(
+                                    _isCheckingUpdate
+                                        ? 'Checking for updates...'
+                                        : 'Check for updates',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                      color: scheme.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const Gap(8),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: () =>
+                                GoRouter.of(context).push('/our-mission'),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              child: Text(
+                                'Crafted by Shaijo George',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                  color: scheme.onSurfaceVariant
+                                      .withValues(alpha: 0.7),
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: scheme.onSurfaceVariant
+                                      .withValues(alpha: 0.3),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const Gap(48),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// -- Components --
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.label, required this.scheme});
+  final String label;
+  final ColorScheme scheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 10),
+      child: Text(
+        label,
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 10.5,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.2,
+          color: scheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+class _ValuePill extends StatelessWidget {
+  const _ValuePill({required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.65),
+        borderRadius: AppRadii.borderRadiusFull,
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: scheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsSectionCard extends StatelessWidget {
+  const _SettingsSectionCard({
+    required this.children,
+  });
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return VersoCard(
+      padding: EdgeInsets.zero,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        child: AnimatedSize(
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: Column(
+            children: [
+              for (int i = 0; i < children.length; i++) ...[
+                children[i],
+                if (i < children.length - 1)
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    indent: 66,
+                    endIndent: 16,
+                    color: scheme.outlineVariant
+                        .withValues(alpha: isDark ? 0.3 : 0.6),
+                  ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsSwitchTile extends StatelessWidget {
+  const _SettingsSwitchTile({
+    required this.title,
+    required this.icon,
+    required this.iconColor,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String title;
+  final IconData icon;
+  final Color iconColor;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: Colors.transparent,
+      child: SwitchListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        title: Text(
+          title,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: scheme.onSurface,
+          ),
+        ),
+        secondary: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(AppRadii.sm),
+            border: Border.all(color: iconColor.withValues(alpha: 0.2)),
+          ),
+          child: Icon(icon, size: 19, color: iconColor),
+        ),
+        value: value,
+        onChanged: onChanged,
+      ),
+    );
+  }
+}
+
+class _SettingsActionTile extends StatelessWidget {
+  const _SettingsActionTile({
+    required this.title,
+    required this.icon,
+    required this.iconColor,
+    required this.onTap,
+    this.trailing,
+  });
+
+  final String title;
+  final IconData icon;
+  final Color iconColor;
+  final Widget? trailing;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadii.sm),
+                  border: Border.all(color: iconColor.withValues(alpha: 0.2)),
+                ),
+                child: Icon(icon, size: 19, color: iconColor),
+              ),
+              const Gap(14),
+              Expanded(
+                child: Text(
+                  title,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: scheme.onSurface,
+                  ),
+                ),
+              ),
+              if (trailing != null) ...[
+                trailing!,
+                const Gap(8),
+              ],
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20,
+                color: scheme.onSurfaceVariant.withValues(alpha: 0.5),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemeProfileTile extends StatelessWidget {
+  const _ThemeProfileTile({
+    required this.profile,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final ThemeProfile profile;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final previewPalette = switch (context.palette.style) {
+      AppearanceStyle.light => profile.light,
+      AppearanceStyle.amoled => profile.amoled,
+      _ => profile.dark,
+    };
+
+    return Material(
+      color: isSelected
+          ? scheme.primary.withValues(alpha: 0.08)
+          : Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          child: Row(
+            children: [
+              // Swatches
+              SizedBox(
+                width: 42,
+                height: 42,
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      child: _Swatch(color: previewPalette.bg, size: 28),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: _Swatch(color: previewPalette.primary, size: 22),
+                    ),
+                    Positioned(
+                      top: 4,
+                      right: 0,
+                      child: _Swatch(color: previewPalette.secondary, size: 14),
+                    ),
+                  ],
+                ),
+              ),
+              const Gap(14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      profile.name,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                    const Gap(2),
+                    Text(
+                      profile.tagline,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12.5,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                transitionBuilder: (child, animation) => ScaleTransition(
+                  scale: animation,
+                  child: FadeTransition(opacity: animation, child: child),
+                ),
+                child: isSelected
+                    ? Icon(
+                        Icons.check_circle_rounded,
+                        key: const ValueKey('checked'),
+                        color: scheme.primary,
+                        size: 22,
+                      )
+                    : const SizedBox(
+                        key: ValueKey('unchecked'),
+                        width: 22,
+                        height: 22,
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Swatch extends StatelessWidget {
+  const _Swatch({required this.color, required this.size});
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.25),
+        ),
+      ),
+    );
+  }
+}
+
+class _TimeChip extends StatelessWidget {
+  const _TimeChip({required this.label, required this.onTap});
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Theme.of(context)
+              .colorScheme
+              .surfaceContainerHighest
+              .withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(AppRadii.sm),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FontSizeSettingsTile extends StatelessWidget {
+  const _FontSizeSettingsTile({
+    required this.currentScale,
+    required this.onChanged,
+  });
+
+  final double currentScale;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activePreset = AppFontSize.fromScale(currentScale);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Live Preview Box
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHighest
+                  .withValues(alpha: isDark ? 0.35 : 0.45),
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              border: Border.all(
+                color: scheme.outline.withValues(alpha: isDark ? 0.15 : 0.2),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'LIVE PREVIEW',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                        color: scheme.primary,
+                      ),
+                    ),
+                    Text(
+                      '${activePreset.label} (${activePreset.percentage})',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+                const Gap(8),
+                Text(
+                  'Your word is a lamp to my feet and a light to my path.',
+                  style: GoogleFonts.dmSerifDisplay(
+                    fontSize: 16 * currentScale,
+                    height: 1.35,
+                    color: scheme.onSurface,
+                  ),
+                ),
+                const Gap(4),
+                Text(
+                  'Read daily to build your streak and stay consistent.',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12 * currentScale,
+                    height: 1.4,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Gap(12),
+
+          // Preset Selection Buttons
+          Row(
+            children: AppFontSize.values.map((preset) {
+              final isSelected = (preset.scale - currentScale).abs() < 0.01;
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2.5),
+                  child: InkWell(
+                    onTap: () => onChanged(preset.scale),
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? scheme.primary
+                            : scheme.surfaceContainerHighest
+                                .withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(AppRadii.sm),
+                        border: Border.all(
+                          color: isSelected
+                              ? scheme.primary
+                              : scheme.outline.withValues(alpha: 0.15),
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            preset.label,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? scheme.onPrimary
+                                  : scheme.onSurface,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const Gap(1),
+                          Text(
+                            preset.percentage,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: isSelected
+                                  ? scheme.onPrimary.withValues(alpha: 0.85)
+                                  : scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const Gap(8),
+          Text(
+            'In-app font size applies across all books and screens, independent of phone settings.',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              height: 1.3,
+              color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

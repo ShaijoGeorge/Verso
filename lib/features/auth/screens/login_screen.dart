@@ -1,41 +1,120 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import '../providers/auth_providers.dart';
-import '../../../core/utils/app_error_handler.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:verso/core/design/components/verso_auth_gradient.dart';
+import 'package:verso/core/design/components/verso_gradient_button.dart';
+import 'package:verso/core/design/components/verso_header_icon.dart';
+import 'package:verso/core/design/components/verso_snackbar.dart';
+import 'package:verso/core/design/components/verso_text_field.dart';
+import 'package:verso/core/design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/shadows.dart';
+import 'package:verso/core/design/tokens/spacing.dart';
+import 'package:verso/core/utils/app_error_handler.dart';
+import 'package:verso/features/auth/models/saved_account.dart';
+import 'package:verso/features/auth/providers/auth_providers.dart';
+import 'package:verso/features/auth/services/account_switch_service.dart';
+import 'package:verso/features/auth/services/saved_accounts_service.dart';
+import 'package:verso/features/auth/widgets/saved_account_tile.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({
+    super.key,
+    this.initialEmail,
+    this.isAddingAccount = false,
+  });
+
+  final String? initialEmail;
+  final bool isAddingAccount;
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen>
+    with SingleTickerProviderStateMixin {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  // FIX: Explicitly use EncryptedSharedPreferences for Android
-  // This solves the issue where data isn't persisted on some devices.
-  final _storage = const FlutterSecureStorage(
-    aOptions: AndroidOptions(
-      encryptedSharedPreferences: true,
-    ),
-  );
-  
   bool _isSignUp = false;
   bool _isLoading = false;
   bool _isPasswordVisible = false;
-  bool _rememberMe = false; 
+  bool _showAllAccounts = false;
+  // "Remember me" state - true means we save the email for next time
+  bool _rememberMe = false;
+
+  // The SharedPreferences key - a constant so we never mistype it
+  static const _rememberedEmailKey = 'remembered_email';
+
+  late final AnimationController _animController;
+  late final Animation<double> _fadeIn;
+  late final Animation<Offset> _slideUp;
 
   @override
   void initState() {
     super.initState();
-    _loadSavedCredentials();
+
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+    _fadeIn = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOut,
+    );
+
+    _slideUp = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+
+    _animController.forward();
+
+    // Pre-fill email from route args if provided, otherwise load remembered email
+    if (widget.initialEmail != null && widget.initialEmail!.isNotEmpty) {
+      _emailController.text = widget.initialEmail!;
+      _rememberMe = true;
+    } else {
+      _loadRememberedEmail();
+    }
+  }
+
+  @override
+  void didUpdateWidget(LoginScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialEmail != null &&
+        widget.initialEmail!.isNotEmpty &&
+        widget.initialEmail != oldWidget.initialEmail) {
+      _emailController.text = widget.initialEmail!;
+      _rememberMe = true;
+    }
+  }
+
+  // Read the saved email from disk and pre-fills the field + checkbox
+  Future<void> _loadRememberedEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_rememberedEmailKey);
+    if (saved != null && saved.isNotEmpty) {
+      // Only run setState if the widget is still mounted
+      if (mounted) {
+        setState(() {
+          _emailController.text = saved;
+          _rememberMe = true; // If we have a saved email, tick the box
+        });
+      }
+    }
   }
 
   @override
@@ -43,27 +122,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _nameController.dispose();
+    _animController.dispose();
     super.dispose();
-  }
-
-  // Load credentials if they exist
-  Future<void> _loadSavedCredentials() async {
-    try {
-      debugPrint('Reading credentials...');
-      final savedEmail = await _storage.read(key: 'email');
-      final savedPassword = await _storage.read(key: 'password');
-
-      if (savedEmail != null && savedPassword != null) {
-        debugPrint('Credentials found for: $savedEmail');
-        setState(() {
-          _emailController.text = savedEmail;
-          _passwordController.text = savedPassword;
-          _rememberMe = true;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error loading credentials: $e');
-    }
   }
 
   Future<void> _submit() async {
@@ -73,208 +133,597 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     try {
       final auth = ref.read(authRepositoryProvider);
+      final accountSwitch = ref.read(accountSwitchServiceProvider);
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
+      final name = _nameController.text.trim();
+      final rememberMe = _rememberMe;
 
       if (_isSignUp) {
-        await auth.signUp(
-          _emailController.text.trim(),
-          _passwordController.text.trim(),
-          _nameController.text.trim(),
-        );
+        await auth.signUp(email, password, name);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Account created! Please Log In.')),
+          VersoSnackbar.success(
+            context,
+            message: 'Account created! Please Log In.',
           );
           setState(() => _isSignUp = false);
         }
       } else {
-        await auth.signIn(
-          _emailController.text.trim(),
-          _passwordController.text.trim(),
-        );
+        await auth.signIn(email, password);
 
-        // Handle Remember Me Logic (Save AFTER login succeeds)
-        if (_rememberMe) {
-          debugPrint('Saving credentials...');
-          await _storage.write(key: 'email', value: _emailController.text.trim());
-          await _storage.write(key: 'password', value: _passwordController.text.trim());
+        // Save or clear the email depending on the checkbox
+        final prefs = await SharedPreferences.getInstance();
+        if (rememberMe) {
+          // We ONLY save the email - never the password
+          await prefs.setString(_rememberedEmailKey, email);
         } else {
-          debugPrint('Clearing credentials...');
-          await _storage.delete(key: 'email');
-          await _storage.delete(key: 'password');
+          // User opted out - clear any previously saved email
+          await prefs.remove(_rememberedEmailKey);
         }
-        // Router handles navigation via auth state change
+
+        // Restore canon, invalidate user-scoped providers, sync progress, and
+        // persist the session using the keepAlive AccountSwitchService ref so
+        // unmounting LoginScreen on auth redirect does not fail mid-flight.
+        await accountSwitch.restoreSessionAfterSignIn();
+
+        // The add-account route intentionally permits the previous user to
+        // remain signed in until this credential exchange succeeds. Once it
+        // does, leave that special route for the newly signed-in account.
+        if (widget.isAddingAccount && mounted) {
+          context.go('/home');
+        }
       }
     } catch (e) {
       if (mounted) {
-        final userFriendlyError = AppErrorHandler.getMessage(e);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(child: Text(userFriendlyError)),
-              ],
-            ),
-            backgroundColor: Theme.of(context).colorScheme.error,
-            behavior: SnackBarBehavior.floating, // Makes it float above bottom nav
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
-        );
+        VersoSnackbar.error(context, message: AppErrorHandler.getMessage(e));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  void _toggleMode() {
+    setState(() => _isSignUp = !_isSignUp);
+    _animController.reset();
+    _animController.forward();
+  }
+
+  Future<void> _quickSignIn(SavedAccount account, {bool force = false}) async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    final SwitchResult result;
+    try {
+      final switchService = ref.read(accountSwitchServiceProvider);
+      result = await switchService.switchToAccount(account, force: force);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+    if (!mounted) return;
+
+    switch (result) {
+      case SwitchSuccess():
+        VersoSnackbar.success(
+          context,
+          message: 'Signed in as ${account.displayName}',
+        );
+        if (widget.isAddingAccount) {
+          context.go('/home');
+        }
+      case SwitchOffline():
+        VersoSnackbar.show(
+          context,
+          message: 'Connect to the internet to sign in',
+        );
+      case SwitchSessionExpired():
+        VersoSnackbar.show(
+          context,
+          message:
+              'Session expired for ${account.displayName}. Please enter your password.',
+        );
+        setState(() {
+          _emailController.text = account.email;
+        });
+      case SwitchFlushFailed(:final pendingCount):
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(
+              'Sync in progress',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+            ),
+            content: Text(
+              'Could not sync $pendingCount offline records. Switch anyway and sync them later, or Cancel?',
+              style: GoogleFonts.plusJakartaSans(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Switch anyway'),
+              ),
+            ],
+          ),
+        );
+        if ((confirmed ?? false) && mounted) {
+          await _quickSignIn(account, force: true);
+        }
+      case SwitchError(:final message):
+        VersoSnackbar.error(context, message: 'Could not sign in: $message');
+    }
+  }
+
+  Future<void> _handleRemoveAccount(SavedAccount account) async {
+    if (_isLoading) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          'Remove account?',
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          'Remove "${account.displayName}" (${account.email}) from this device?',
+          style: GoogleFonts.plusJakartaSans(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed ?? false) {
+      await ref
+          .read(savedAccountsListProvider.notifier)
+          .removeAccount(account.userId);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+    final savedAccountsAsync = ref.watch(savedAccountsListProvider);
+    final savedAccounts = savedAccountsAsync.value ?? [];
+    final displayedAccounts =
+        _showAllAccounts ? savedAccounts : savedAccounts.take(2).toList();
+
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Icon(
-                  Icons.auto_stories,
-                  size: 80,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const Gap(16),
-                Text(
-                  _isSignUp ? 'Create Account' : 'Welcome Back',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const Gap(32),
-
-                // Name Field (Only for Sign Up)
-                if (_isSignUp) ...[
-                  TextFormField(
-                    controller: _nameController,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(
-                      labelText: 'Full Name',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.person),
-                    ),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Please enter your name' : null,
-                  ),
-                  const Gap(16),
-                ],
-
-                // Email Field
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  autocorrect: false,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email),
-                  ),
-                  validator: (value) =>
-                      value!.contains('@') ? null : 'Please enter a valid email',
-                ),
-                const Gap(16),
-
-                // Password Field
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: !_isPasswordVisible, // Toggles based on state
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.lock),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _isPasswordVisible
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _isPasswordVisible = !_isPasswordVisible;
-                        });
-                      },
-                    ),
-                  ),
-                  validator: (value) => value!.length < 6
-                      ? 'Password must be at least 6 characters'
-                      : null,
-                ),
-                const Gap(16),
-
-                if (!_isSignUp)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Checkbox(
-                            value: _rememberMe,
-                            activeColor: Theme.of(context).colorScheme.primary,
-                            onChanged: (value) {
-                              setState(() {
-                                _rememberMe = value ?? false;
-                              });
-                            },
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: VisualDensity.compact,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Remember Password',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ],
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          GoRouter.of(context).push('/forgot-password');
-                        },
-                        child: const Text('Forgot Password?'),
-                      ),
+      body: Container(
+        decoration: BoxDecoration(gradient: VersoAuthGradient.of(context)),
+        child: Stack(
+          children: [
+            // Ambient top-right light orb
+            Positioned(
+              top: -80,
+              right: -60,
+              child: Container(
+                width: 240,
+                height: 240,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      colorScheme.primary.withValues(alpha: 0.14),
+                      colorScheme.primary.withValues(alpha: 0),
                     ],
                   ),
-
-                const Gap(24),
-
-                // Submit Button
-                FilledButton(
-                  onPressed: _isLoading ? null : _submit,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(_isSignUp ? 'Sign Up' : 'Log In'),
                 ),
-                const Gap(16),
-
-                // Toggle Button
-                TextButton(
-                  onPressed: () => setState(() => _isSignUp = !_isSignUp),
-                  child: Text(_isSignUp
-                      ? 'Already have an account? Log In'
-                      : 'New to Verso? Create Account'),
-                ),
-              ],
+              ),
             ),
-          ),
+            SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: Spacing.pagePadding,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 440),
+                    child: FadeTransition(
+                      opacity: _fadeIn,
+                      child: SlideTransition(
+                        position: _slideUp,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Logo and branding
+                            Column(
+                              children: [
+                                const VersoHeaderIcon(
+                                  icon: Icons.auto_stories_rounded,
+                                ),
+                                const Gap(Spacing.md),
+                                Text(
+                                  'Verso',
+                                  style: GoogleFonts.dmSerifDisplay(
+                                    fontSize: 36,
+                                    color: colorScheme.onSurface,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                const Gap(4),
+                                Text(
+                                  'SACRED SCRIPTURE COMPANION',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 2,
+                                    color: colorScheme.primary
+                                        .withValues(alpha: 0.8),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Gap(Spacing.xl),
+
+                            // Form card
+                            Container(
+                              decoration: BoxDecoration(
+                                color: colorScheme.surface,
+                                borderRadius: AppRadii.borderRadiusXL,
+                                border: Border.all(
+                                  color: colorScheme.outline.withValues(
+                                    alpha: isDark ? 0.25 : 0.65,
+                                  ),
+                                ),
+                                boxShadow:
+                                    isDark ? AppShadows.md : AppShadows.lg,
+                              ),
+                              padding: const EdgeInsets.all(Spacing.lg),
+                              child: Form(
+                                key: _formKey,
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    AnimatedSwitcher(
+                                      duration:
+                                          const Duration(milliseconds: 300),
+                                      child: Align(
+                                        key: ValueKey(_isSignUp),
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          _isSignUp
+                                              ? 'Create Account'
+                                              : 'Welcome Back',
+                                          style: GoogleFonts.dmSerifDisplay(
+                                            fontSize: 26,
+                                            color: colorScheme.onSurface,
+                                            height: 1.2,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const Gap(4),
+                                    AnimatedSwitcher(
+                                      duration:
+                                          const Duration(milliseconds: 300),
+                                      child: Align(
+                                        key: ValueKey('sub_$_isSignUp'),
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          _isSignUp
+                                              ? 'Start your Bible reading journey'
+                                              : 'Sign in to continue reading',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 14,
+                                            color: colorScheme.onSurfaceVariant,
+                                            height: 1.5,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const Gap(Spacing.lg),
+
+                                    // Quick Sign In with saved accounts
+                                    if (!_isSignUp &&
+                                        savedAccounts.isNotEmpty) ...[
+                                      Text(
+                                        'SAVED ACCOUNTS',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: colorScheme.onSurfaceVariant,
+                                          letterSpacing: 1.1,
+                                        ),
+                                      ),
+                                      const Gap(Spacing.sm),
+                                      ...displayedAccounts.map((account) {
+                                        return Padding(
+                                          padding:
+                                              const EdgeInsets.only(bottom: 8),
+                                          child: SavedAccountTile(
+                                            account: account,
+                                            isLoading: _isLoading,
+                                            onTap: () => _quickSignIn(account),
+                                            onRemove: () =>
+                                                _handleRemoveAccount(account),
+                                          ),
+                                        );
+                                      }),
+                                      if (savedAccounts.length > 2)
+                                        Padding(
+                                          padding:
+                                              const EdgeInsets.only(bottom: 8),
+                                          child: Center(
+                                            child: TextButton(
+                                              onPressed: () {
+                                                setState(() {
+                                                  _showAllAccounts =
+                                                      !_showAllAccounts;
+                                                });
+                                              },
+                                              style: TextButton.styleFrom(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: Spacing.sm,
+                                                  vertical: Spacing.xs,
+                                                ),
+                                                minimumSize: Size.zero,
+                                                tapTargetSize:
+                                                    MaterialTapTargetSize
+                                                        .shrinkWrap,
+                                              ),
+                                              child: Text(
+                                                _showAllAccounts
+                                                    ? 'Show less'
+                                                    : 'Show ${savedAccounts.length - 2} more',
+                                                style:
+                                                    GoogleFonts.plusJakartaSans(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: colorScheme.primary,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      const Gap(Spacing.xs),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Divider(
+                                              color: colorScheme.outline
+                                                  .withValues(alpha: 0.2),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                            ),
+                                            child: Text(
+                                              'or sign in with password',
+                                              style:
+                                                  GoogleFonts.plusJakartaSans(
+                                                fontSize: 12,
+                                                color: colorScheme
+                                                    .onSurfaceVariant
+                                                    .withValues(alpha: 0.7),
+                                              ),
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Divider(
+                                              color: colorScheme.outline
+                                                  .withValues(alpha: 0.2),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const Gap(Spacing.md),
+                                    ],
+
+                                    // Name Field (Sign Up only)
+                                    AnimatedSize(
+                                      duration:
+                                          const Duration(milliseconds: 300),
+                                      curve: Curves.easeOutCubic,
+                                      child: _isSignUp
+                                          ? Column(
+                                              children: [
+                                                VersoTextField(
+                                                  controller: _nameController,
+                                                  label: 'Full Name',
+                                                  icon: Icons
+                                                      .person_outline_rounded,
+                                                  textCapitalization:
+                                                      TextCapitalization.words,
+                                                  validator: (value) => value!
+                                                          .isEmpty
+                                                      ? 'Please enter your name'
+                                                      : null,
+                                                ),
+                                                const Gap(Spacing.md),
+                                              ],
+                                            )
+                                          : const SizedBox.shrink(),
+                                    ),
+
+                                    // Email
+                                    VersoTextField(
+                                      controller: _emailController,
+                                      label: 'Email',
+                                      icon: Icons.mail_outline_rounded,
+                                      keyboardType: TextInputType.emailAddress,
+                                      autocorrect: false,
+                                      validator: (value) =>
+                                          RegExp(r'^.+@.+\..+$')
+                                                  .hasMatch(value ?? '')
+                                              ? null
+                                              : 'Please enter a valid email',
+                                    ),
+                                    const Gap(Spacing.md),
+
+                                    // Password
+                                    VersoTextField(
+                                      controller: _passwordController,
+                                      label: 'Password',
+                                      icon: Icons.lock_outline_rounded,
+                                      obscureText: !_isPasswordVisible,
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          _isPasswordVisible
+                                              ? Icons.visibility_outlined
+                                              : Icons.visibility_off_outlined,
+                                          size: 20,
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
+                                        onPressed: () {
+                                          setState(
+                                            () => _isPasswordVisible =
+                                                !_isPasswordVisible,
+                                          );
+                                        },
+                                      ),
+                                      validator: (value) => value!.length < 6
+                                          ? 'Password must be at least 6 characters'
+                                          : null,
+                                    ),
+
+                                    if (!_isSignUp) ...[
+                                      const Gap(Spacing.sm),
+                                      // Responsive Wrap holds both "Remember me" and "Forgot password?"
+                                      Wrap(
+                                        alignment: WrapAlignment.spaceBetween,
+                                        crossAxisAlignment:
+                                            WrapCrossAlignment.center,
+                                        spacing: 8,
+                                        runSpacing: 4,
+                                        children: [
+                                          // Remember Me checkbox
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child: Checkbox(
+                                                  value: _rememberMe,
+                                                  onChanged: (value) =>
+                                                      setState(
+                                                    // Toggle the flag on tap
+                                                    () => _rememberMe =
+                                                        value ?? false,
+                                                  ),
+                                                  materialTapTargetSize:
+                                                      MaterialTapTargetSize
+                                                          .shrinkWrap,
+                                                  visualDensity:
+                                                      VisualDensity.compact,
+                                                ),
+                                              ),
+                                              const Gap(Spacing.xs),
+                                              Text(
+                                                'Remember me',
+                                                style:
+                                                    GoogleFonts.plusJakartaSans(
+                                                  fontSize: 13,
+                                                  color: colorScheme
+                                                      .onSurfaceVariant,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          // Forgot Password link
+                                          TextButton(
+                                            onPressed: () =>
+                                                GoRouter.of(context)
+                                                    .push('/forgot-password'),
+                                            style: TextButton.styleFrom(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: Spacing.sm,
+                                                vertical: Spacing.xs,
+                                              ),
+                                              minimumSize: Size.zero,
+                                              tapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
+                                            ),
+                                            child: Text(
+                                              'Forgot password?',
+                                              style:
+                                                  GoogleFonts.plusJakartaSans(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700,
+                                                color: colorScheme.primary,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+
+                                    const Gap(Spacing.lg),
+
+                                    // Submit button
+                                    VersoGradientButton(
+                                      label: _isSignUp
+                                          ? 'Create Account'
+                                          : 'Sign In',
+                                      isLoading: _isLoading,
+                                      onPressed: _submit,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            const Gap(Spacing.lg),
+
+                            // Toggle sign up / sign in
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  _isSignUp
+                                      ? 'Already have an account?'
+                                      : 'New to Verso?',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 14,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: _toggleMode,
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: Spacing.sm,
+                                    ),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text(
+                                    _isSignUp ? 'Sign In' : 'Create Account',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                      color: colorScheme.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

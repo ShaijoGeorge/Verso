@@ -1,193 +1,179 @@
-import 'package:dashed_circular_progress_bar/dashed_circular_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import '../providers/stats_providers.dart';
-import '../../../core/widgets/error_state_widget.dart';
-import 'package:go_router/go_router.dart';
+import 'package:verso/core/design/extensions.dart';
+import 'package:verso/core/design/tokens/radii.dart';
+import 'package:verso/core/design/tokens/shadows.dart';
+import 'package:verso/core/widgets/error_state_widget.dart';
+import 'package:verso/data/local/entities/user_settings.dart';
+import 'package:verso/features/stats/providers/stats_providers.dart';
+import 'package:verso/features/stats/tabs/monthly_tab.dart';
+import 'package:verso/features/stats/tabs/overview_tab.dart';
+import 'package:verso/features/stats/tabs/weekly_tab.dart';
+import 'package:verso/features/stats/tabs/yearly_tab.dart';
+import 'package:verso/features/stats/widgets/shimmer_skeletons.dart';
 
-class StatsScreen extends ConsumerWidget {
-  const StatsScreen({super.key});
+class StatsScreen extends ConsumerStatefulWidget {
+  const StatsScreen({super.key, this.initialIndex = 0});
+  final int initialIndex;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final statsAsync = ref.watch(userStatsProvider);
+  ConsumerState<StatsScreen> createState() => _StatsScreenState();
+}
 
-    final refreshTrigger = ref.watch(homeRefreshTriggerProvider);
+class _StatsScreenState extends ConsumerState<StatsScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
 
-    // No Scaffold, no AppBar here either
-    return statsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => ErrorStateWidget(
-        error: err,
-        onRetry: () => ref.invalidate(userStatsProvider),
-      ),
-      data: (stats) {
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(
+      length: 4,
+      vsync: this,
+      initialIndex: widget.initialIndex,
+    );
+  }
+
+  @override
+  void didUpdateWidget(StatsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialIndex != widget.initialIndex) {
+      _tabController.animateTo(widget.initialIndex);
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final statsAsync = ref.watch(detailedStatsProvider);
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final isAmoled = context.palette.style == AppearanceStyle.amoled;
+
+    // Reset to Overview tab whenever the user re-enters the Stats branch.
+    ref.listen<int>(statsTabResetTriggerProvider, (_, __) {
+      if (_tabController.index != 0) {
+        _tabController.animateTo(0);
+      }
+    });
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ANIMATED CIRCULAR PROGRESS
-              // We use TweenAnimationBuilder to drive the value from 0 to actual progress
-              TweenAnimationBuilder<double>(
-                // Forces the animation to restart when trigger changes
-                key: ValueKey("circle_$refreshTrigger"),
-                tween: Tween<double>(begin: 0.0, end: stats.totalProgress),
-                duration: const Duration(milliseconds: 1500), // 1.5 seconds animation
-                curve: Curves.easeOutCubic, // Smooth slowdown at the end
-                builder: (context, animatedProgress, child) {
-                  return GestureDetector(
-                    onTap: () {
-                  // Navigate to Detailed Stats
-                      context.push('/detailed-stats');
-                    },
-                    child: SizedBox(
-                      width: 220,
-                      height: 220,
-                      child: DashedCircularProgressBar.aspectRatio(
-                        aspectRatio: 1,
-                        // Pass the animated value to the notifier
-                        valueNotifier: ValueNotifier(animatedProgress),
-                        progress: animatedProgress,
-                        maxProgress: 100,
-                        corners: StrokeCap.butt,
-                        foregroundColor: Theme.of(context).colorScheme.primary,
-                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        foregroundStrokeWidth: 15,
-                        backgroundStrokeWidth: 15,
-                        animation: false, // we using Tween
-                        child: Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '${animatedProgress.toStringAsFixed(1)}%',
-                                style: const TextStyle(
-                                  fontSize: 40,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                'Bible Completed',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                              const Gap(8),
-                              Text(
-                                'Tap for details',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
+              Text(
+                'HABITS & INSIGHTS',
+                style: textTheme.labelSmall?.copyWith(
+                  color: scheme.primary.withValues(alpha: 0.8),
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.3,
+                  fontSize: 10,
+                ),
               ),
-              const Gap(40),
-
-              // ANIMATED STAT CARDS
-              Row(
-                children: [
-                  // Streak Card (Counts up from 0)
-                  Expanded(
-                    child: TweenAnimationBuilder<int>(
-                      // Forces restart
-                      key: ValueKey("streak_$refreshTrigger"),
-                      tween: IntTween(begin: 0, end: stats.streak),
-                      duration: const Duration(milliseconds: 1500),
-                      curve: Curves.easeOutCubic,
-                      builder: (context, animatedStreak, _) {
-                        return _StatCard(
-                          icon: Icons.local_fire_department,
-                          iconColor: Colors.orange,
-                          label: "Current Streak",
-                          value: "$animatedStreak Days",
-                        );
-                      },
-                    ),
-                  ),
-                  const Gap(16),
-                  
-                  // Chapters Read Card (Counts up from 0)
-                  Expanded(
-                    child: TweenAnimationBuilder<int>(
-                      // Forces restart
-                      key: ValueKey("chapters_$refreshTrigger"),
-                      tween: IntTween(begin: 0, end: stats.totalChaptersRead),
-                      duration: const Duration(milliseconds: 1500),
-                      curve: Curves.easeOutCubic,
-                      builder: (context, animatedChapters, _) {
-                        return _StatCard(
-                          icon: Icons.auto_stories,
-                          iconColor: Colors.blue,
-                          label: "Chapters Read",
-                          value: "$animatedChapters",
-                        );
-                      },
-                    ),
-                  ),
-                ],
+              const Gap(4),
+              Text(
+                'Reading Analytics',
+                style: textTheme.headlineLarge?.copyWith(
+                  color: scheme.onSurface,
+                ),
               ),
             ],
           ),
-        );
-      },
+        ),
+
+        // Tab Bar
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: isAmoled
+                ? scheme.surfaceContainerHighest
+                : scheme.surfaceContainerHighest
+                    .withValues(alpha: isLight ? 0.65 : 0.45),
+            borderRadius: AppRadii.borderRadiusLG,
+            border: Border.all(
+              color: scheme.outline.withValues(alpha: isLight ? 0.4 : 0.15),
+            ),
+          ),
+          child: TabBar(
+            controller: _tabController,
+            labelColor: scheme.primary,
+            unselectedLabelColor: scheme.onSurfaceVariant,
+            labelStyle:
+                const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+            unselectedLabelStyle:
+                const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+            indicator: BoxDecoration(
+              color: scheme.surface,
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              border: Border.all(
+                color: scheme.outline.withValues(alpha: isLight ? 0.5 : 0.25),
+              ),
+              boxShadow: isLight ? AppShadows.sm : null,
+            ),
+            indicatorSize: TabBarIndicatorSize.tab,
+            dividerColor: Colors.transparent,
+            splashFactory: NoSplash.splashFactory,
+            tabs: const [
+              Tab(height: 36, text: 'Overview'),
+              Tab(height: 36, text: 'Weekly'),
+              Tab(height: 36, text: 'Monthly'),
+              Tab(height: 36, text: 'Yearly'),
+            ],
+          ),
+        ),
+
+        // Tab Content
+        Expanded(
+          child: statsAsync.when(
+            loading: () => _ShimmerTabView(tabController: _tabController),
+            error: (err, stack) => ErrorStateWidget(
+              error: err,
+              onRetry: () => ref.invalidate(detailedStatsProvider),
+            ),
+            data: (stats) => TabBarView(
+              controller: _tabController,
+              children: [
+                OverviewTab(stats: stats),
+                const WeeklyTab(),
+                const MonthlyTab(),
+                const YearlyTab(),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String label;
-  final String value;
-
-  const _StatCard({
-    required this.icon,
-    required this.iconColor,
-    required this.label,
-    required this.value,
-  });
+/// Shows shimmer skeletons while data is loading — one per tab
+class _ShimmerTabView extends StatelessWidget {
+  const _ShimmerTabView({required this.tabController});
+  final TabController tabController;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
-        ),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 32, color: iconColor),
-          const Gap(8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
+    return TabBarView(
+      controller: tabController,
+      children: const [
+        OverviewShimmer(),
+        WeeklyShimmer(),
+        MonthlyShimmer(),
+        YearlyShimmer(),
+      ],
     );
   }
 }

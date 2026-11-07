@@ -1,0 +1,524 @@
+import 'dart:math';
+
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gap/gap.dart';
+import 'package:verso/core/design/components/verso_card.dart';
+import 'package:verso/core/design/components/verso_frost_effect.dart';
+import 'package:verso/core/design/components/verso_section_header.dart';
+import 'package:verso/core/design/extensions.dart';
+import 'package:verso/features/stats/providers/stats_providers.dart';
+import 'package:verso/features/stats/widgets/time_period_navigator.dart';
+
+class WeeklyTab extends ConsumerWidget {
+  const WeeklyTab({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+
+    final offset = ref.watch(weeklyOffsetProvider);
+    final asyncData = ref.watch(weeklyChartStatsProvider(offset));
+    final frozenDates =
+        ref.watch(userStatsProvider).value?.frozenDates ?? const <String>{};
+
+    return asyncData.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('Error: $err')),
+      data: (chartData) {
+        final total = chartData.totalRead;
+        final maxCount =
+            chartData.counts.isEmpty ? 0 : chartData.counts.reduce(max);
+        final maxY = maxCount > 10 ? maxCount.toDouble() + 3 : 12.0;
+
+        final firstDate = chartData.dates.first;
+        final lastDate = chartData.dates.last;
+        final months = [
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec',
+        ];
+        final rangeLabel = offset == 0
+            ? 'This Week'
+            : '${months[firstDate.month - 1]} ${firstDate.day} – ${months[lastDate.month - 1]} ${lastDate.day}';
+
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 110),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Period navigator
+              TimePeriodNavigator(
+                label: rangeLabel,
+                onPrevious: () =>
+                    ref.read(weeklyOffsetProvider.notifier).goBack(),
+                onNext: offset > 0
+                    ? () => ref.read(weeklyOffsetProvider.notifier).goForward()
+                    : null,
+                onReset: offset > 0
+                    ? () => ref.read(weeklyOffsetProvider.notifier).reset()
+                    : null,
+              ),
+              const Gap(16),
+
+              // Summary line
+              VersoCard(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _SummaryLine(
+                      highlight: '$total chapters',
+                      suffix: offset == 0 ? 'read this week' : 'read that week',
+                      scheme: scheme,
+                    ),
+                    const Gap(24),
+
+                    // Bar Chart
+                    SizedBox(
+                      height: 240,
+                      child: _AnimatedChartWrapper(
+                        key: ValueKey('weekly_chart_$offset'),
+                        builder: (isAnimated) {
+                          return BarChart(
+                            BarChartData(
+                              maxY: maxY,
+                              alignment: BarChartAlignment.spaceAround,
+                              barTouchData: BarTouchData(
+                                touchTooltipData: BarTouchTooltipData(
+                                  getTooltipColor: (_) =>
+                                      scheme.primaryContainer,
+                                  getTooltipItem:
+                                      (group, groupIndex, rod, rodIndex) {
+                                    final count = chartData.counts[group.x];
+                                    final dateKey =
+                                        formatDateKey(chartData.dates[group.x]);
+                                    final isFrozen = count == 0 &&
+                                        frozenDates.contains(dateKey);
+                                    return BarTooltipItem(
+                                      isFrozen
+                                          ? 'Protected by Streak Freeze'
+                                          : '$count chapters',
+                                      TextStyle(
+                                        color: scheme.onPrimaryContainer,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 12,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              titlesData: FlTitlesData(
+                                topTitles: const AxisTitles(),
+                                rightTitles: const AxisTitles(),
+                                bottomTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    reservedSize: 42,
+                                    getTitlesWidget: (value, meta) {
+                                      final index = value.toInt();
+                                      if (index < 0 ||
+                                          index >= chartData.dates.length) {
+                                        return const SizedBox();
+                                      }
+                                      final date = chartData.dates[index];
+                                      // Sunday-first labels
+                                      const days = [
+                                        'Mon',
+                                        'Tue',
+                                        'Wed',
+                                        'Thu',
+                                        'Fri',
+                                        'Sat',
+                                        'Sun',
+                                      ];
+                                      final dayDate = DateTime(
+                                        date.year,
+                                        date.month,
+                                        date.day,
+                                      );
+                                      final isTodayCell = dayDate == today;
+                                      final dateKey = formatDateKey(dayDate);
+                                      final isFrozenCell =
+                                          chartData.counts[index] == 0 &&
+                                              frozenDates.contains(dateKey);
+                                      final freezeColor =
+                                          context.appColors.streakFreeze;
+
+                                      return Padding(
+                                        padding: const EdgeInsets.only(top: 6),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                if (isFrozenCell) ...[
+                                                  Icon(
+                                                    Icons.ac_unit_rounded,
+                                                    size: 10,
+                                                    color: freezeColor,
+                                                  ),
+                                                  const SizedBox(width: 2),
+                                                ],
+                                                Text(
+                                                  days[date.weekday - 1],
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: (isTodayCell ||
+                                                            isFrozenCell)
+                                                        ? FontWeight.w800
+                                                        : FontWeight.w600,
+                                                    color: isFrozenCell
+                                                        ? freezeColor
+                                                        : (isTodayCell
+                                                            ? scheme.primary
+                                                            : scheme
+                                                                .onSurfaceVariant),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            Text(
+                                              '${date.day}',
+                                              style: TextStyle(
+                                                fontSize: 9.5,
+                                                fontWeight: isFrozenCell
+                                                    ? FontWeight.w700
+                                                    : FontWeight.normal,
+                                                color: isFrozenCell
+                                                    ? freezeColor.withValues(
+                                                        alpha: 0.85,
+                                                      )
+                                                    : (isTodayCell
+                                                        ? scheme.primary
+                                                            .withValues(
+                                                            alpha: 0.85,
+                                                          )
+                                                        : scheme
+                                                            .onSurfaceVariant
+                                                            .withValues(
+                                                            alpha: 0.6,
+                                                          )),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                leftTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    reservedSize: 28,
+                                    interval: (maxY / 4)
+                                        .ceilToDouble()
+                                        .clamp(1, double.infinity),
+                                    getTitlesWidget: (value, meta) {
+                                      return Text(
+                                        value.toInt().toString(),
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: scheme.onSurfaceVariant,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                              gridData: FlGridData(
+                                drawVerticalLine: false,
+                                horizontalInterval: (maxY / 4)
+                                    .ceilToDouble()
+                                    .clamp(1, double.infinity),
+                                getDrawingHorizontalLine: (value) => FlLine(
+                                  color: scheme.outline.withValues(alpha: 0.12),
+                                  strokeWidth: 1,
+                                ),
+                              ),
+                              borderData: FlBorderData(show: false),
+                              barGroups: List.generate(7, (index) {
+                                final count =
+                                    chartData.counts[index].toDouble();
+                                final dayDate = DateTime(
+                                  chartData.dates[index].year,
+                                  chartData.dates[index].month,
+                                  chartData.dates[index].day,
+                                );
+                                final isToday = dayDate == today;
+                                final dateKey = formatDateKey(dayDate);
+                                final isFrozenDay =
+                                    chartData.counts[index] == 0 &&
+                                        frozenDates.contains(dateKey);
+                                final freezeColor =
+                                    context.appColors.streakFreeze;
+
+                                return BarChartGroupData(
+                                  x: index,
+                                  barRods: [
+                                    BarChartRodData(
+                                      toY: isAnimated
+                                          ? (isFrozenDay
+                                              ? (maxY * 0.28).clamp(2.0, maxY)
+                                              : count)
+                                          : 0,
+                                      width: 24,
+                                      borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(8),
+                                      ),
+                                      borderSide: isFrozenDay
+                                          ? BorderSide(
+                                              color: Colors.white
+                                                  .withValues(alpha: 0.65),
+                                              width: 1.2,
+                                            )
+                                          : BorderSide.none,
+                                      backDrawRodData:
+                                          BackgroundBarChartRodData(
+                                        show: isFrozenDay,
+                                        toY: maxY,
+                                        color:
+                                            freezeColor.withValues(alpha: 0.06),
+                                      ),
+                                      gradient: LinearGradient(
+                                        begin: Alignment.bottomCenter,
+                                        end: Alignment.topCenter,
+                                        colors: isFrozenDay
+                                            ? [
+                                                freezeColor.withValues(
+                                                  alpha: 0.55,
+                                                ),
+                                                freezeColor,
+                                                Color.lerp(
+                                                  freezeColor,
+                                                  Colors.white,
+                                                  0.45,
+                                                )!,
+                                              ]
+                                            : isToday
+                                                ? [
+                                                    scheme.primary,
+                                                    context
+                                                        .palette.primaryHover,
+                                                  ]
+                                                : count > 0
+                                                    ? [
+                                                        context.palette.primary
+                                                            .withValues(
+                                                          alpha: 0.7,
+                                                        ),
+                                                        context.palette
+                                                            .primaryHover
+                                                            .withValues(
+                                                          alpha: 0.5,
+                                                        ),
+                                                      ]
+                                                    : [
+                                                        scheme.outline
+                                                            .withValues(
+                                                          alpha: 0.15,
+                                                        ),
+                                                        scheme.outline
+                                                            .withValues(
+                                                          alpha: 0.08,
+                                                        ),
+                                                      ],
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }),
+                            ),
+                            duration: const Duration(milliseconds: 800),
+                            curve: Curves.easeOutCubic,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Gap(24),
+
+              // Daily breakdown
+              const VersoSectionHeader(title: 'Daily Breakdown'),
+              const Gap(12),
+              VersoCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: List.generate(7, (index) {
+                    final date = chartData.dates[index];
+                    final count = chartData.counts[index];
+                    final dayDate = DateTime(date.year, date.month, date.day);
+                    final isToday = dayDate == today;
+                    final dateKey = formatDateKey(dayDate);
+                    final isFrozenDay =
+                        count == 0 && frozenDates.contains(dateKey);
+                    final freezeColor = context.appColors.streakFreeze;
+
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: index == 6 ? 0 : 12),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 72,
+                            child: Text(
+                              isToday
+                                  ? 'Today'
+                                  : '${months[date.month - 1]} ${date.day}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: (isToday || isFrozenDay)
+                                    ? FontWeight.w800
+                                    : FontWeight.w600,
+                                color: isFrozenDay
+                                    ? freezeColor
+                                    : (isToday
+                                        ? scheme.primary
+                                        : scheme.onSurfaceVariant),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: VersoFrostEffect(
+                              isFrozen: isFrozenDay,
+                              borderRadius: BorderRadius.circular(99),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(99),
+                                child: LinearProgressIndicator(
+                                  value: isFrozenDay
+                                      ? 1.0
+                                      : (maxCount > 0 ? count / maxCount : 0),
+                                  minHeight: 8,
+                                  backgroundColor:
+                                      scheme.outline.withValues(alpha: 0.1),
+                                  valueColor: AlwaysStoppedAnimation(
+                                    isFrozenDay
+                                        ? freezeColor.withValues(alpha: 0.35)
+                                        : (isToday
+                                            ? scheme.primary
+                                            : scheme.primary
+                                                .withValues(alpha: 0.5)),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const Gap(12),
+                          SizedBox(
+                            width: 44,
+                            child: isFrozenDay
+                                ? Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      Icon(
+                                        Icons.ac_unit_rounded,
+                                        size: 13,
+                                        color: freezeColor,
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        'Saved',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w800,
+                                          color: freezeColor,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Text(
+                                    '$count',
+                                    textAlign: TextAlign.end,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w800,
+                                      color: count > 0
+                                          ? scheme.onSurface
+                                          : scheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SummaryLine extends StatelessWidget {
+  const _SummaryLine({
+    required this.highlight,
+    required this.suffix,
+    required this.scheme,
+  });
+  final String highlight;
+  final String suffix;
+  final ColorScheme scheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return RichText(
+      text: TextSpan(
+        style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
+        children: [
+          TextSpan(
+            text: '$highlight ',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              color: scheme.primary,
+              fontSize: 18,
+              letterSpacing: -0.3,
+            ),
+          ),
+          TextSpan(text: suffix),
+        ],
+      ),
+    );
+  }
+}
+
+class _AnimatedChartWrapper extends StatefulWidget {
+  const _AnimatedChartWrapper({required this.builder, super.key});
+  final Widget Function(bool isAnimated) builder;
+
+  @override
+  State<_AnimatedChartWrapper> createState() => _AnimatedChartWrapperState();
+}
+
+class _AnimatedChartWrapperState extends State<_AnimatedChartWrapper> {
+  bool _visible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) setState(() => _visible = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.builder(_visible);
+}

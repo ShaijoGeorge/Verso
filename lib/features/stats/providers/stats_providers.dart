@@ -1,43 +1,296 @@
-import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../reading/providers/reading_providers.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:verso/data/bible_data.dart';
+import 'package:verso/data/local/entities/reading_progress.dart';
+import 'package:verso/features/auth/providers/auth_providers.dart';
+import 'package:verso/features/reading/providers/reading_providers.dart';
+import 'package:verso/features/settings/providers/settings_providers.dart';
 
 part 'stats_providers.g.dart';
 
-final homeRefreshTriggerProvider = StateProvider<int>((ref) => 0);
+/// Increments when the user re-enters the Stats branch from another tab.
+/// StatsScreen listens to this and resets to the Overview tab.
+class StatsTabResetTrigger extends Notifier<int> {
+  @override
+  int build() => 0;
+  void trigger() => state++;
+}
+
+final statsTabResetTriggerProvider =
+    NotifierProvider<StatsTabResetTrigger, int>(StatsTabResetTrigger.new);
 
 class UserStats {
-  final int streak;
-  final int totalChaptersRead;
-  final double totalProgress;
-
   UserStats({
     required this.streak,
     required this.totalChaptersRead,
+    required this.booksCompleted,
     required this.totalProgress,
+    required this.totalBooksInCanon,
+    required this.totalChaptersInCanon,
+    this.availableFreezes = 1,
+    this.frozenDates = const {},
+    this.isStreakFrozen = false,
+    this.newlyFrozenDate,
   });
+  final int streak;
+  final int totalChaptersRead;
+  final int booksCompleted;
+  final double totalProgress;
+  final int totalBooksInCanon;
+  final int totalChaptersInCanon;
+  final int availableFreezes;
+  final Set<String> frozenDates;
+  final bool isStreakFrozen;
+  final String? newlyFrozenDate;
+}
+
+class StreakCalculationResult {
+  const StreakCalculationResult({
+    required this.streak,
+    required this.availableFreezes,
+    required this.frozenDates,
+    required this.isFrozenTodayOrYesterday,
+    this.newlyFrozenDate,
+  });
+
+  final int streak;
+  final int availableFreezes;
+  final Set<String> frozenDates;
+  final bool isFrozenTodayOrYesterday;
+  final String? newlyFrozenDate; // Non-null if a freeze was just auto-consumed
+}
+
+String formatDateKey(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
+    '${d.month.toString().padLeft(2, '0')}-'
+    '${d.day.toString().padLeft(2, '0')}';
+
+/// Calculates the active streak while factoring in and auto-applying Streak Freezes.
+StreakCalculationResult calculateStreakWithFreezes(
+  List<ReadingProgress> history, {
+  required int initialFreezes,
+  required Set<String> existingFrozenDates,
+}) {
+  if (history.isEmpty) {
+    return StreakCalculationResult(
+      streak: 0,
+      availableFreezes: initialFreezes,
+      frozenDates: existingFrozenDates,
+      isFrozenTodayOrYesterday: false,
+    );
+  }
+
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final yesterday = today.subtract(const Duration(days: 1));
+
+  final readDatesSet = history
+      .where((p) => p.isRead && p.readAt != null)
+      .map((p) => p.readAt!.toLocal())
+      .map((dt) {
+    final d = DateTime(dt.year, dt.month, dt.day);
+    return d.isAfter(today) ? today : d;
+  }).toSet();
+
+  if (readDatesSet.isEmpty) {
+    return StreakCalculationResult(
+      streak: 0,
+      availableFreezes: initialFreezes,
+      frozenDates: existingFrozenDates,
+      isFrozenTodayOrYesterday: false,
+    );
+  }
+
+  final sortedReads = readDatesSet.toList()..sort((a, b) => b.compareTo(a));
+  final mostRecentRead = sortedReads.first;
+
+  var availableFreezes = initialFreezes;
+  final frozenDates = Set<String>.from(existingFrozenDates);
+  String? newlyFrozenDate;
+
+  // Determine starting anchor for the walk-back:
+  // If user hasn't read today, we check from yesterday backward.
+  var cursor = readDatesSet.contains(today) ? today : yesterday;
+
+  // If the gap between cursor and mostRecentRead is larger than available freezes + existing frozen dates,
+  // check if we can bridge from yesterday back to their last read.
+  final daysSinceLastRead = cursor.difference(mostRecentRead).inDays;
+  if (daysSinceLastRead < 0) {
+    cursor = today;
+  }
+
+  // Count unread, unfrozen days strictly between cursor (inclusive) and mostRecentRead (exclusive)
+  var unbridgedDays = 0;
+  var checkCursor = cursor;
+  while (checkCursor.isAfter(mostRecentRead)) {
+    final key = formatDateKey(checkCursor);
+    if (!readDatesSet.contains(checkCursor) && !frozenDates.contains(key)) {
+      unbridgedDays++;
+    }
+    checkCursor = checkCursor.subtract(const Duration(days: 1));
+  }
+
+  if (unbridgedDays > availableFreezes) {
+    // Gap cannot be bridged even with all available freezes. Streak is broken.
+    return StreakCalculationResult(
+      streak: 0,
+      availableFreezes: initialFreezes,
+      frozenDates: existingFrozenDates,
+      isFrozenTodayOrYesterday: false,
+    );
+  }
+
+  var streak = 0;
+
+  while (true) {
+    final key = formatDateKey(cursor);
+
+    if (readDatesSet.contains(cursor)) {
+      streak++;
+      cursor = cursor.subtract(const Duration(days: 1));
+    } else if (frozenDates.contains(key)) {
+      // Already frozen in the past — bridges the streak (doesn't increment read count, but preserves continuity)
+      cursor = cursor.subtract(const Duration(days: 1));
+    } else if (cursor.isAfter(mostRecentRead) && availableFreezes > 0) {
+      // User missed `cursor` (e.g., yesterday), but has an active streak before it and a freeze equipped!
+      availableFreezes--;
+      frozenDates.add(key);
+      newlyFrozenDate ??= key;
+      cursor = cursor.subtract(const Duration(days: 1));
+    } else {
+      break;
+    }
+  }
+
+  final yesterdayKey = formatDateKey(yesterday);
+  final isFrozenRecent =
+      !readDatesSet.contains(today) && frozenDates.contains(yesterdayKey);
+
+  return StreakCalculationResult(
+    streak: streak,
+    availableFreezes: availableFreezes,
+    frozenDates: frozenDates,
+    isFrozenTodayOrYesterday: isFrozenRecent,
+    newlyFrozenDate: newlyFrozenDate,
+  );
+}
+
+int calculateStreak(List<ReadingProgress> history) {
+  return calculateStreakWithFreezes(
+    history,
+    initialFreezes: 0,
+    existingFrozenDates: const {},
+  ).streak;
 }
 
 @riverpod
 Future<UserStats> userStats(Ref ref) async {
-  final repo = ref.watch(bibleRepositoryProvider);
-  final streak = await repo.getCurrentStreak();
-  final totalRead = await repo.countTotalRead();
-  const totalChaptersInBible = 1334;
+  // 1. Watch synchronous dependencies before any await gaps
+  final activeBooks = ref.watch(activeCanonBooksProvider);
+  final authUser = ref.watch(authUserProvider).value;
+  final settingsRepo = ref.read(settingsRepositoryProvider);
+
+  // Watch the global stream's latest data
+  final history = await ref.watch(globalProgressProvider.future);
+
+  final activeBookIds = activeBooks.map((b) => b.id).toSet();
+
+  // 2. Calculate dynamic totals
+  final totalBooksInCanon = activeBooks.length;
+  final totalChaptersInCanon =
+      activeBooks.fold<int>(0, (sum, book) => sum + book.chapters);
+
+  // Filter read history strictly to active canon books
+  final activeReadHistory = history
+      .where((p) => p.isRead && activeBookIds.contains(p.bookId))
+      .toList();
+  final totalRead = activeReadHistory.length;
+  final user = Supabase.instance.client.auth.currentUser ?? authUser;
+  final uid = user?.id ?? '';
+  final initialFreezes =
+      uid.isNotEmpty ? await settingsRepo.getStreakFreezesAvailable(uid) : 1;
+  final existingFrozenDates =
+      uid.isNotEmpty ? await settingsRepo.getFrozenDates(uid) : <String>{};
+
+  final streakResult = calculateStreakWithFreezes(
+    history,
+    initialFreezes: initialFreezes,
+    existingFrozenDates: existingFrozenDates,
+  );
+
+  // Persist if a freeze was automatically consumed today
+  if (uid.isNotEmpty && streakResult.newlyFrozenDate != null) {
+    await settingsRepo.setStreakFreezesAvailable(
+      uid,
+      streakResult.availableFreezes,
+    );
+    await settingsRepo.saveFrozenDates(uid, streakResult.frozenDates);
+  }
+
+  // Calculate Books Completed
+  var completedBooksCount = 0;
+  final readChaptersByBook = <int, Set<int>>{};
+  for (final progress in activeReadHistory) {
+    readChaptersByBook.putIfAbsent(progress.bookId, () => <int>{});
+    readChaptersByBook[progress.bookId]!.add(progress.chapterNumber);
+  }
+
+  for (final book in activeBooks) {
+    final readCount = readChaptersByBook[book.id]?.length ?? 0;
+    if (readCount >= book.chapters) {
+      completedBooksCount++;
+    }
+  }
+
   final progress =
-      totalChaptersInBible > 0 ? (totalRead / totalChaptersInBible) * 100 : 0.0;
+      totalChaptersInCanon > 0 ? (totalRead / totalChaptersInCanon) * 100 : 0.0;
 
   return UserStats(
-    streak: streak,
+    streak: streakResult.streak,
     totalChaptersRead: totalRead,
+    booksCompleted: completedBooksCount,
     totalProgress: progress,
+    totalBooksInCanon: totalBooksInCanon,
+    totalChaptersInCanon: totalChaptersInCanon,
+    availableFreezes: streakResult.availableFreezes,
+    frozenDates: streakResult.frozenDates,
+    isStreakFrozen: streakResult.isFrozenTodayOrYesterday,
+    newlyFrozenDate: streakResult.newlyFrozenDate,
   );
 }
 
 class DetailedStats {
+  DetailedStats({
+    required this.otRead,
+    required this.ntRead,
+    required this.totalRead,
+    required this.otBooksCompleted,
+    required this.ntBooksCompleted,
+    required this.otProgress,
+    required this.ntProgress,
+    required this.totalProgress,
+    required this.last7DaysDates,
+    required this.last7DaysCounts,
+    required this.currentMonthDailyCounts,
+    required this.currentYearMonthlyCounts,
+    required this.averageChaptersPerDay,
+    required this.streak,
+    required this.bookCompletionMap,
+    required this.totalOTChapters,
+    required this.totalNTChapters,
+    required this.totalBibleChapters,
+    required this.totalOTBooks,
+    required this.totalNTBooks,
+    required this.totalBooks,
+    this.availableFreezes = 1,
+    this.frozenDates = const {},
+    this.isStreakFrozen = false,
+  });
   final int otRead;
   final int ntRead;
   final int totalRead;
+  final int otBooksCompleted;
+  final int ntBooksCompleted;
   final double otProgress;
   final double ntProgress;
   final double totalProgress;
@@ -47,91 +300,346 @@ class DetailedStats {
   final Map<int, int> currentMonthDailyCounts;
   final Map<int, int> currentYearMonthlyCounts;
   final double averageChaptersPerDay;
+  final int streak;
 
-  // Predictions REMOVED
+  /// Per-book completion: bookId → fraction (0.0 to 1.0)
+  final Map<int, double> bookCompletionMap;
 
-  DetailedStats({
-    required this.otRead,
-    required this.ntRead,
-    required this.totalRead,
-    required this.otProgress,
-    required this.ntProgress,
-    required this.totalProgress,
-    required this.last7DaysDates,
-    required this.last7DaysCounts,
-    required this.currentMonthDailyCounts,
-    required this.currentYearMonthlyCounts,
-    required this.averageChaptersPerDay,
-  });
+  final int totalOTChapters;
+  final int totalNTChapters;
+  final int totalBibleChapters;
+  final int totalOTBooks;
+  final int totalNTBooks;
+  final int totalBooks;
+
+  final int availableFreezes;
+  final Set<String> frozenDates;
+  final bool isStreakFrozen;
 }
 
 @riverpod
 Future<DetailedStats> detailedStats(Ref ref) async {
-  final repo = ref.watch(bibleRepositoryProvider);
-  final history = await repo.getAllProgressSnapshot();
+  // 1. Watch synchronous dependencies before any await gaps
+  final activeBooks = ref.watch(activeCanonBooksProvider);
+  final authUser = ref.watch(authUserProvider).value;
+  final settingsRepo = ref.read(settingsRepositoryProvider);
 
-  const int totalOT = 1074;
-  const int totalNT = 260;
-  const int totalBible = 1334;
+  final history = await ref.watch(globalProgressProvider.future);
 
-  final otRead = history.where((p) => p.bookId <= 39).length;
-  final ntRead = history.where((p) => p.bookId >= 40).length;
-  final totalRead = history.length;
+  final activeBookIds = activeBooks.map((b) => b.id).toSet();
+
+  final otBooks =
+      activeBooks.where((b) => b.testament == Testament.old).toList();
+  final ntBooks =
+      activeBooks.where((b) => b.testament == Testament.newTestament).toList();
+  final otBookIds = otBooks.map((b) => b.id).toSet();
+  final ntBookIds = ntBooks.map((b) => b.id).toSet();
+
+  final totalOT = otBooks.fold<int>(0, (sum, b) => sum + b.chapters);
+  final totalNT = ntBooks.fold<int>(0, (sum, b) => sum + b.chapters);
+  final totalBible = totalOT + totalNT;
+  final totalOTBooks = otBooks.length;
+  final totalNTBooks = ntBooks.length;
+  final totalBooks = activeBooks.length;
+
+  final readHistory = history
+      .where((p) => p.isRead && activeBookIds.contains(p.bookId))
+      .toList();
+
+  final otRead = readHistory.where((p) => otBookIds.contains(p.bookId)).length;
+  final ntRead = readHistory.where((p) => ntBookIds.contains(p.bookId)).length;
+  final totalRead = readHistory.length;
+
+  // Calculate Books Completed for OT/NT
+  var otBooksCompleted = 0;
+  var ntBooksCompleted = 0;
+  final readChaptersByBook = <int, Set<int>>{};
+  for (final progress in readHistory) {
+    readChaptersByBook.putIfAbsent(progress.bookId, () => <int>{});
+    readChaptersByBook[progress.bookId]!.add(progress.chapterNumber);
+  }
+
+  for (final book in activeBooks) {
+    final readCount = readChaptersByBook[book.id]?.length ?? 0;
+    if (readCount >= book.chapters) {
+      if (book.testament == Testament.old) {
+        otBooksCompleted++;
+      } else {
+        ntBooksCompleted++;
+      }
+    }
+  }
+
+  // Per-book completion fractions for the active canon grid
+  final bookCompletionMap = <int, double>{};
+  for (final book in activeBooks) {
+    final readCount = readChaptersByBook[book.id]?.length ?? 0;
+    bookCompletionMap[book.id] =
+        book.chapters > 0 ? readCount / book.chapters : 0.0;
+  }
 
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
 
+  // Sanitize history: Convert to local time and clamp corrupted future dates to today
+  final sanitizedHistory = readHistory.where((p) => p.readAt != null).map((p) {
+    final localDt = p.readAt!.toLocal();
+    if (DateTime(localDt.year, localDt.month, localDt.day).isAfter(today)) {
+      return DateTime(
+        today.year,
+        today.month,
+        today.day,
+        localDt.hour,
+        localDt.minute,
+      );
+    }
+    return localDt;
+  }).toList();
+
   // 1. Weekly Data
   final last7DaysDates = <DateTime>[];
   final last7DaysCounts = <int>[];
-  for (int i = 6; i >= 0; i--) {
+  for (var i = 6; i >= 0; i--) {
     final date = today.subtract(Duration(days: i));
     last7DaysDates.add(date);
-    final count = history.where((p) {
-      if (p.readAt == null) return false;
-      final pDate = p.readAt!;
-      return pDate.year == date.year &&
-          pDate.month == date.month &&
-          pDate.day == date.day;
+    final count = sanitizedHistory.where((dt) {
+      return dt.year == date.year &&
+          dt.month == date.month &&
+          dt.day == date.day;
     }).length;
     last7DaysCounts.add(count);
   }
 
   // 2. Monthly Data
   final currentMonthDailyCounts = <int, int>{};
-  final monthHistory = history.where((p) =>
-      p.readAt != null &&
-      p.readAt!.year == now.year &&
-      p.readAt!.month == now.month);
-  for (final entry in monthHistory) {
-    currentMonthDailyCounts[entry.readAt!.day] =
-        (currentMonthDailyCounts[entry.readAt!.day] ?? 0) + 1;
+  final monthHistory = sanitizedHistory.where(
+    (dt) => dt.year == now.year && dt.month == now.month,
+  );
+  for (final dt in monthHistory) {
+    currentMonthDailyCounts[dt.day] =
+        (currentMonthDailyCounts[dt.day] ?? 0) + 1;
   }
 
   // 3. Yearly Data
   final currentYearMonthlyCounts = <int, int>{};
-  final yearHistory =
-      history.where((p) => p.readAt != null && p.readAt!.year == now.year);
-  for (final entry in yearHistory) {
-    currentYearMonthlyCounts[entry.readAt!.month] =
-        (currentYearMonthlyCounts[entry.readAt!.month] ?? 0) + 1;
+  final yearHistory = sanitizedHistory.where((dt) => dt.year == now.year);
+  for (final dt in yearHistory) {
+    currentYearMonthlyCounts[dt.month] =
+        (currentYearMonthlyCounts[dt.month] ?? 0) + 1;
   }
 
   // 4. Average
   final recentTotal = last7DaysCounts.reduce((a, b) => a + b);
   final dailyRate = recentTotal > 0 ? recentTotal / 7.0 : 0.0;
+  final user = Supabase.instance.client.auth.currentUser ?? authUser;
+  final uid = user?.id ?? '';
+  final initialFreezes =
+      uid.isNotEmpty ? await settingsRepo.getStreakFreezesAvailable(uid) : 1;
+  final existingFrozenDates =
+      uid.isNotEmpty ? await settingsRepo.getFrozenDates(uid) : <String>{};
+
+  final streakResult = calculateStreakWithFreezes(
+    history,
+    initialFreezes: initialFreezes,
+    existingFrozenDates: existingFrozenDates,
+  );
 
   return DetailedStats(
     otRead: otRead,
     ntRead: ntRead,
     totalRead: totalRead,
-    otProgress: otRead / totalOT,
-    ntProgress: ntRead / totalNT,
-    totalProgress: totalRead / totalBible,
+    otBooksCompleted: otBooksCompleted,
+    ntBooksCompleted: ntBooksCompleted,
+    otProgress: totalOT > 0 ? otRead / totalOT : 0.0,
+    ntProgress: totalNT > 0 ? ntRead / totalNT : 0.0,
+    totalProgress: totalBible > 0 ? totalRead / totalBible : 0.0,
     last7DaysDates: last7DaysDates,
     last7DaysCounts: last7DaysCounts,
     currentMonthDailyCounts: currentMonthDailyCounts,
     currentYearMonthlyCounts: currentYearMonthlyCounts,
     averageChaptersPerDay: dailyRate,
+    streak: streakResult.streak,
+    bookCompletionMap: bookCompletionMap,
+    totalOTChapters: totalOT,
+    totalNTChapters: totalNT,
+    totalBibleChapters: totalBible,
+    totalOTBooks: totalOTBooks,
+    totalNTBooks: totalNTBooks,
+    totalBooks: totalBooks,
+    availableFreezes: streakResult.availableFreezes,
+    frozenDates: streakResult.frozenDates,
+    isStreakFrozen: streakResult.isFrozenTodayOrYesterday,
   );
+}
+
+// --- WEEKLY PROVIDERS ---
+
+class WeeklyChartData {
+  WeeklyChartData(this.dates, this.counts, this.totalRead);
+  final List<DateTime> dates;
+  final List<int> counts;
+  final int totalRead;
+}
+
+@riverpod
+class WeeklyOffset extends _$WeeklyOffset {
+  @override
+  int build() => 0;
+
+  void goBack() => state++;
+  void goForward() {
+    if (state > 0) state--;
+  }
+
+  void reset() => state = 0;
+}
+
+@riverpod
+Future<WeeklyChartData> weeklyChartStats(Ref ref, int weeksAgo) async {
+  final activeBooks = ref.watch(activeCanonBooksProvider);
+  final history = await ref.watch(globalProgressProvider.future);
+  final activeBookIds = activeBooks.map((b) => b.id).toSet();
+  final readHistory = history
+      .where((p) => p.isRead && activeBookIds.contains(p.bookId))
+      .toList();
+
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final startOfWeek = today.subtract(Duration(days: weeksAgo * 7));
+
+  final dates = <DateTime>[];
+  final counts = <int>[];
+  var totalRead = 0;
+
+  for (var i = 6; i >= 0; i--) {
+    final date = startOfWeek.subtract(Duration(days: i));
+    dates.add(date);
+
+    final count = readHistory.where((p) {
+      if (p.readAt == null) return false;
+      final pDate = p.readAt!.toLocal();
+      return pDate.year == date.year &&
+          pDate.month == date.month &&
+          pDate.day == date.day;
+    }).length;
+
+    counts.add(count);
+    totalRead += count;
+  }
+
+  return WeeklyChartData(dates, counts, totalRead);
+}
+
+// --- MONTHLY PROVIDERS ---
+
+class MonthlyChartData {
+  MonthlyChartData(this.year, this.month, this.dailyCounts, this.totalRead);
+  final int year;
+  final int month;
+  final Map<int, int> dailyCounts;
+  final int totalRead;
+}
+
+@riverpod
+class MonthlyOffset extends _$MonthlyOffset {
+  @override
+  int build() => 0;
+
+  void goBack() => state++;
+  void goForward() {
+    if (state > 0) state--;
+  }
+
+  void reset() => state = 0;
+}
+
+@riverpod
+Future<MonthlyChartData> monthlyChartStats(Ref ref, int monthsAgo) async {
+  final activeBooks = ref.watch(activeCanonBooksProvider);
+  final history = await ref.watch(globalProgressProvider.future);
+  final activeBookIds = activeBooks.map((b) => b.id).toSet();
+  final readHistory = history
+      .where((p) => p.isRead && activeBookIds.contains(p.bookId))
+      .toList();
+
+  final now = DateTime.now();
+
+  // Calculate target month and year safely
+  var targetYear = now.year;
+  var targetMonth = now.month - monthsAgo;
+
+  // If we go back past January, shift the year back
+  while (targetMonth <= 0) {
+    targetMonth += 12;
+    targetYear--;
+  }
+
+  final dailyCounts = <int, int>{};
+  var totalRead = 0;
+
+  final monthHistory = readHistory.where((p) {
+    if (p.readAt == null) return false;
+    final pDate = p.readAt!.toLocal();
+    return pDate.year == targetYear && pDate.month == targetMonth;
+  });
+
+  for (final entry in monthHistory) {
+    final pDate = entry.readAt!.toLocal();
+    dailyCounts[pDate.day] = (dailyCounts[pDate.day] ?? 0) + 1;
+    totalRead++;
+  }
+
+  return MonthlyChartData(targetYear, targetMonth, dailyCounts, totalRead);
+}
+
+// --- YEARLY PROVIDERS ---
+
+class YearlyChartData {
+  YearlyChartData(this.year, this.monthlyCounts, this.totalRead);
+  final int year;
+  final Map<int, int> monthlyCounts;
+  final int totalRead;
+}
+
+@riverpod
+class YearlyOffset extends _$YearlyOffset {
+  @override
+  int build() => 0;
+
+  void goBack() => state++;
+  void goForward() {
+    if (state > 0) state--;
+  }
+
+  void reset() => state = 0;
+}
+
+@riverpod
+Future<YearlyChartData> yearlyChartStats(Ref ref, int yearsAgo) async {
+  final activeBooks = ref.watch(activeCanonBooksProvider);
+  final history = await ref.watch(globalProgressProvider.future);
+  final activeBookIds = activeBooks.map((b) => b.id).toSet();
+  final readHistory = history
+      .where((p) => p.isRead && activeBookIds.contains(p.bookId))
+      .toList();
+
+  final now = DateTime.now();
+  final targetYear = now.year - yearsAgo;
+
+  final monthlyCounts = <int, int>{};
+  var totalRead = 0;
+
+  final yearHistory = readHistory.where((p) {
+    if (p.readAt == null) return false;
+    final pDate = p.readAt!.toLocal();
+    return pDate.year == targetYear;
+  });
+
+  for (final entry in yearHistory) {
+    final pDate = entry.readAt!.toLocal();
+    monthlyCounts[pDate.month] = (monthlyCounts[pDate.month] ?? 0) + 1;
+    totalRead++;
+  }
+
+  return YearlyChartData(targetYear, monthlyCounts, totalRead);
 }

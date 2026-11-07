@@ -1,0 +1,131 @@
+import 'dart:convert';
+import 'dart:developer' as dev;
+
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'package:verso/features/home/data/daily_verse.dart';
+
+class VerseRepository {
+  VerseRepository(this._supabase);
+  final SupabaseClient _supabase;
+  static const String _cacheKey = 'cached_daily_verses_v2';
+  static const String _legacyCacheKey = 'cached_daily_verses_v1';
+
+  /// Called by the UI to get today's verse.
+  Future<DailyVerse> getTodayVerse() async {
+    final todayDayOfYear = _getDayOfYear(DateTime.now());
+
+    // 1. Fetch our local offline stash (cached from Supabase)
+    var localVerses = await _getLocalVerses();
+
+    // 2. Find today's verse in local cache
+    Map<String, dynamic>? todayVerse;
+    try {
+      todayVerse = localVerses.firstWhere(
+        (verse) =>
+            (verse as Map<String, dynamic>)['day_of_year'] == todayDayOfYear,
+      ) as Map<String, dynamic>;
+    } catch (_) {
+      // It's okay if it fails, todayVerse stays null
+    }
+
+    final hasMultilingual = todayVerse != null &&
+        ((todayVerse['text_ml_poc'] as String?)?.trim().isNotEmpty == true ||
+            (todayVerse['text_ml_bsi'] as String?)?.trim().isNotEmpty == true);
+
+    // 3. If cache is empty, doesn't have today's verse, or lacks multilingual text,
+    // fetch immediately from Supabase
+    if (todayVerse == null || !hasMultilingual) {
+      await _fetchAndCacheNextBatch(todayDayOfYear);
+      localVerses = await _getLocalVerses();
+      try {
+        todayVerse = localVerses.firstWhere(
+          (verse) =>
+              (verse as Map<String, dynamic>)['day_of_year'] == todayDayOfYear,
+        ) as Map<String, dynamic>;
+      } catch (_) {
+        // Still null (e.g. device is offline)
+      }
+    } else {
+      // 4. BACKGROUND CHECK: Are we running low on verses in cache? (< 3 days remaining)
+      final futureVersesCount = localVerses
+          .where(
+            (v) =>
+                (v as Map<String, dynamic>)['day_of_year'] as int >=
+                todayDayOfYear,
+          )
+          .length;
+
+      if (futureVersesCount < 3) {
+        _fetchAndCacheNextBatch(todayDayOfYear).ignore();
+      }
+    }
+
+    // 5. Return today's verse, or safe fallback if offline on fresh install
+    if (todayVerse != null) {
+      return DailyVerse.fromJson(todayVerse);
+    }
+    return DailyVerse.fallback;
+  }
+
+  // --- PRIVATE HELPER METHODS ---
+
+  Future<List<dynamic>> _getLocalVerses() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Clean up legacy v1 cache if present
+    if (prefs.containsKey(_legacyCacheKey)) {
+      await prefs.remove(_legacyCacheKey);
+    }
+    final jsonString = prefs.getString(_cacheKey);
+    if (jsonString == null) return [];
+    try {
+      return jsonDecode(jsonString) as List<dynamic>;
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> _fetchAndCacheNextBatch(int startDay) async {
+    try {
+      dev.log(
+        'Silently fetching next batch of verses from Supabase...',
+        name: 'VerseRepo',
+      );
+
+      final response = await _supabase
+          .from('daily_verses')
+          .select('day_of_year, reference, text, text_ml_poc, text_ml_bsi')
+          .gte('day_of_year', startDay)
+          .limit(14);
+
+      final list = List<Map<String, dynamic>>.from(response);
+
+      // Wrap around to start of year if near the end (e.g. day 360-366)
+      if (list.length < 14) {
+        final wrapNeeded = 14 - list.length;
+        final wrapResponse = await _supabase
+            .from('daily_verses')
+            .select('day_of_year, reference, text, text_ml_poc, text_ml_bsi')
+            .lte('day_of_year', wrapNeeded);
+        list.addAll(List<Map<String, dynamic>>.from(wrapResponse));
+      }
+
+      // Save to SharedPreferences for offline reading
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_cacheKey, jsonEncode(list));
+    } catch (e) {
+      // Silent failure. If they are offline, we just try again next time!
+      dev.log(
+        'Background verse fetch failed (likely offline). Safe to ignore.',
+        error: e,
+        name: 'VerseRepo',
+      );
+    }
+  }
+
+  /// Calculates the current day of the year (1 - 366)
+  int _getDayOfYear(DateTime date) {
+    return date.difference(DateTime(date.year)).inDays + 1;
+  }
+}

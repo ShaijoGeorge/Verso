@@ -1,10 +1,4 @@
 class ReadingProgress {
-  final String userId;
-  final int bookId;
-  final int chapterNumber;
-  final bool isRead;
-  final DateTime? readAt;
-
   ReadingProgress({
     required this.userId,
     required this.bookId,
@@ -20,7 +14,24 @@ class ReadingProgress {
       bookId: json['book_id'] as int,
       chapterNumber: json['chapter_number'] as int,
       isRead: json['is_read'] as bool,
-      readAt: json['read_at'] != null ? DateTime.parse(json['read_at']) : null,
+      readAt: json['read_at'] != null
+          ? DateTime.parse(json['read_at'] as String)
+          : null,
     );
+  }
+  final String userId;
+  final int bookId;
+  final int chapterNumber;
+  final bool isRead;
+  final DateTime? readAt;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'user_id': userId,
+      'book_id': bookId,
+      'chapter_number': chapterNumber,
+      'is_read': isRead,
+      'read_at': readAt?.toIso8601String(),
+    };
   }
 }
