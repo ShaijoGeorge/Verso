@@ -122,7 +122,7 @@ class VersoUpdateSheet extends StatelessWidget {
             if (info.releaseNotes.isNotEmpty) ...[
               Container(
                 width: double.infinity,
-                constraints: const BoxConstraints(maxHeight: 180),
+                constraints: const BoxConstraints(maxHeight: 220),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: cardBg,
@@ -134,13 +134,9 @@ class VersoUpdateSheet extends StatelessWidget {
                 ),
                 child: Scrollbar(
                   child: SingleChildScrollView(
-                    child: Text(
-                      info.releaseNotes,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13,
-                        height: 1.45,
-                        color: scheme.onSurface.withValues(alpha: 0.85),
-                      ),
+                    child: _FormattedReleaseNotes(
+                      notes: info.releaseNotes,
+                      scheme: scheme,
                     ),
                   ),
                 ),
@@ -183,5 +179,144 @@ class VersoUpdateSheet extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _FormattedReleaseNotes extends StatelessWidget {
+  const _FormattedReleaseNotes({
+    required this.notes,
+    required this.scheme,
+  });
+
+  final String notes;
+  final ColorScheme scheme;
+
+  static final RegExp _headingRegex = RegExp(r'^#{1,6}\s+(.*)$');
+  static final RegExp _bulletRegex = RegExp(r'^[-*•]\s+(.*)$');
+  static final RegExp _inlineBoldRegex = RegExp(r'\*\*(.+?)\*\*');
+
+  @override
+  Widget build(BuildContext context) {
+    final baseStyle = GoogleFonts.plusJakartaSans(
+      fontSize: 13,
+      height: 1.45,
+      color: scheme.onSurface.withValues(alpha: 0.85),
+    );
+    final boldStyle = baseStyle.copyWith(
+      fontWeight: FontWeight.w700,
+      color: scheme.onSurface,
+    );
+    final headingStyle = GoogleFonts.plusJakartaSans(
+      fontSize: 13.5,
+      fontWeight: FontWeight.w700,
+      height: 1.35,
+      color: scheme.onSurface,
+    );
+
+    final lines = notes.replaceAll('\r\n', '\n').trim().split('\n');
+    final children = <Widget>[];
+
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i].trim();
+      if (line.isEmpty) {
+        if (children.isNotEmpty && children.last is! Gap) {
+          children.add(const Gap(6));
+        }
+        continue;
+      }
+
+      final headingMatch = _headingRegex.firstMatch(line);
+      if (headingMatch != null) {
+        if (children.isNotEmpty && children.last is! Gap) {
+          children.add(const Gap(8));
+        }
+        children.add(
+          Text(
+            headingMatch.group(1)!.replaceAll('**', '').trim(),
+            style: headingStyle,
+          ),
+        );
+        children.add(const Gap(6));
+        continue;
+      }
+
+      final bulletMatch = _bulletRegex.firstMatch(line);
+      if (bulletMatch != null) {
+        children.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('•  ', style: boldStyle),
+                Expanded(
+                  child: Text.rich(
+                    _parseInlineSpans(
+                      bulletMatch.group(1)!,
+                      baseStyle,
+                      boldStyle,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+        continue;
+      }
+
+      children.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Text.rich(
+            _parseInlineSpans(line, baseStyle, boldStyle),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: children,
+    );
+  }
+
+  TextSpan _parseInlineSpans(
+    String text,
+    TextStyle baseStyle,
+    TextStyle boldStyle,
+  ) {
+    final spans = <InlineSpan>[];
+    var lastEnd = 0;
+
+    for (final match in _inlineBoldRegex.allMatches(text)) {
+      if (match.start > lastEnd) {
+        spans.add(
+          TextSpan(
+            text: text.substring(lastEnd, match.start),
+            style: baseStyle,
+          ),
+        );
+      }
+      spans.add(
+        TextSpan(
+          text: match.group(1),
+          style: boldStyle,
+        ),
+      );
+      lastEnd = match.end;
+    }
+
+    if (lastEnd < text.length) {
+      spans.add(
+        TextSpan(
+          text: text.substring(lastEnd),
+          style: baseStyle,
+        ),
+      );
+    }
+
+    return TextSpan(children: spans);
   }
 }
