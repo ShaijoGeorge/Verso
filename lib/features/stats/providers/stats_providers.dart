@@ -103,6 +103,7 @@ StreakCalculationResult calculateStreakWithFreezes(
 
   final sortedReads = readDatesSet.toList()..sort((a, b) => b.compareTo(a));
   final mostRecentRead = sortedReads.first;
+  final oldestRead = sortedReads.last;
 
   var availableFreezes = initialFreezes;
   final frozenDates = Set<String>.from(existingFrozenDates);
@@ -151,12 +152,28 @@ StreakCalculationResult calculateStreakWithFreezes(
     } else if (frozenDates.contains(key)) {
       // Already frozen in the past — bridges the streak (doesn't increment read count, but preserves continuity)
       cursor = cursor.subtract(const Duration(days: 1));
-    } else if (cursor.isAfter(mostRecentRead) && availableFreezes > 0) {
-      // User missed `cursor` (e.g., yesterday), but has an active streak before it and a freeze equipped!
-      availableFreezes--;
-      frozenDates.add(key);
-      newlyFrozenDate ??= key;
-      cursor = cursor.subtract(const Duration(days: 1));
+    } else if (cursor.isAfter(oldestRead) && availableFreezes > 0) {
+      // Count consecutive unread, unfrozen days in this gap going backward.
+      // Only consume freezes if we have enough available freezes to bridge the entire gap to an earlier read day.
+      var gapDays = 0;
+      var gapCursor = cursor;
+      while (gapCursor.isAfter(oldestRead)) {
+        final gapKey = formatDateKey(gapCursor);
+        if (readDatesSet.contains(gapCursor) || frozenDates.contains(gapKey)) {
+          break;
+        }
+        gapDays++;
+        gapCursor = gapCursor.subtract(const Duration(days: 1));
+      }
+
+      if (gapDays > 0 && gapDays <= availableFreezes) {
+        availableFreezes--;
+        frozenDates.add(key);
+        newlyFrozenDate ??= key;
+        cursor = cursor.subtract(const Duration(days: 1));
+      } else {
+        break;
+      }
     } else {
       break;
     }
@@ -443,6 +460,14 @@ Future<DetailedStats> detailedStats(Ref ref) async {
     initialFreezes: initialFreezes,
     existingFrozenDates: existingFrozenDates,
   );
+
+  if (uid.isNotEmpty && streakResult.newlyFrozenDate != null) {
+    await settingsRepo.setStreakFreezesAvailable(
+      uid,
+      streakResult.availableFreezes,
+    );
+    await settingsRepo.saveFrozenDates(uid, streakResult.frozenDates);
+  }
 
   return DetailedStats(
     otRead: otRead,
