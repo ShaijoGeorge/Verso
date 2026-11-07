@@ -12,7 +12,6 @@ class SavedAccountsService {
   SavedAccountsService({FlutterSecureStorage? secureStorage})
       : _secureStorage = secureStorage ??
             const FlutterSecureStorage(
-              aOptions: AndroidOptions(resetOnError: true),
               iOptions:
                   IOSOptions(accessibility: KeychainAccessibility.first_unlock),
             );

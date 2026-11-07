@@ -151,14 +151,13 @@ Future<List<ReadingProgress>> _fetchOfflineFirstHistory(Ref ref) async {
 
 @riverpod
 Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
-  // WATCH the filter - if filter changes, this entire function re-runs
+  // WATCH the filter and active books before any await gaps
   final filter = ref.watch(activityFilterStateProvider);
+  final activeBooks = ref.watch(activeCanonBooksProvider);
 
   // Use our new Offline-First helper, and copy to a mutable list so we can sort it
   final rawHistory = await _fetchOfflineFirstHistory(ref);
   final allHistory = List<ReadingProgress>.from(rawHistory);
-
-  final activeBooks = ref.watch(activeCanonBooksProvider);
 
   // Detect Completed Books
   final bookCompletionTimes = <int, DateTime>{};
@@ -273,9 +272,9 @@ Future<Map<DateTime, List<ActivityGroup>>> activityLog(Ref ref) async {
 
 @riverpod
 Future<List<BibleBook>> booksWithActivity(Ref ref) async {
+  final activeBooks = ref.watch(activeCanonBooksProvider);
   // Use our new Offline-First helper so the dropdown works offline!
   final allHistory = await _fetchOfflineFirstHistory(ref);
-  final activeBooks = ref.watch(activeCanonBooksProvider);
   final bookIds = allHistory.map((p) => p.bookId).toSet();
 
   return activeBooks.where((b) => bookIds.contains(b.id)).toList();
