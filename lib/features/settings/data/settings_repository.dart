@@ -314,7 +314,8 @@ class SettingsRepository {
     }
 
     // 2. Restore last earned milestone streak
-    final remoteLastEarned = (meta[_kLastFreezeEarnedStreakKey] as num?)?.toInt();
+    final remoteLastEarned =
+        (meta[_kLastFreezeEarnedStreakKey] as num?)?.toInt();
     if (remoteLastEarned != null) {
       final localLastEarned = prefs.getInt(lastEarnedKey) ?? 0;
       if (remoteLastEarned > localLastEarned) {
