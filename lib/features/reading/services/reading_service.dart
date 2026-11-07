@@ -151,6 +151,15 @@ class ReadingService {
     );
     final updatedStreak = streakResult.streak > 0 ? streakResult.streak : 1;
 
+    // Persist if a freeze was consumed to bridge a missed day (e.g. yesterday)
+    if (streakResult.newlyFrozenDate != null) {
+      await settingsRepo.setStreakFreezesAvailable(
+        uid,
+        streakResult.availableFreezes,
+      );
+      await settingsRepo.saveFrozenDates(uid, streakResult.frozenDates);
+    }
+
     // Award +1 Streak Freeze on every 30-day streak milestone if below max capacity
     var updatedFreezes = streakResult.availableFreezes;
     final lastEarnedStreak = await settingsRepo.getLastFreezeEarnedStreak(uid);
