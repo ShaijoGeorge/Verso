@@ -37,7 +37,9 @@ class ReadingService {
       Supabase.instance.client.auth.currentUser?.id ?? '';
 
   Future<int?> toggleChapter(int bookId, int chapterNumber, bool isRead) async {
-    final streak = isRead ? await _checkAndMarkFirstReadToday() : null;
+    final actionTime = DateTime.now();
+    final streak =
+        isRead ? await _checkAndMarkFirstReadToday(actionTime) : null;
 
     // 1. ALWAYS queue the action (chronologically ordered source of truth)
     await _cache.enqueueWrite({
@@ -45,6 +47,7 @@ class ReadingService {
       'book_id': bookId,
       'chapter_number': chapterNumber,
       'is_read': isRead,
+      'created_at': actionTime,
     });
 
     // 2. ALWAYS update local cache immediately (instant optimistic UI)
@@ -53,6 +56,7 @@ class ReadingService {
       bookId,
       chapterNumber,
       isRead,
+      readAt: actionTime,
     );
 
     // 3. Schedule a debounced provider refresh — rapid taps won't
@@ -66,18 +70,21 @@ class ReadingService {
   }
 
   Future<int?> markBookAsRead(int bookId, int totalChapters) async {
-    final streak = await _checkAndMarkFirstReadToday();
+    final actionTime = DateTime.now();
+    final streak = await _checkAndMarkFirstReadToday(actionTime);
 
     await _cache.enqueueWrite({
       'type': 'mark_book',
       'book_id': bookId,
       'total_chapters': totalChapters,
+      'created_at': actionTime,
     });
 
     await _cache.applyCachedMarkBook(
       _currentUserId,
       bookId,
       totalChapters,
+      readAt: actionTime,
     );
 
     // Mark-all is a single action, refresh immediately
@@ -91,11 +98,10 @@ class ReadingService {
   ///
   /// Returns the updated streak number (>= 1) if this action is the first read today,
   /// or `null` if the user has already read or celebrated today.
-  Future<int?> _checkAndMarkFirstReadToday() async {
+  Future<int?> _checkAndMarkFirstReadToday(DateTime now) async {
     final uid = _currentUserId;
     if (uid.isEmpty) return null;
 
-    final now = DateTime.now();
     final todayString = '${now.year.toString().padLeft(4, '0')}-'
         '${now.month.toString().padLeft(2, '0')}-'
         '${now.day.toString().padLeft(2, '0')}';
@@ -220,6 +226,7 @@ class ReadingService {
       if (current.isEmpty) return true;
 
       final op = current.first;
+      final opTime = op['created_at'] as DateTime?;
       try {
         switch (op['type']) {
           case 'toggle':
@@ -227,11 +234,13 @@ class ReadingService {
               op['book_id'] as int,
               op['chapter_number'] as int,
               op['is_read'] as bool,
+              readAt: opTime,
             );
           case 'mark_book':
             await _repo.markBookAsRead(
               op['book_id'] as int,
               op['total_chapters'] as int,
+              readAt: opTime,
             );
         }
         await _cache.removeQueueAction(0);
@@ -300,6 +309,9 @@ class ReadingService {
       );
 
       await _cache.cacheProgress(merged, userId: userId);
+      if (remainingQueue.isNotEmpty) {
+        await _flushQueueInternal();
+      }
       _lastSyncTime = DateTime.now();
       _lastSyncUserId = userId;
       _invalidateProviders();
