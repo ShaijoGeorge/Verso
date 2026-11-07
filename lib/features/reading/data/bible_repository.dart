@@ -41,11 +41,16 @@ class BibleRepository {
   }
 
   // 2. Toggle Chapter (Writes directly to Cloud)
-  Future<void> toggleChapter(int bookId, int chapterNumber, bool isRead) async {
+  Future<void> toggleChapter(
+    int bookId,
+    int chapterNumber,
+    bool isRead, {
+    DateTime? readAt,
+  }) async {
     final userId = _currentUserId;
     if (userId.isEmpty) return;
 
-    final now = DateTime.now().toUtc();
+    final timestamp = (readAt ?? DateTime.now()).toUtc();
 
     await _supabase.from('user_progress').upsert(
       {
@@ -53,7 +58,7 @@ class BibleRepository {
         'book_id': bookId,
         'chapter_number': chapterNumber,
         'is_read': isRead,
-        'read_at': isRead ? now.toIso8601String() : null,
+        'read_at': isRead ? timestamp.toIso8601String() : null,
       },
       onConflict: 'user_id,book_id,chapter_number',
     );
@@ -61,11 +66,15 @@ class BibleRepository {
 
   // Mark Entire Book as Read (Smart Version)
   // Only inserts chapters that are NOT already marked as read.
-  Future<void> markBookAsRead(int bookId, int totalChapters) async {
+  Future<void> markBookAsRead(
+    int bookId,
+    int totalChapters, {
+    DateTime? readAt,
+  }) async {
     final userId = _currentUserId;
     if (userId.isEmpty) return;
 
-    final now = DateTime.now().toUtc().toIso8601String();
+    final now = (readAt ?? DateTime.now()).toUtc().toIso8601String();
 
     // Fetch which chapters are ALREADY read
     final existingData = await _supabase
