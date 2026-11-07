@@ -12,6 +12,7 @@ class SavedAccountsService {
   SavedAccountsService({FlutterSecureStorage? secureStorage})
       : _secureStorage = secureStorage ??
             const FlutterSecureStorage(
+              aOptions: AndroidOptions(resetOnError: true),
               iOptions:
                   IOSOptions(accessibility: KeychainAccessibility.first_unlock),
             );
@@ -61,17 +62,26 @@ class SavedAccountsService {
         if (acc.userId.isEmpty) continue;
 
         // 1. Fetch token from hardware-backed secure storage
-        var token = await _secureStorage.read(key: _tokenKey(acc.userId));
+        String? token;
+        try {
+          token = await _secureStorage.read(key: _tokenKey(acc.userId));
+        } catch (_) {
+          token = null;
+        }
 
         // 2. Backward compatibility & migration:
         // If secure storage doesn't have it yet, check if legacy SharedPreferences JSON had it.
         if ((token == null || token.isEmpty) && acc.refreshToken.isNotEmpty) {
           token = acc.refreshToken;
-          await _secureStorage.write(
-            key: _tokenKey(acc.userId),
-            value: token,
-          );
-          needsSanitization = true;
+          try {
+            await _secureStorage.write(
+              key: _tokenKey(acc.userId),
+              value: token,
+            );
+            needsSanitization = true;
+          } catch (_) {
+            // Keep legacy token usable if hardware keystore fails on this device
+          }
         } else if (acc.refreshToken.isNotEmpty) {
           // If SharedPreferences still has plaintext token even though secure storage has it,
           // mark for sanitization to strip it from SharedPreferences.
@@ -105,10 +115,14 @@ class SavedAccountsService {
     if (account.userId.isEmpty || account.refreshToken.isEmpty) return;
 
     // 1. Save sensitive refresh token to hardware-backed secure storage
-    await _secureStorage.write(
-      key: _tokenKey(account.userId),
-      value: account.refreshToken,
-    );
+    try {
+      await _secureStorage.write(
+        key: _tokenKey(account.userId),
+        value: account.refreshToken,
+      );
+    } catch (_) {
+      return;
+    }
 
     // 2. Save profile metadata to SharedPreferences (toJson() excludes refreshToken)
     final prefs = await SharedPreferences.getInstance();
@@ -165,7 +179,11 @@ class SavedAccountsService {
     if (userId.isEmpty) return;
 
     // 1. Delete token from secure storage
-    await _secureStorage.delete(key: _tokenKey(userId));
+    try {
+      await _secureStorage.delete(key: _tokenKey(userId));
+    } catch (_) {
+      // Ignore secure storage deletion errors and still remove from SharedPreferences
+    }
 
     // 2. Remove from SharedPreferences
     final prefs = await SharedPreferences.getInstance();

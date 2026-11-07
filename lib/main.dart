@@ -119,31 +119,40 @@ class _VersoAppState extends ConsumerState<VersoApp>
 
     // Listen for Auth Events
     Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
-      final event = data.event;
-      if (event == AuthChangeEvent.passwordRecovery) {
-        // If we detect a recovery link was clicked, force navigation to Update Password
-        ref.read(routerProvider).go('/update-password');
-      } else if (event == AuthChangeEvent.userUpdated ||
-          event == AuthChangeEvent.signedIn ||
-          event == AuthChangeEvent.tokenRefreshed) {
-        // Check if an email change was confirmed
-        final pending =
-            await ref.read(authRepositoryProvider).getPendingEmailChange();
-        final currentEmail = data.session?.user.email;
-        if (pending != null &&
-            currentEmail != null &&
-            currentEmail.toLowerCase() == pending.toLowerCase()) {
-          await ref.read(authRepositoryProvider).clearPendingEmailChange();
-          ref.read(routerProvider).go(
-                '/email-change-success?email=${Uri.encodeComponent(currentEmail)}',
-              );
+      try {
+        if (!mounted) return;
+        final event = data.event;
+        if (event == AuthChangeEvent.passwordRecovery) {
+          // If we detect a recovery link was clicked, force navigation to Update Password
+          ref.read(routerProvider).go('/update-password');
+        } else if (event == AuthChangeEvent.userUpdated ||
+            event == AuthChangeEvent.signedIn ||
+            event == AuthChangeEvent.tokenRefreshed) {
+          // Check if an email change was confirmed
+          final pending =
+              await ref.read(authRepositoryProvider).getPendingEmailChange();
+          if (!mounted) return;
+          final currentEmail = data.session?.user.email;
+          if (pending != null &&
+              currentEmail != null &&
+              currentEmail.toLowerCase() == pending.toLowerCase()) {
+            await ref.read(authRepositoryProvider).clearPendingEmailChange();
+            if (!mounted) return;
+            ref.read(routerProvider).go(
+                  '/email-change-success?email=${Uri.encodeComponent(currentEmail)}',
+                );
+          }
         }
-      }
 
-      // Keep saved accounts list synchronized with latest tokens and profiles
-      final session = data.session;
-      if (session != null) {
-        ref.read(savedAccountsServiceProvider).syncCurrentSession(session);
+        // Keep saved accounts list synchronized with latest tokens and profiles
+        final session = data.session;
+        if (session != null && mounted) {
+          await ref
+              .read(savedAccountsServiceProvider)
+              .syncCurrentSession(session);
+        }
+      } catch (e) {
+        debugPrint('Auth state listener error: $e');
       }
     });
 
