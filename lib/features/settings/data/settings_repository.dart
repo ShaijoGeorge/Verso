@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:verso/data/local/entities/user_settings.dart';
@@ -267,6 +269,67 @@ class SettingsRepository {
 
   // ── Streak Freeze Persistence ──────────────────────────────────────────────
 
+  void _syncStreakMetadataToCloud(
+    String userId,
+    Map<String, dynamic> data,
+  ) {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+    if (user == null || user.id != userId) return;
+
+    unawaited(
+      Future(() async {
+        try {
+          await client.auth.updateUser(UserAttributes(data: data));
+        } catch (_) {}
+      }),
+    );
+  }
+
+  /// Restores Streak Freezes and frozen dates from Supabase `user_metadata`
+  /// on sign-in or account switch, merging any cloud-saved frozen dates with
+  /// local SharedPreferences so reinstalls/updates never lose freeze history.
+  Future<void> restoreStreakFreezesFromCloud(String userId) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null || user.id != userId) return;
+
+    final meta = user.userMetadata;
+    if (meta == null) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final freezeKey = _userKey(_kStreakFreezesAvailableKey, userId);
+    final welcomeKey = _userKey(_kWelcomeFreezeAwardedKey, userId);
+    final lastEarnedKey = _userKey(_kLastFreezeEarnedStreakKey, userId);
+    final frozenKey = _userKey(_kFrozenDatesKey, userId);
+
+    // 1. Merge frozen dates (union of local + remote)
+    final remoteDatesRaw = meta[_kFrozenDatesKey];
+    if (remoteDatesRaw is List) {
+      final remoteDates = remoteDatesRaw.whereType<String>().toSet();
+      if (remoteDates.isNotEmpty) {
+        final localDates = (prefs.getStringList(frozenKey) ?? []).toSet();
+        final merged = {...localDates, ...remoteDates}.toList()..sort();
+        await prefs.setStringList(frozenKey, merged);
+      }
+    }
+
+    // 2. Restore last earned milestone streak
+    final remoteLastEarned = (meta[_kLastFreezeEarnedStreakKey] as num?)?.toInt();
+    if (remoteLastEarned != null) {
+      final localLastEarned = prefs.getInt(lastEarnedKey) ?? 0;
+      if (remoteLastEarned > localLastEarned) {
+        await prefs.setInt(lastEarnedKey, remoteLastEarned);
+      }
+    }
+
+    // 3. Restore available streak freezes if present in cloud metadata
+    final remoteFreezes = (meta[_kStreakFreezesAvailableKey] as num?)?.toInt();
+    if (remoteFreezes != null) {
+      await prefs.setInt(freezeKey, remoteFreezes.clamp(0, maxStreakFreezes));
+      await prefs.setBool(welcomeKey, true);
+    }
+  }
+
   /// Returns available streak freezes (defaults to exactly 1 welcome gift freeze).
   Future<int> getStreakFreezesAvailable(String userId) async {
     final prefs = await SharedPreferences.getInstance();
@@ -275,15 +338,35 @@ class SettingsRepository {
     final lastEarnedKey = _userKey(_kLastFreezeEarnedStreakKey, userId);
 
     final hasAwardedWelcome = prefs.getBool(welcomeKey) ?? false;
-    final lastEarned = prefs.getInt(lastEarnedKey) ?? 0;
 
     if (!hasAwardedWelcome) {
+      // Check Supabase user_metadata first in case local cache was cleared
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null && user.id == userId) {
+        final meta = user.userMetadata;
+        final remoteFreezes =
+            (meta?[_kStreakFreezesAvailableKey] as num?)?.toInt();
+        final remoteLastEarned =
+            (meta?[_kLastFreezeEarnedStreakKey] as num?)?.toInt();
+        if (remoteLastEarned != null) {
+          await prefs.setInt(lastEarnedKey, remoteLastEarned);
+        }
+        if (remoteFreezes != null) {
+          final clamped = remoteFreezes.clamp(0, maxStreakFreezes);
+          await prefs.setInt(freezeKey, clamped);
+          await prefs.setBool(welcomeKey, true);
+          return clamped;
+        }
+      }
+
       // Award exactly 1 welcome gift freeze
       await prefs.setInt(freezeKey, 1);
       await prefs.setBool(welcomeKey, true);
+      _syncStreakMetadataToCloud(userId, {_kStreakFreezesAvailableKey: 1});
       return 1;
     }
 
+    final lastEarned = await getLastFreezeEarnedStreak(userId);
     final stored = prefs.getInt(freezeKey) ?? 1;
     // Self-heal: If user has not earned a milestone yet, clamp to max 1 welcome freeze
     if (lastEarned == 0 && stored > 1) {
@@ -296,35 +379,66 @@ class SettingsRepository {
 
   Future<void> setStreakFreezesAvailable(String userId, int count) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(
-      _userKey(_kStreakFreezesAvailableKey, userId),
-      count.clamp(0, maxStreakFreezes),
-    );
+    final clamped = count.clamp(0, maxStreakFreezes);
+    await prefs.setInt(_userKey(_kStreakFreezesAvailableKey, userId), clamped);
+    await prefs.setBool(_userKey(_kWelcomeFreezeAwardedKey, userId), true);
+    _syncStreakMetadataToCloud(userId, {_kStreakFreezesAvailableKey: clamped});
   }
 
   /// Returns the set of local date strings ('YYYY-MM-DD') protected by a Streak Freeze.
   Future<Set<String>> getFrozenDates(String userId) async {
     final prefs = await SharedPreferences.getInstance();
-    final list = prefs.getStringList(_userKey(_kFrozenDatesKey, userId)) ?? [];
-    return list.toSet();
+    final frozenKey = _userKey(_kFrozenDatesKey, userId);
+    final localSet = (prefs.getStringList(frozenKey) ?? []).toSet();
+
+    // Merge with Supabase user_metadata if available so cleared local storage
+    // or app reinstalls never lose previously frozen dates.
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null && user.id == userId) {
+      final remoteRaw = user.userMetadata?[_kFrozenDatesKey];
+      if (remoteRaw is List) {
+        final remoteSet = remoteRaw.whereType<String>().toSet();
+        if (remoteSet.difference(localSet).isNotEmpty) {
+          final merged = {...localSet, ...remoteSet};
+          final sorted = merged.toList()..sort();
+          await prefs.setStringList(frozenKey, sorted);
+          return merged;
+        }
+      }
+    }
+
+    return localSet;
   }
 
   Future<void> saveFrozenDates(String userId, Set<String> dates) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(
-      _userKey(_kFrozenDatesKey, userId),
-      dates.toList()..sort(),
-    );
+    final sorted = dates.toList()..sort();
+    await prefs.setStringList(_userKey(_kFrozenDatesKey, userId), sorted);
+    _syncStreakMetadataToCloud(userId, {_kFrozenDatesKey: sorted});
   }
 
   Future<int> getLastFreezeEarnedStreak(String userId) async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_userKey(_kLastFreezeEarnedStreakKey, userId)) ?? 0;
+    final key = _userKey(_kLastFreezeEarnedStreakKey, userId);
+    final local = prefs.getInt(key);
+    if (local != null) return local;
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null && user.id == userId) {
+      final remote =
+          (user.userMetadata?[_kLastFreezeEarnedStreakKey] as num?)?.toInt();
+      if (remote != null) {
+        await prefs.setInt(key, remote);
+        return remote;
+      }
+    }
+    return 0;
   }
 
   Future<void> setLastFreezeEarnedStreak(String userId, int streak) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_userKey(_kLastFreezeEarnedStreakKey, userId), streak);
+    _syncStreakMetadataToCloud(userId, {_kLastFreezeEarnedStreakKey: streak});
   }
 
   Future<String?> getLastShownFreezeSavedDate(String userId) async {
