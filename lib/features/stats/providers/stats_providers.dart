@@ -185,11 +185,14 @@ int calculateStreak(List<ReadingProgress> history) {
 
 @riverpod
 Future<UserStats> userStats(Ref ref) async {
+  // 1. Watch synchronous dependencies before any await gaps
+  final activeBooks = ref.watch(activeCanonBooksProvider);
+  final authUser = ref.watch(authUserProvider).value;
+  final settingsRepo = ref.read(settingsRepositoryProvider);
+
   // Watch the global stream's latest data
   final history = await ref.watch(globalProgressProvider.future);
 
-  // 1. Get the current active canon
-  final activeBooks = ref.watch(activeCanonBooksProvider);
   final activeBookIds = activeBooks.map((b) => b.id).toSet();
 
   // 2. Calculate dynamic totals
@@ -202,11 +205,8 @@ Future<UserStats> userStats(Ref ref) async {
       .where((p) => p.isRead && activeBookIds.contains(p.bookId))
       .toList();
   final totalRead = activeReadHistory.length;
-  ref.watch(authUserProvider);
-  final user = Supabase.instance.client.auth.currentUser ??
-      ref.watch(authUserProvider).value;
+  final user = Supabase.instance.client.auth.currentUser ?? authUser;
   final uid = user?.id ?? '';
-  final settingsRepo = ref.read(settingsRepositoryProvider);
   final initialFreezes =
       uid.isNotEmpty ? await settingsRepo.getStreakFreezesAvailable(uid) : 1;
   final existingFrozenDates =
@@ -319,10 +319,13 @@ class DetailedStats {
 
 @riverpod
 Future<DetailedStats> detailedStats(Ref ref) async {
+  // 1. Watch synchronous dependencies before any await gaps
+  final activeBooks = ref.watch(activeCanonBooksProvider);
+  final authUser = ref.watch(authUserProvider).value;
+  final settingsRepo = ref.read(settingsRepositoryProvider);
+
   final history = await ref.watch(globalProgressProvider.future);
 
-  // 1. Get the current active canon
-  final activeBooks = ref.watch(activeCanonBooksProvider);
   final activeBookIds = activeBooks.map((b) => b.id).toSet();
 
   final otBooks =
@@ -428,10 +431,8 @@ Future<DetailedStats> detailedStats(Ref ref) async {
   // 4. Average
   final recentTotal = last7DaysCounts.reduce((a, b) => a + b);
   final dailyRate = recentTotal > 0 ? recentTotal / 7.0 : 0.0;
-  final user = Supabase.instance.client.auth.currentUser ??
-      ref.watch(authUserProvider).value;
+  final user = Supabase.instance.client.auth.currentUser ?? authUser;
   final uid = user?.id ?? '';
-  final settingsRepo = ref.read(settingsRepositoryProvider);
   final initialFreezes =
       uid.isNotEmpty ? await settingsRepo.getStreakFreezesAvailable(uid) : 1;
   final existingFrozenDates =
@@ -495,8 +496,8 @@ class WeeklyOffset extends _$WeeklyOffset {
 
 @riverpod
 Future<WeeklyChartData> weeklyChartStats(Ref ref, int weeksAgo) async {
-  final history = await ref.watch(globalProgressProvider.future);
   final activeBooks = ref.watch(activeCanonBooksProvider);
+  final history = await ref.watch(globalProgressProvider.future);
   final activeBookIds = activeBooks.map((b) => b.id).toSet();
   final readHistory = history
       .where((p) => p.isRead && activeBookIds.contains(p.bookId))
@@ -554,8 +555,8 @@ class MonthlyOffset extends _$MonthlyOffset {
 
 @riverpod
 Future<MonthlyChartData> monthlyChartStats(Ref ref, int monthsAgo) async {
-  final history = await ref.watch(globalProgressProvider.future);
   final activeBooks = ref.watch(activeCanonBooksProvider);
+  final history = await ref.watch(globalProgressProvider.future);
   final activeBookIds = activeBooks.map((b) => b.id).toSet();
   final readHistory = history
       .where((p) => p.isRead && activeBookIds.contains(p.bookId))
@@ -615,8 +616,8 @@ class YearlyOffset extends _$YearlyOffset {
 
 @riverpod
 Future<YearlyChartData> yearlyChartStats(Ref ref, int yearsAgo) async {
-  final history = await ref.watch(globalProgressProvider.future);
   final activeBooks = ref.watch(activeCanonBooksProvider);
+  final history = await ref.watch(globalProgressProvider.future);
   final activeBookIds = activeBooks.map((b) => b.id).toSet();
   final readHistory = history
       .where((p) => p.isRead && activeBookIds.contains(p.bookId))
