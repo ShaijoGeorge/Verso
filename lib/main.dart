@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -180,13 +181,17 @@ class _VersoAppState extends ConsumerState<VersoApp>
     if (state == AppLifecycleState.resumed) {
       // Re-evaluate schedule boundaries when returning from background.
       ref.invalidate(scheduleTickStreamProvider);
-      // Reconcile cross-device reading progress on resume.
-      ref.read(readingServiceProvider).syncOnResume();
-      // Ensure daily reminders and verse notifications remain fresh and registered
-      _initializeReminders();
+      // Reconcile cross-device reading progress & freezes first, then refresh reminders.
+      unawaited(_onAppResumed());
       // Check if an email update was confirmed while app was in background
       _checkPendingEmailChange();
     }
+  }
+
+  Future<void> _onAppResumed() async {
+    await ref.read(readingServiceProvider).syncOnResume();
+    if (!mounted) return;
+    await _initializeReminders();
   }
 
   Future<void> _checkPendingEmailChange() async {
@@ -225,6 +230,14 @@ class _VersoAppState extends ConsumerState<VersoApp>
       await _checkAndScheduleBirthday();
 
       // Automatic streak saver countdowns (no user toggle needed)
+      await _syncStreakAlertsFromLatestState();
+    } catch (e) {
+      // Silently ignore if settings/stats fail to load
+    }
+  }
+
+  Future<void> _syncStreakAlertsFromLatestState() async {
+    try {
       final stats = await ref.read(userStatsProvider.future);
       final todayCount = await ref.read(todayChaptersProvider.future);
       await NotificationService().syncStreakEscalationAlerts(
@@ -233,9 +246,7 @@ class _VersoAppState extends ConsumerState<VersoApp>
         isStreakFrozen: stats.isStreakFrozen,
         readToday: todayCount > 0,
       );
-    } catch (e) {
-      // Silently ignore if settings/stats fail to load
-    }
+    } catch (_) {}
   }
 
   Future<void> _checkAndScheduleBirthday() async {
@@ -283,6 +294,20 @@ class _VersoAppState extends ConsumerState<VersoApp>
     final resolved = ref.watch(resolvedThemeProvider(_systemBrightness));
     final settingsAsync = ref.watch(currentSettingsProvider);
     final fontScaleFactor = settingsAsync.value?.fontScaleFactor ?? 1.0;
+
+    // Reactively keep streak notifications synchronized whenever fresh Supabase
+    // snapshot data or Realtime chapter reads arrive from another device.
+    ref
+      ..listen(userStatsProvider, (prev, next) {
+        if (next.hasValue) {
+          unawaited(_syncStreakAlertsFromLatestState());
+        }
+      })
+      ..listen(todayChaptersProvider, (prev, next) {
+        if (next.hasValue && prev?.value != next.value) {
+          unawaited(_syncStreakAlertsFromLatestState());
+        }
+      });
 
     return MaterialApp.router(
       title: 'Verso',

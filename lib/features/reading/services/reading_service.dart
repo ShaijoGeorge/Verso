@@ -283,7 +283,8 @@ class ReadingService {
   /// 2. Fetches latest remote progress snapshot to catch up on cross-device changes.
   /// 3. Reconciles remote snapshot with any writes queued during fetch.
   /// 4. Atomically updates local Drift SQLite cache.
-  /// 5. Invalidates providers so UI updates immediately and stream reconnects.
+  /// 5. Refreshes cloud user_metadata to sync Streak Freezes across devices.
+  /// 6. Invalidates providers so UI updates immediately and stream reconnects.
   Future<void> syncOnResume({bool force = false}) async {
     final userId = _currentUserId;
     if (!_isOnline || userId.isEmpty) return;
@@ -321,6 +322,16 @@ class ReadingService {
       if (remainingQueue.isNotEmpty) {
         await _flushQueueInternal();
       }
+
+      // Refresh user_metadata from Supabase so Streak Freezes & frozen dates
+      // stay synchronized across multiple logged-in devices.
+      try {
+        await Supabase.instance.client.auth.getUser();
+        await _ref
+            .read(settingsRepositoryProvider)
+            .restoreStreakFreezesFromCloud(userId);
+      } catch (_) {}
+
       _lastSyncTime = DateTime.now();
       _lastSyncUserId = userId;
       _invalidateProviders();
